@@ -4,6 +4,8 @@ extends Node2D
 var level_id
 
 var card_being_dragged
+# 被拖动的卡原来所在的卡槽（从手牌拖出时为 null）
+var drag_origin_slot
 var is_hovering_on_card
 
 var screen_size
@@ -148,115 +150,103 @@ func start_drag(card):
 	# 拖动时取消放大效果
 	card.scale = Vector2(DEFAULT_CARD_SCALE,DEFAULT_CARD_SCALE)
 
-	# 如果卡牌在槽中
+	# 如果卡牌在槽中，记下来源卡槽（互换时要把对方移过去），并清空卡槽
+	drag_origin_slot = card.card_slot_card_is_in
 	if card.card_slot_card_is_in != null:
-		# 重置卡槽状态
-		card.card_slot_card_is_in.get_node("Area2D/CollisionShape2D").disabled = false
 		card.card_slot_card_is_in.card_in_slot = null
 		card.card_slot_card_is_in = null
 
-func move_dragged_card_to_hand():
-	player_hand_reference.add_card_to_hand(card_being_dragged,DEFAULT_CARD_MOVE_SPEED)
+func finish_drag():
+	drop_card(raycast_check_for_card_slot())
+
+# 把正在拖动的卡放到 slot 上（null 表示格子以外）。
+# 规则见 docs/design/game-design.md 第 7 节「布阵交互」
+func drop_card(slot):
+	var card = card_being_dragged
+	var origin_slot = drag_origin_slot
 	card_being_dragged = null
+	drag_origin_slot = null
 	# 重置鼠标悬停状态，结束拖拽后离开再放回才放大显示
 	is_hovering_on_card = false
+	card.scale = Vector2(DEFAULT_CARD_SCALE,DEFAULT_CARD_SCALE)
 
-func finish_drag():
-	# 结束拖动卡牌
-	var card_slot_found = raycast_check_for_card_slot()
-	# 判断检测到卡槽 and 卡槽可以交互
-	if card_slot_found and card_slot_found.interactable == true :
-		# 如果卡槽中没卡
-		if card_slot_found.card_in_slot == null:
-			# 卡牌缩放到默认大小
-			card_being_dragged.scale = Vector2(DEFAULT_CARD_SCALE,DEFAULT_CARD_SCALE)
-			# 卡牌z坐标置为底层
-			card_being_dragged.z_index = 0
-			card_being_dragged.old_z_index = 0
-			# 重置鼠标悬停状态，结束拖拽后离开再放回才放大显示
-			is_hovering_on_card = false
-			# 设置卡牌所在卡槽属性
-			card_being_dragged.card_slot_card_is_in = card_slot_found
-			# 从手牌移除该牌(若在手牌中)
-			player_hand_reference.remove_card_from_hand(card_being_dragged)
-			# 卡牌位置吸附到卡槽中心
-			card_being_dragged.position = card_slot_found.position
-			# 设置卡槽存在卡牌属性
-			card_slot_found.card_in_slot = card_being_dragged
-			# # 卡槽无效化（清除碰撞）
-			# card_slot_found.get_node("Area2D/CollisionShape2D").disabled = true
-			
-			# 清空正在拖拽卡牌变量
-			card_being_dragged = null
+	# 放到格子以外（含敌方格子）：回手，已合并的卡拆开
+	if slot == null or slot.interactable == false:
+		drop_outside(card)
+	# 空格：装备不能单独上场，退回手牌；角色或已合并的卡放入
+	elif slot.card_in_slot == null:
+		if card.card_id == "":
+			player_hand_reference.add_card_to_hand(card,DEFAULT_CARD_MOVE_SPEED)
 		else:
-			var card_1 = card_slot_found.card_in_slot
-			var char_1 = card_1.card_id
-			var equip_1 = card_1.equip_id
-			
-			# 如果卡牌是对手卡牌，则退回手牌
-			if card_1.is_enemy_card == true:
-				move_dragged_card_to_hand()
-			# 如果卡槽中有卡，且是合并过的卡，则退回手牌
-			elif char_1 != "" and equip_1 != "":
-				move_dragged_card_to_hand()
-			
-			else :
-				# 如果卡槽中有卡且未合并过，则检测是否可以合并
-				var card_2 = card_being_dragged
-				var char_2 = card_2.card_id
-				var equip_2 = card_2.equip_id
-				# 如果种类相同,则退回手牌
-				if char_1+char_2 == "" or equip_1+equip_2 == "":
-					move_dragged_card_to_hand()
-				# 如果拖拽的卡牌是合成卡牌也直接退回
-				elif char_2 != "" and equip_2 != "":
-					move_dragged_card_to_hand()
-				else:
-					# 清除缩放
-					card_1.scale = Vector2(DEFAULT_CARD_SCALE,DEFAULT_CARD_SCALE)
-					card_2.scale = Vector2(DEFAULT_CARD_SCALE,DEFAULT_CARD_SCALE)
-					# 执行合并
-					load_card.union_two_cards(card_1,card_2)
-
-					# 卡牌z坐标置为底层
-					card_1.z_index = 0
-					card_1.old_z_index = 0
-					
-					# 从手牌移除该牌(若在手牌中)
-					player_hand_reference.remove_card_from_hand(card_being_dragged)
-					# 清除正在拖拽的卡牌
-					card_being_dragged = null
-					# 释放第二张卡牌
-					card_2.queue_free()
-
-					# 重置鼠标悬停状态，结束拖拽后离开再放回才放大显示
-					is_hovering_on_card = false
+			place_card(card, slot)
 	else:
-		# 如果是合并的卡牌，拆分再回手
-		var chara = card_being_dragged.card_id
-		var equip = card_being_dragged.equip_id
-		if chara == "" or equip == "":
-			move_dragged_card_to_hand()
-		else :
-			var new_chara_card = load_card.generate(chara)
-			var new_equip_card = load_card.generate("", equip)
+		drop_on_card(card, slot, origin_slot)
 
-			new_chara_card.position = card_being_dragged.position
-			new_equip_card.position = card_being_dragged.position
+# 放到有卡的格子上
+func drop_on_card(card, slot, origin_slot):
+	var target = slot.card_in_slot
+	# 一张角色、一张装备，都没合并过：合并
+	if can_merge(card, target):
+		load_card.union_two_cards(target, card)
+		target.z_index = 0
+		target.old_z_index = 0
+		player_hand_reference.remove_card_from_hand(card)
+		card.queue_free()
+	# 装备拖到已合并的卡上：换装备，旧装备回手
+	elif card.card_id == "" and target.card_id != "" and target.equip_id != "":
+		var old_equip_id = target.equip_id
+		load_card.show_cards(target, target.card_id, card.equip_id)
+		target.get_node("equip_image").adjust_size()
+		player_hand_reference.remove_card_from_hand(card)
+		card.queue_free()
+		var old_equip = load_card.generate("", old_equip_id)
+		old_equip.position = target.position
+		self.add_child(old_equip)
+		player_hand_reference.add_card_to_hand(old_equip,DEFAULT_CARD_MOVE_SPEED)
+	# 场上的卡拖到场上另一张卡：互换位置，被换的卡移到原位置
+	elif origin_slot != null:
+		place_card(card, slot)
+		target.card_slot_card_is_in = origin_slot
+		origin_slot.card_in_slot = target
+		animate_card_to_position(target, origin_slot.position, DEFAULT_CARD_MOVE_SPEED * 2)
+	# 手牌拖到场上的卡：手牌占位，原来那张整张回手，不拆开
+	else:
+		target.card_slot_card_is_in = null
+		slot.card_in_slot = null
+		place_card(card, slot)
+		player_hand_reference.add_card_to_hand(target,DEFAULT_CARD_MOVE_SPEED)
 
-			# 从手牌移除该牌(若在手牌中)
-			player_hand_reference.remove_card_from_hand(card_being_dragged)
-			# 删除该牌
-			var old_card = card_being_dragged
-			card_being_dragged = null
-			old_card.queue_free()
-			# 重置鼠标悬停状态，结束拖拽后离开再放回才放大显示
-			is_hovering_on_card = false
+# 一张是只有角色的卡，另一张是只有装备的卡
+func can_merge(card_1, card_2):
+	var is_char = func(c): return c.card_id != "" and c.equip_id == ""
+	var is_equip = func(c): return c.card_id == "" and c.equip_id != ""
+	return (is_char.call(card_1) and is_equip.call(card_2)) or (is_equip.call(card_1) and is_char.call(card_2))
 
-			player_hand_reference.add_card_to_hand(new_chara_card,DEFAULT_CARD_MOVE_SPEED)
-			player_hand_reference.add_card_to_hand(new_equip_card,DEFAULT_CARD_MOVE_SPEED)
-			self.add_child(new_chara_card)
-			self.add_child(new_equip_card)
+# 把卡牌放进格子
+func place_card(card, slot):
+	player_hand_reference.remove_card_from_hand(card)
+	card.z_index = 0
+	card.old_z_index = 0
+	card.card_slot_card_is_in = slot
+	card.position = slot.position
+	slot.card_in_slot = card
+
+# 放到格子以外：回手，已合并的卡拆开
+func drop_outside(card):
+	if card.card_id == "" or card.equip_id == "":
+		player_hand_reference.add_card_to_hand(card,DEFAULT_CARD_MOVE_SPEED)
+		return
+	var new_chara_card = load_card.generate(card.card_id)
+	var new_equip_card = load_card.generate("", card.equip_id)
+	new_chara_card.position = card.position
+	new_equip_card.position = card.position
+	# 从手牌移除该牌(若在手牌中)，删除该牌
+	player_hand_reference.remove_card_from_hand(card)
+	card.queue_free()
+	player_hand_reference.add_card_to_hand(new_chara_card,DEFAULT_CARD_MOVE_SPEED)
+	player_hand_reference.add_card_to_hand(new_equip_card,DEFAULT_CARD_MOVE_SPEED)
+	self.add_child(new_chara_card)
+	self.add_child(new_equip_card)
 
 func add_card_to_hand_by_id(id):
 	var new_card = load_card.generate_single_card(id)

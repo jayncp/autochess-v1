@@ -11,6 +11,7 @@
 
 - Godot 路径默认是 `/Applications/Godot.app/Contents/MacOS/Godot`，可以用环境变量 `GODOT` 覆盖。
 - CI（`.github/workflows/test.yml`）在推送到 main 和提交 PR 时运行 `just test`。
+- 冒烟流程：从主菜单走一遍科研模式、两个关卡、图鉴，全程不能报错。第一关还会按 `docs/design/game-design.md` 第 7 节逐条检查布阵交互：直接调用拖放逻辑，不经过鼠标。
 - 数据检查：每张卡都有卡图，卡牌、种族、时机、词条、关卡都有中文名（在英文环境下检查，确认能回退到中文）。数据字段和 id 的合法性由 `CardDB`、`LevelDB` 加载时校验。
 
 ## 战斗用例 `golden/battles.jsonl`
