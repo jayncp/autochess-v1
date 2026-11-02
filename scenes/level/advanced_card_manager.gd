@@ -197,7 +197,7 @@ func finish_drag():
 			if card_1.is_enemy_card == true:
 				move_dragged_card_to_hand()
 			# 如果卡槽中有卡，且是合并过的卡，则退回手牌
-			if char_1 != "" and equip_1 != "":
+			elif char_1 != "" and equip_1 != "":
 				move_dragged_card_to_hand()
 			
 			else :

@@ -26,7 +26,7 @@ func _process(delta: float) -> void:
 	else:
 		$"../last_page_button".visible = true
 		$"../last_page_button".disabled = false
-	if this_page >= display_list.size() / 18 + 1:
+	if this_page >= total_pages():
 		$"../next_page_button".visible = false
 		$"../next_page_button".disabled = true
 	else:
@@ -39,8 +39,7 @@ func update_display(page: int):
 		display_card_list.erase(first_card)
 		first_card.queue_free()
 	
-	var tot_page = display_list.size() / 18 + 1
-	$"../pages".text = tr("ui.book.page") % [page, tot_page]
+	$"../pages".text = tr("ui.book.page") % [page, total_pages()]
 	for i in range((page-1)*18,min(display_list.size(),page*18)):
 		# 生成卡牌实例
 		var new_card = load_card.generate_single_card(display_list[i])
@@ -51,6 +50,10 @@ func update_display(page: int):
 		$"../card_manager".add_child(new_card)
 		# 进入玩家战斗队列
 		display_card_list.append(new_card)
+
+# 总页数：每页 18 张，至少 1 页
+func total_pages() -> int:
+	return maxi(1, ceili(display_list.size() / 18.0))
 
 func update_list():
 	display_list = []

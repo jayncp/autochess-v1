@@ -140,6 +140,8 @@ func _run_smoke() -> void:
 	book._on_filter_character_button_pressed()
 	book._on_filter_equipment_button_pressed()
 	book._on_filter_star_button_item_selected(2)
+	if book.total_pages() != 1:  # 2★ 正好 18 张，一页放下（B4）
+		_failures.append("[smoke-book] 2★ 共 %d 张，应为 1 页，实际 %d 页" % [book.display_list.size(), book.total_pages()])
 	book.get_node("../filter_string_input").text = "集结"
 	book._on_filter_string_button_pressed()
 	await _frames(2)

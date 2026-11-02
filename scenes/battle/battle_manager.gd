@@ -551,7 +551,9 @@ func buff_text_effect(card, text, color):
 	$"../buff_text_container".add_child(buff_text)
 	buff_text.position = card.position
 	buff_text.get_node("buff_text_label").text = text
-	buff_text.get_node("AnimationPlayer").play(color+"_text")
+	var player: AnimationPlayer = buff_text.get_node("AnimationPlayer")
+	player.animation_finished.connect(func(_name): buff_text.queue_free())
+	player.play(color+"_text")
 
 # 卡牌预备状态动画
 func card_prepare_animation(card_1,card_2,direction):
