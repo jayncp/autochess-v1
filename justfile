@@ -6,7 +6,7 @@ limit := "timeout 600"
 run:
     {{godot}} --path .
 
-# 全部测试：战斗用例（含镜像检查）+ 冒烟流程
+# 全部测试：数据检查、战斗用例（含镜像检查、事件自洽）、回放检查、冒烟流程
 test:
     {{limit}} {{godot}} --headless --path . --script res://tests/run_tests.gd
 
@@ -21,3 +21,7 @@ gen-random:
 # 枚举关卡的全部解，写入 level 组用例，之后运行 just record
 levels:
     {{limit}} {{godot}} --headless --path . --script res://tests/tools/level_solutions.gd
+
+# 批量模拟：输入 JSONL 每行 {"p1": [...], "p2": [...]}，输出每行一个结果；加 --log 带事件日志
+sim input output *flags:
+    {{limit}} {{godot}} --headless --path . --script res://cli/sim.gd -- {{input}} {{output}} {{flags}}
