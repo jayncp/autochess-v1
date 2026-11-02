@@ -29,8 +29,8 @@
 
 ## 命令
 
-- 运行：`/Applications/Godot.app/Contents/MacOS/Godot --path .`
-- 无头冒烟：`/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 120`
+- 运行：`just run`；测试：`just test`（说明和维护方法见 `tests/README.md`）
+- Godot：`/Applications/Godot.app/Contents/MacOS/Godot`（`justfile` 里可用环境变量 `GODOT` 覆盖）
 - 无头脚本：`... --headless --path . --script <file.gd>`
   - 脚本 `extends SceneTree`；
   - 跑战斗时设 `battle_manager.play_animation = false`，约 30 场/秒。
