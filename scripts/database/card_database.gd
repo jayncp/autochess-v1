@@ -22,7 +22,7 @@ const CARDS = { # 名称, 0:序号, 1:类型, 2:星级, 3:种族, 4:战力1(角�
     "圣盾" : ["218", "装备", 2, null, null, null, null, null, null, null, [{"庇护":-1}]],
     "剧毒匕首" : ["209", "装备", 2, null, null, null, null, null, null, null, [{"致命":-1}]],
     "防爆头盔" : ["210", "装备", 2, null, null, null, null, null, null, null, [{"坚固":3}]],
-    "圣水": ["211", "装备", 2, null, null, null, null, null, "战前", [{"振奋":1}], null],
+    "圣水": ["211", "装备", 2, null, null, 2, null, null, "战前", null, null],
     "战旗" : ["212", "装备", 2, null, null, null, null, null, null, [{"集结":2}], null],
     "毒囊" : ["213", "装备", 2, null, null, null, null, null, null, [{"腐蚀":4}], null],
     "铁剑" : ["214", "装备", 2, null, null, 8, null, null, null, null, null],
