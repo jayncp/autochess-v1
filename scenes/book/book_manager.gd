@@ -40,7 +40,7 @@ func update_display(page: int):
 		first_card.queue_free()
 	
 	var tot_page = display_list.size() / 18 + 1
-	$"../pages".text = "第"+str(page) + "页/共" + str(tot_page) + "页"
+	$"../pages".text = tr("ui.book.page") % [page, tot_page]
 	for i in range((page-1)*18,min(display_list.size(),page*18)):
 		# 生成卡牌实例
 		var new_card = load_card.generate_single_card(display_list[i])

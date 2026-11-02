@@ -26,7 +26,7 @@ offset_top = 14.0
 offset_right = 1303.0
 offset_bottom = 85.0
 theme_override_font_sizes/font_size = 50
-text = "图  鉴"
+text = "ui.book.title"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -47,7 +47,7 @@ offset_top = 810.0
 offset_right = 349.0
 offset_bottom = 989.0
 theme_override_font_sizes/font_size = 40
-text = "上一页"
+text = "ui.book.prev"
 autowrap_mode = 3
 icon_alignment = 1
 
@@ -57,7 +57,7 @@ offset_top = 791.0
 offset_right = 1891.0
 offset_bottom = 988.0
 theme_override_font_sizes/font_size = 40
-text = "下一页"
+text = "ui.book.next"
 autowrap_mode = 3
 icon_alignment = 1
 
@@ -69,7 +69,7 @@ offset_right = 128.0
 offset_bottom = 159.0
 rotation = -0.000805978
 theme_override_font_sizes/font_size = 40
-text = "角色"
+text = "ui.book.character"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -87,7 +87,7 @@ offset_top = 181.0
 offset_right = 128.0
 offset_bottom = 238.0
 theme_override_font_sizes/font_size = 40
-text = "装备"
+text = "ui.book.equipment"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -105,7 +105,7 @@ offset_top = 261.0
 offset_right = 128.0
 offset_bottom = 318.0
 theme_override_font_sizes/font_size = 40
-text = "星级"
+text = "ui.book.star"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -118,12 +118,12 @@ theme_override_font_sizes/font_size = 35
 alignment = 1
 selected = 0
 item_count = 4
-popup/item_0/text = "不限"
-popup/item_1/text = "1星"
+popup/item_0/text = "ui.book.star_any"
+popup/item_1/text = "ui.book.star_1"
 popup/item_1/id = 1
-popup/item_2/text = "2星"
+popup/item_2/text = "ui.book.star_2"
 popup/item_2/id = 2
-popup/item_3/text = "3星"
+popup/item_3/text = "ui.book.star_3"
 popup/item_3/id = 3
 script = ExtResource("3_ot48t")
 
@@ -134,7 +134,7 @@ offset_top = 512.0
 offset_right = 234.0
 offset_bottom = 569.0
 theme_override_font_sizes/font_size = 40
-text = "搜索筛选"
+text = "ui.book.search"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -144,7 +144,7 @@ offset_top = 569.0
 offset_right = 274.0
 offset_bottom = 635.0
 theme_override_font_sizes/font_size = 35
-placeholder_text = "请输入关键词"
+placeholder_text = "ui.book.search_hint"
 
 [node name="filter_string_button" type="Button" parent="."]
 offset_left = 110.0
@@ -152,7 +152,7 @@ offset_top = 648.0
 offset_right = 198.0
 offset_bottom = 713.0
 theme_override_font_sizes/font_size = 40
-text = "确认"
+text = "ui.book.confirm"
 
 [node name="card_slots" type="Node2D" parent="."]
 
@@ -242,7 +242,7 @@ offset_top = 20.0
 offset_right = 121.0
 offset_bottom = 78.0
 theme_override_font_sizes/font_size = 35
-text = "返回"
+text = "ui.common.back"
 
 [connection signal="pressed" from="last_page_button" to="book_manager" method="_on_last_page_button_pressed"]
 [connection signal="pressed" from="next_page_button" to="book_manager" method="_on_next_page_button_pressed"]

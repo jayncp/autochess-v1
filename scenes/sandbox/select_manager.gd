@@ -115,4 +115,4 @@ func _on_start_battle_pressed() -> void:
 		global_var.battle_equip_list_2 = list_equip[2]
 		emit_signal("start_battle")
 	else:
-		$"../output_text".text = "阵容有误，请重新输入！"
+		$"../output_text".text = tr("ui.sandbox.invalid")

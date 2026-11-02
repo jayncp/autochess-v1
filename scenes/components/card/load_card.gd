@@ -113,7 +113,7 @@ static func generate_skill_string(skills):
 	if skills == null:
 		return null
 	if skills.is_empty():
-		return "无"
+		return _t("ui.common.none")
 	var parts := []
 	for skill in skills:
 		var value = skills[skill]

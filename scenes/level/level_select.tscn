@@ -31,7 +31,7 @@ offset_right = 347.0
 offset_bottom = 171.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 80
-text = "闯关模式   关卡选择"
+text = "ui.level_select.title"
 horizontal_alignment = 1
 
 [node name="back_button" type="Button" parent="."]
@@ -41,7 +41,7 @@ offset_top = 20.0
 offset_right = 121.0
 offset_bottom = 78.0
 theme_override_font_sizes/font_size = 35
-text = "返回"
+text = "ui.common.back"
 
 [node name="FlowContainer" type="FlowContainer" parent="."]
 custom_minimum_size = Vector2(1100, 400)

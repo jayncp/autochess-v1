@@ -29,6 +29,7 @@ func _ready() -> void:
 func pre_load():
 	# 切换整合技能UI
 	$"../skill_union".button_pressed = true
+	show_battle_speed()
 	# 加载双方卡槽
 	player_slots[1].append($"../card_slots/card_slot1")
 	player_slots[1].append($"../card_slots/card_slot2")
@@ -128,11 +129,11 @@ func check_special_draw():
 
 # 在putput文本中显示胜利者; 显示返回按钮
 func show_winner():
-	$"../start_battle".text = "返回"
+	$"../start_battle".text = tr("ui.common.back")
 	match winner:
-		1:$"../output_text".text = "战斗结束,玩家1获胜!"
-		2:$"../output_text".text = "战斗结束,玩家2获胜!"
-		3:$"../output_text".text = "战斗结束,双方平局!"
+		1:$"../output_text".text = tr("ui.battle.p1_win")
+		2:$"../output_text".text = tr("ui.battle.p2_win")
+		3:$"../output_text".text = tr("ui.battle.draw")
 
 
 #==============================================
@@ -145,8 +146,11 @@ var have_been_skipped = false
 @onready var speed_button = $"../speed_button"
 
 func _on_speed_button_pressed() -> void:
-	var new_speed = cycle_battle_speed()
-	speed_button.text = "速度: " + str(new_speed) + "x"
+	cycle_battle_speed()
+	show_battle_speed()
+
+func show_battle_speed():
+	speed_button.text = tr("ui.battle.speed") % str(battle_speed)
 
 # 调整战斗速度功能
 func cycle_battle_speed():
@@ -178,9 +182,9 @@ func _on_skip_button_pressed() -> void:
 func _on_start_battle_pressed_battle() -> void:
 	if is_pre_battle == false:
 		is_pre_battle = true
-		$"../start_battle".text = "战前结算中"
+		$"../start_battle".text = tr("ui.battle.pre_battle_running")
 		await pre_battle_part()
-		$"../start_battle".text = "战斗中"
+		$"../start_battle".text = tr("ui.battle.running")
 		await main_battle_part()
 		show_winner()
 		# 针对跳过战斗情况，显示最终场面

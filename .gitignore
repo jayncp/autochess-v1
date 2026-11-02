@@ -4,6 +4,3 @@
 
 # macOS
 .DS_Store
-
-# CSV 翻译表导入时生成
-*.translation

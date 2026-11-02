@@ -35,7 +35,7 @@ theme/custom="res://assets/fonts/hei_font.tres"
 
 [internationalization]
 
-locale/translations=PackedStringArray("res://i18n/data.zh_CN.translation")
+locale/translations=PackedStringArray("res://i18n/data.zh_CN.translation", "res://i18n/ui.zh_CN.translation")
 locale/fallback="zh_CN"
 
 [input_devices]

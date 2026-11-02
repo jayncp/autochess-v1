@@ -34,7 +34,7 @@ func _on_start_battle_pressed() -> void:
 		global_var.battle_equip_list_2 = generate_battle_list()[1]
 		emit_signal("start_battle")
 	else:
-		$"output_text".text = "阵容有误，请调整！"
+		$"output_text".text = tr("ui.level_setup.invalid")
 
 # 检索我方队伍
 func generate_battle_list():

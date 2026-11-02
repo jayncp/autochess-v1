@@ -97,7 +97,7 @@ offset_top = 425.0
 offset_right = 1809.0
 offset_bottom = 448.0
 scale = Vector2(2, 2)
-text = "实时状态"
+text = "ui.battle.realtime"
 
 [node name="start_battle" type="Button" parent="."]
 offset_left = 1570.0
@@ -105,7 +105,7 @@ offset_top = 494.0
 offset_right = 1642.0
 offset_bottom = 525.0
 scale = Vector2(3, 3)
-text = "开始战斗"
+text = "ui.battle.start"
 
 [node name="speed_button" type="Button" parent="."]
 offset_left = 16.0
@@ -114,7 +114,6 @@ offset_right = 53.0
 offset_bottom = 275.0
 scale = Vector2(3, 3)
 theme_override_font_sizes/font_size = 12
-text = "速度: 1.0x"
 autowrap_mode = 1
 
 [node name="skip_button" type="Button" parent="."]
@@ -124,7 +123,7 @@ offset_right = 53.0
 offset_bottom = 759.0
 scale = Vector2(3, 3)
 theme_override_font_sizes/font_size = 12
-text = "跳过战斗"
+text = "ui.battle.skip"
 autowrap_mode = 1
 
 [node name="output_text" type="Label" parent="."]

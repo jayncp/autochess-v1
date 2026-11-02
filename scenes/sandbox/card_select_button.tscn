@@ -15,7 +15,7 @@ alignment = 1
 selected = 0
 allow_reselect = true
 item_count = 1
-popup/item_0/text = "无"
+popup/item_0/text = "ui.common.none"
 script = ExtResource("1_pek0o")
 
 [connection signal="item_selected" from="." to="." method="_on_item_selected"]
