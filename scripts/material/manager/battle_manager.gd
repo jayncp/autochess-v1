@@ -469,8 +469,10 @@ func settlement_fight_part():
 		if play_animation:
 			await get_tree().create_timer(0.2/battle_speed).timeout
 
-		# 结算反噬
-		if settlement_self_hurt(head_card_1) or settlement_self_hurt(head_card_2):
+		# 结算反噬（双方都要结算，不能用 or 短路）
+		var self_hurt_1 = settlement_self_hurt(head_card_1)
+		var self_hurt_2 = settlement_self_hurt(head_card_2)
+		if self_hurt_1 or self_hurt_2:
 			if play_animation:
 				await get_tree().create_timer(0.1/battle_speed).timeout
 
@@ -741,13 +743,13 @@ func settlement_deadly(card):
 			return true
 	return false
 
-# 结算反噬
+# 结算反噬：走伤害流程（受坚固减免、可被庇护抵挡）
 func settlement_self_hurt(card):
+	var is_hurt = false
 	for skill in card.special_skill:
 		if skill.keys()[0]== "反噬":
 			if play_animation:
 				buff_text_effect(card,"反噬 - "+str(skill.values()[0]),"red")
-			card.strength -= skill.values()[0]
-			card.get_node("strength_1").text = str(card.strength)
-			return true
-	return false
+			settlement_damage(card, skill.values()[0])
+			is_hurt = true
+	return is_hurt
