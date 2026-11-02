@@ -58,16 +58,19 @@ func _check_data() -> void:
 	print("数据检查：%d 张卡，%d 个关卡" % [CardDB.all().size(), LevelDB.all().size()])
 
 
+## 每条用例：结果符合期望、交换左右后对称、事件日志自洽
 func _run_battle_cases() -> void:
-	var harness := Harness.new(self)
 	var cases := Harness.load_cases(CASES_PATH)
 	for c in cases:
-		var got: Dictionary = await harness.run(c.p1, c.p2)
-		if not Harness.same(got, c.expect):
-			_failures.append("[%s] 期望 %s，实际 %s" % [c.id, c.expect, got])
+		var result := BattleSim.simulate(c.p1, c.p2)
+		if not Harness.same(result, c.expect):
+			_failures.append("[%s] 期望 %s，实际 %s" % [c.id, c.expect, Harness.run(c.p1, c.p2)])
+		var inconsistency := Harness.check_events(result)
+		if inconsistency != "":
+			_failures.append("[%s] 事件日志不自洽：%s" % [c.id, inconsistency])
 		if not c.get("asymmetric", false):
-			var mirrored: Dictionary = await harness.run(c.p2, c.p1)
-			if not Harness.same(mirrored, Harness.mirror(got)):
+			var mirrored := Harness.run(c.p2, c.p1)
+			if not Harness.same(mirrored, Harness.mirror(result)):
 				_failures.append("[%s] 交换左右后结果不对称：%s" % [c.id, mirrored])
 	print("战斗用例：%d 条" % cases.size())
 
@@ -75,22 +78,12 @@ func _run_battle_cases() -> void:
 ## 只测对战用例触发不到的情况
 func _run_unit_tests() -> void:
 	# 相邻两个单位同时阵亡时都要移除（B6；现有卡牌只有交战位会阵亡，对战中触发不到，湮灭会触发）
-	global_var.battle_card_list_1 = ["soldier", "soldier", "soldier"]
-	global_var.battle_equip_list_1 = ["", "", ""]
-	global_var.battle_card_list_2 = ["pixie"]
-	global_var.battle_equip_list_2 = [""]
-	var scene: Node = Harness.BATTLE_SCENE.instantiate()
-	root.add_child(scene)
-	var manager: Node = scene.get_node("battle_manager")
-	manager.play_animation = false
-	var field: Array = manager.player_battle_fields[1]
-	field[0].strength = 0
-	field[1].strength = -1
-	var survivor: Node = field[2]
-	manager.settlement_death()
-	if manager.player_battle_fields[1] != [survivor]:
-		_failures.append("[unit-death-adjacent] 相邻两个阵亡单位应一起移除，实际剩余 %d 个" % manager.player_battle_fields[1].size())
-	scene.free()
+	var sim := BattleSim.new([["soldier", ""], ["soldier", ""], ["soldier", ""]], [["pixie", ""]])
+	sim.fields[1][0].strength = 0
+	sim.fields[1][1].strength = -1
+	sim.settle_death()
+	if sim.fields[1].map(func(u): return u.uid) != ["1-2"]:
+		_failures.append("[unit-death-adjacent] 相邻两个阵亡单位应一起移除，实际剩余 %s" % [sim.fields[1].map(func(u): return u.uid)])
 	print("单元测试：1 条")
 
 
