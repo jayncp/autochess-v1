@@ -27,6 +27,7 @@ func _initialize() -> void:
 	_check_data()
 	await _run_battle_cases()
 	await _run_unit_tests()
+	await _run_replay_checks()
 	await _run_smoke()
 	await _frames(3)  # 让 queue_free 的节点真正释放，避免退出时报泄漏
 	_finish()
@@ -125,6 +126,52 @@ func _test_overlay() -> void:
 			_failures.append("[unit-overlay] %s：期望 %s，实际 %s" % [c[4], c[3], got])
 
 
+## 回放检查：战斗场景最后显示的局面和 BattleSim 的结果一致。
+## 覆盖动画播完、僵持压缩、动画中途跳过三种情况（高速播放）
+func _run_replay_checks() -> void:
+	var cases := [
+		["animated", [["tiger_man", "lionheart"], ["fairy", ""]], [["porcupine", "holy_shield"], ["paladin", ""]], -1],
+		["stalemate", [["angel", "riot_helmet"]], [["angel", "riot_helmet"]], -1],
+		["skip-midway", [["soldier", ""], ["soldier", ""], ["tiger", "holy_water"]], [["sludge", "thorns"], ["shield_guard", ""]], 30],
+	]
+	for c in cases:
+		global_var.battle_card_list_1 = c[1].map(func(u): return u[0])
+		global_var.battle_equip_list_1 = c[1].map(func(u): return u[1])
+		global_var.battle_card_list_2 = c[2].map(func(u): return u[0])
+		global_var.battle_equip_list_2 = c[2].map(func(u): return u[1])
+		var scene: Node = load("res://scenes/battle/battle.tscn").instantiate()
+		root.add_child(scene)
+		var battle_manager: Node = scene.get_node("battle_manager")
+		battle_manager.battle_speed = 1000.0
+		battle_manager._on_start_battle_pressed_battle()
+		if c[3] >= 0:
+			await _frames(c[3])
+			battle_manager._on_skip_button_pressed()
+		while battle_manager.winner == 0:
+			await process_frame
+		if c[3] >= 0 and not battle_manager.have_been_skipped:
+			_failures.append("[replay-%s] 战斗在跳过之前就播完了，没测到中途跳过" % c[0])
+		_check_replay(battle_manager, "replay-" + c[0])
+		scene.free()
+	print("回放检查：%d 条" % cases.size())
+
+
+## 场景里显示的胜负和双方幸存单位的战力，应与 BattleSim 的结果一致
+func _check_replay(battle_manager: Node, label: String) -> void:
+	var lineups := {1: [], 2: []}
+	for side in [1, 2]:
+		var cards: Array = global_var.battle_card_list_1 if side == 1 else global_var.battle_card_list_2
+		var equips: Array = global_var.battle_equip_list_1 if side == 1 else global_var.battle_equip_list_2
+		for n in cards.size():
+			lineups[side].append([cards[n], equips[n]])
+	var expected := Harness.run(lineups[1], lineups[2])
+	var shown := {"winner": battle_manager.winner}
+	for side in [1, 2]:
+		shown["p%d" % side] = battle_manager.player_battle_fields[side].map(func(card): return int(card.get_node("strength_1").text))
+	if not Harness.same(shown, expected):
+		_failures.append("[%s] 场景显示 %s，BattleSim 结果 %s" % [label, shown, expected])
+
+
 func _run_smoke() -> void:
 	var manager: Node = load("res://scenes/app/scene_manager.tscn").instantiate()
 	root.add_child(manager)
@@ -192,7 +239,7 @@ func _play_battle_and_return(manager: Node) -> void:
 	battle_manager._on_skip_button_pressed()
 	while battle_manager.winner == 0:
 		await process_frame
-	await create_timer(1.0).timeout  # 等跳过后的补位动画
+	_check_replay(battle_manager, "smoke-battle")
 	battle_manager._on_start_battle_pressed_battle()
 	await _frames(2)
 

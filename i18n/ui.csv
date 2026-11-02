@@ -22,6 +22,8 @@ ui.battle.running,战斗中
 ui.battle.p1_win,"战斗结束,玩家1获胜!"
 ui.battle.p2_win,"战斗结束,玩家2获胜!"
 ui.battle.draw,"战斗结束,双方平局!"
+ui.battle.no_death,无人阵亡 %d/%d
+ui.battle.stalemate,双方僵持
 ui.book.title,图  鉴
 ui.book.prev,上一页
 ui.book.next,下一页

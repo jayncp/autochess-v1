@@ -91,8 +91,10 @@ func pre_battle_phase() -> void:
 			pair.append(unit)
 		if pair[0] == null and pair[1] == null:
 			return
-		events.append({"type": "pre_battle", "units": pair.map(func(u): return u.uid if u else "")})
-		resolve_timing(pair.filter(func(u): return u != null and "pre_battle" in u.timings))
+		var actors := pair.filter(func(u): return u != null and "pre_battle" in u.timings)
+		events.append({"type": "pre_battle", "units": pair.map(func(u): return u.uid if u else ""),
+			"actors": actors.map(func(u): return u.uid)})
+		resolve_timing(actors)
 		settle_death()
 
 

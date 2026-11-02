@@ -16,16 +16,9 @@ var is_enemy_card = false
 var card_id := ""
 var equip_id := ""
 
-# 卡牌战斗属性
+# 战斗中当前显示的战力（结算在 BattleSim 里，这里只做显示）
 var strength
-var skill_time = []
-var normal_skill = []
-var special_skill = []
-
-# 战斗过程变量
-var finish_pre_battle = false
 var is_playing_animation = false
-var finish_entering = false
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
