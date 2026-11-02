@@ -55,12 +55,12 @@ func _on_to_single_mode():
 	add_child(current_scene)
 
 # 进入指定关卡
-func _on_select_level(level_name):
+func _on_select_level(level_id):
 	get_node("LevelSelectScene").queue_free()
 	current_scene = preload("res://scenes/level/level_setup.tscn").instantiate()
 	current_scene.connect("back_to_level_select",Callable(self, "_on_back_to_level_select"))
 	current_scene.connect("start_battle",Callable(self, "_on_start_battle"))
-	current_scene.level_name = level_name
+	current_scene.level_id = level_id
 	add_child(current_scene)
 
 # 返回关卡选择

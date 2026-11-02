@@ -1,7 +1,5 @@
 extends Node2D
 
-var card_database_reference
-
 var this_page = 1
 var display_list = []
 var display_card_list = []
@@ -17,7 +15,6 @@ func _ready() -> void:
 	$"../filter_character_button".button_pressed = true
 	$"../filter_equipment_button".button_pressed = true
 
-	card_database_reference = preload("res://scripts/database/card_database.gd")
 	update_list()
 	update_display(1)
 
@@ -45,10 +42,8 @@ func update_display(page: int):
 	var tot_page = display_list.size() / 18 + 1
 	$"../pages".text = "第"+str(page) + "页/共" + str(tot_page) + "页"
 	for i in range((page-1)*18,min(display_list.size(),page*18)):
-		var card_name = display_list[i]
-
 		# 生成卡牌实例
-		var new_card = load_card.generate_single_card(card_name)
+		var new_card = load_card.generate_single_card(display_list[i])
 		# 确定卡牌位置
 		new_card.position = Vector2(((i%18)%6)*240 + 480,(i%18)/6*310 + 230)
 		
@@ -59,50 +54,30 @@ func update_display(page: int):
 
 func update_list():
 	display_list = []
-	for i in card_database_reference.CARDS.keys():
-		if (is_filter_character == false) and (card_database_reference.CARDS[i][1] == "角色"):
+	for id in CardDB.all():
+		var data := CardDB.card(id)
+		if (is_filter_character == false) and (data.type == "character"):
 				continue
-		if (is_filter_equipment == false) and (card_database_reference.CARDS[i][1] == "装备"):
+		if (is_filter_equipment == false) and (data.type == "equipment"):
 				continue
-		if (filter_star != 0) and (card_database_reference.CARDS[i][2] != filter_star):
+		if (filter_star != 0) and (data.star != filter_star):
 				continue
-
-		if filter_string != "":
-			var is_exist_str = false
-			var card_data_list = card_database_reference.CARDS[i]
-			if filter_string in i:
-				is_exist_str = true
-			if card_data_list[3]!=null:
-				for j in card_data_list[3]:
-					if filter_string in j:
-						is_exist_str = true
-			
-			if card_data_list[6]!=null:
-				if filter_string in card_data_list[6]:
-					is_exist_str = true
-
-			if card_data_list[7]!=null:		
-				for j in card_data_list[7]:
-					if filter_string in j.keys()[0]:
-						is_exist_str = true
-
-			if card_data_list[8]!=null:
-				if filter_string in card_data_list[8]:
-					is_exist_str = true
-
-			if card_data_list[9]!=null:
-				for j in card_data_list[9]:
-					if filter_string in j.keys()[0]:
-						is_exist_str = true
-
-			if card_data_list[10]!=null:
-				for j in card_data_list[10]:
-					if filter_string in j.keys()[0]:
-						is_exist_str = true
-
-			if is_exist_str == false:
+		if (filter_string != "") and not matches_filter_string(data):
 				continue
-		display_list.append(i)
+		display_list.append(id)
+
+# 关键词匹配显示的名字：卡名、种族、时机、技能名
+func matches_filter_string(data: Dictionary) -> bool:
+	var names := [tr("card." + data.id)]
+	for race in data.get("races", []):
+		names.append(tr("race." + race))
+	for field in ["timing", "weapon_timing"]:
+		if data.has(field):
+			names.append(tr("timing." + data[field]))
+	for field in ["skills", "weapon_skills", "special_skills"]:
+		for skill in data.get(field, {}):
+			names.append(tr("keyword." + skill))
+	return names.any(func(n): return filter_string in n)
 
 func _on_last_page_button_pressed() -> void:
 	this_page -= 1

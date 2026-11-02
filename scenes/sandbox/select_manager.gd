@@ -49,7 +49,7 @@ func connect_equip_select_signal(card_select_button):
 	card_select_button.equip_select.connect(update_init_equip_list)
 
 func update_init_card_list(button, index):
-	var card_name = button.get_item_text(index)
+	var card_id = button.get_item_metadata(index)
 	var button_owner
 	var button_index
 	if button.position.y < 540:
@@ -57,11 +57,11 @@ func update_init_card_list(button, index):
 	else:
 		button_owner = 2
 	button_index = floor(button.position.x/240)
-	init_card_list[button_owner][button_index] = "" if card_name == "无" else card_name
+	init_card_list[button_owner][button_index] = card_id if card_id else ""
 	update_display(button_owner,button_index,init_card_list[button_owner][button_index],init_equip_list[button_owner][button_index])
 
 func update_init_equip_list(button, index):
-	var equip_name = button.get_item_text(index)
+	var equip_id = button.get_item_metadata(index)
 	var button_owner
 	var button_index
 	if button.position.y < 540:
@@ -69,10 +69,10 @@ func update_init_equip_list(button, index):
 	else:
 		button_owner = 2
 	button_index = floor(button.position.x/240)
-	init_equip_list[button_owner][button_index] = "" if equip_name == "无" else equip_name
+	init_equip_list[button_owner][button_index] = equip_id if equip_id else ""
 	update_display(button_owner,button_index,init_card_list[button_owner][button_index],init_equip_list[button_owner][button_index])
 
-func update_display(button_owner,button_index,card_name,equip_name):
+func update_display(button_owner,button_index,card_id,equip_id):
 	var pos_x = 240 * (button_index + 1)
 	var pos_y = 230 if button_owner == 1 else 850
 	for i in card_display_list:
@@ -81,17 +81,8 @@ func update_display(button_owner,button_index,card_name,equip_name):
 			card_display_list.erase(i)
 			card.queue_free()
 
-	if (card_name != "") or (equip_name != ""):
-		var new_card
-		if card_name != "":
-			new_card = load_card.generate_single_card(card_name)
-			if equip_name != "":
-				var new_equip = load_card.generate_single_card(equip_name)
-				load_card.union_two_cards(new_card,new_equip)
-				new_equip.queue_free()
-		else :
-			new_card = load_card.generate_single_card(equip_name)
-
+	if (card_id != "") or (equip_id != ""):
+		var new_card = load_card.generate(card_id, equip_id)
 		new_card.position = Vector2(pos_x,pos_y)
 		
 		# 显示卡牌(加入card_manager)

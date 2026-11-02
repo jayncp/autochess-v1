@@ -2,10 +2,10 @@
 
 [ext_resource type="Script" path="res://scenes/components/card/card.gd" id="1_enacq"]
 [ext_resource type="Texture2D" uid="uid://dbpx82qeyseyi" path="res://assets/ui/card_frame.png" id="2_wmi0r"]
-[ext_resource type="Texture2D" uid="uid://cyhv5pt806kvl" path="res://assets/cards/老虎.png" id="3_83j8u"]
+[ext_resource type="Texture2D" uid="uid://cyhv5pt806kvl" path="res://assets/cards/tiger.png" id="3_83j8u"]
 [ext_resource type="Script" path="res://scenes/components/card/card_image.gd" id="4_tun7h"]
 [ext_resource type="Script" path="res://scenes/components/card/equip_image.gd" id="5_b6m55"]
-[ext_resource type="Texture2D" uid="uid://cq6fiq5bn25e7" path="res://assets/cards/木剑.png" id="5_q835o"]
+[ext_resource type="Texture2D" uid="uid://cq6fiq5bn25e7" path="res://assets/cards/wooden_sword.png" id="5_q835o"]
 [ext_resource type="Texture2D" uid="uid://bulu18n5l2et3" path="res://assets/ui/card_skill_overlay.png" id="6_s2a20"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_aphw6"]

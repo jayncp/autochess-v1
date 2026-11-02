@@ -12,6 +12,10 @@ var old_z_index
 # 标记为敌人卡牌，无法互动
 var is_enemy_card = false
 
+# 卡牌身份：角色和装备的 id，空字符串表示没有
+var card_id := ""
+var equip_id := ""
+
 # 卡牌战斗属性
 var strength
 var skill_time = []

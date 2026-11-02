@@ -24,11 +24,38 @@ func _initialize() -> void:
 	OS.add_logger(_catcher)
 	create_timer(TIMEOUT_SEC).timeout.connect(_on_timeout)
 	await process_frame
+	_check_data()
 	await _run_battle_cases()
 	await _run_unit_tests()
 	await _run_smoke()
 	await _frames(3)  # 让 queue_free 的节点真正释放，避免退出时报泄漏
 	_finish()
+
+
+## 数据检查：每张卡都有卡图；卡牌、种族、时机、词条、关卡都有中文名。
+## 字段和 id 的合法性由 CardDB、LevelDB 加载时校验，出错会被 ErrorCatcher 捕获。
+## 临时切到英文环境，确认系统语言不是中文时也能回退到中文。
+func _check_data() -> void:
+	var keys := []
+	for id in CardDB.all():
+		keys.append("card." + id)
+		if not ResourceLoader.exists("res://assets/cards/%s.png" % id):
+			_failures.append("[data] %s 没有卡图" % id)
+	for race in CardDB.RACES:
+		keys.append("race." + race)
+	for timing in CardDB.TIMINGS:
+		keys.append("timing." + timing)
+	for skill in CardDB.NORMAL_SKILLS + CardDB.SPECIAL_SKILLS:
+		keys.append("keyword." + skill)
+	for level_id in LevelDB.all():
+		keys.append("level." + level_id)
+	var locale := TranslationServer.get_locale()
+	TranslationServer.set_locale("en")
+	for key in keys:
+		if tr(key) == key:
+			_failures.append("[data] 缺少中文名：%s" % key)
+	TranslationServer.set_locale(locale)
+	print("数据检查：%d 张卡，%d 个关卡" % [CardDB.all().size(), LevelDB.all().size()])
 
 
 func _run_battle_cases() -> void:
@@ -48,9 +75,9 @@ func _run_battle_cases() -> void:
 ## 只测对战用例触发不到的情况
 func _run_unit_tests() -> void:
 	# 相邻两个单位同时阵亡时都要移除（B6；现有卡牌只有交战位会阵亡，对战中触发不到，湮灭会触发）
-	global_var.battle_card_list_1 = ["士兵", "士兵", "士兵"]
+	global_var.battle_card_list_1 = ["soldier", "soldier", "soldier"]
 	global_var.battle_equip_list_1 = ["", "", ""]
-	global_var.battle_card_list_2 = ["小精灵"]
+	global_var.battle_card_list_2 = ["pixie"]
 	global_var.battle_equip_list_2 = [""]
 	var scene: Node = Harness.BATTLE_SCENE.instantiate()
 	root.add_child(scene)
@@ -77,7 +104,7 @@ func _run_smoke() -> void:
 	await _frames(2)
 	var sandbox: Node = manager.current_scene
 	var select: Node = sandbox.get_node("select_manager")
-	for slot in [[1, 0, "虎人", "狮心"], [2, 0, "豪猪", "圣盾"], [2, 1, "仙女", ""]]:
+	for slot in [[1, 0, "tiger_man", "lionheart"], [2, 0, "porcupine", "holy_shield"], [2, 1, "fairy", ""]]:
 		select.init_card_list[slot[0]][slot[1]] = slot[2]
 		select.init_equip_list[slot[0]][slot[1]] = slot[3]
 		select.update_display(slot[0], slot[1], slot[2], slot[3])
@@ -87,15 +114,14 @@ func _run_smoke() -> void:
 	await _frames(2)
 
 	# 闯关：两关各布阵一次 → 开始战斗 → 返回
-	var level_names: Array = preload("res://scripts/database/level_database.gd").LEVEL.keys()
 	manager.get_node("MenuScene")._on_single_mode_pressed()
 	await _frames(2)
-	for level_name in level_names:
-		manager.current_scene._on_level_select_button_pressed(level_name)
+	for level_id in LevelDB.all():
+		manager.current_scene._on_level_select_button_pressed(level_id)
 		await create_timer(0.3).timeout  # 等手牌入场动画
 		var pre_battle: Node = manager.current_scene
 		var chars: Array = pre_battle.get_node("advanced_card_manager").get_children().filter(
-			func(card): return card.get_node("character_name").text != "")
+			func(card): return card.card_id != "")
 		for i in chars.size():
 			chars[i].position = Vector2((i + 1) * 240, 540)
 		pre_battle._on_start_battle_pressed()

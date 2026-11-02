@@ -1,142 +1,76 @@
 class_name load_card
+## 生成卡牌实例、刷新卡面显示。卡牌节点用 card_id / equip_id 记录自己是哪张角色和装备。
 
-const CARD_THENE_PATH = "res://scenes/components/card/card.tscn"
-const CARD_DATABASE_PATH = "res://scripts/database/card_database.gd"
+const CARD_SCENE := preload("res://scenes/components/card/card.tscn")
 
 
-# 给定名字生成单张卡牌实例(位置在初始位置，屏幕外右下角)
-static func generate_single_card(card_name):
-	var card_scene = preload(CARD_THENE_PATH)
-	var card_database_reference = preload(CARD_DATABASE_PATH)
-	var new_card = card_scene.instantiate()
-	clear_UI_text(new_card)
-	if card_database_reference.CARDS[card_name][1] == "角色":
-		var card_image_path = str("res://assets/cards/"+card_name+".png")
-		new_card.get_node("card_image").texture = load(card_image_path)
-		new_card.get_node("card_image").modulate.a = 255
-		# 载入卡牌属性-图像显示
-		# 角色名称
-		var card_data_list = card_database_reference.CARDS[card_name]
-		new_card.get_node("character_name").text = card_name
-		# 角色星级
-		var star_string = ""
-		for j in range(0,card_data_list[2]):
-			star_string += "★"
-		new_card.get_node("character_star").text = star_string
-		# 角色种族
-		var race_string = ""
-		for j in card_data_list[3]:
-			if race_string != "":
-				race_string += ","
-			race_string += j
-		update_attribute_display(new_card,"race",race_string)
-		# 角色战力
-		update_attribute_display(new_card,"strength_1",card_data_list[4])
-		update_attribute_display(new_card,"strength_2",card_data_list[5])
-		# 角色技能时机
-		update_attribute_display(new_card,"time_1",card_data_list[6])
-		update_attribute_display(new_card,"time_2",card_data_list[8])
-		# 角色技能
-		update_attribute_display(new_card,"skill_1",generate_skill_string(card_data_list[7]))
-		update_attribute_display(new_card,"skill_2",generate_skill_string(card_data_list[9]))
-		update_attribute_display(new_card,"skill_3",generate_skill_string(card_data_list[10]))
-	elif card_database_reference.CARDS[card_name][1] == "装备":
-		var equip_name = card_name
-		new_card.get_node("addition_sign").visible = true
-		var equip_data_list = card_database_reference.CARDS[equip_name]
-		new_card.get_node("equipment_name").text = equip_name
-		# 装备图像
-		new_card.get_node("equip_image").modulate.a = 255
-		var equip_image_path = str("res://assets/cards/"+equip_name+".png")
-		new_card.get_node("equip_image").texture = load(equip_image_path)
-		# 装备星级
-		var star_string = ""
-		for j in range(0,equip_data_list[2]):
-			star_string += "★"
-		new_card.get_node("equipment_star").text = star_string
-		# 装备种族
-		# 暂不考虑装备种族
-		# 装备战力
-		update_attribute_display(new_card,"strength_2",equip_data_list[5])
-		# 整备没有基础战力,更新角色战力
-		update_attribute_display(new_card,"strength_1",int(new_card.get_node("strength_1").text) + int(new_card.get_node("strength_2").text))
-		# 装备技能时机, 覆盖角色技能时机
-		update_attribute_display(new_card,"time_1",equip_data_list[6])
-		update_attribute_display(new_card,"time_2",equip_data_list[8])
-		# 装备技能, 覆盖角色技能
-		update_attribute_display(new_card,"skill_1",generate_skill_string(equip_data_list[7]))
-		update_attribute_display(new_card,"skill_2",generate_skill_string(equip_data_list[9]))
-		update_attribute_display(new_card,"skill_3",generate_skill_string(equip_data_list[10]))
+## 生成卡牌实例（位置在初始位置，屏幕外右下角）：只有角色、只有装备，或角色带装备
+static func generate(card_id: String, equip_id: String = ""):
+	var new_card = CARD_SCENE.instantiate()
+	show_cards(new_card, card_id, equip_id)
 	return new_card
 
-# 合并两张卡牌，将卡牌2的信息合并到卡牌1中，并不删除卡牌2，仅改变卡牌UI，不更新内在属性
-# 需保证两张卡牌一张为角色，另一张为装备，未做异常处理
-static func union_two_cards(card_1, card_2):
-	var card_database_reference = preload(CARD_DATABASE_PATH)
-	var card_name = card_1.get_node("character_name").text+card_2.get_node("character_name").text
-	var equipment_name = card_1.get_node("equipment_name").text+card_2.get_node("equipment_name").text
-	# 载入卡牌属性-图像显示
-	# 清空UI文本
-	clear_UI_text(card_1)
-	# 角色名称
-	var card_data_list = card_database_reference.CARDS[card_name]
-	card_1.get_node("character_name").text = card_name
-	# 角色图像
-	var card_image_path = str("res://assets/cards/"+card_name+".png")
-	card_1.get_node("card_image").texture = load(card_image_path)
-	card_1.get_node("card_image").modulate.a = 255
-	card_1.get_node("card_image").adjust_size()
-	# 角色星级
-	var star_string = ""
-	for j in range(0,card_data_list[2]):
-		star_string += "★"
-	card_1.get_node("character_star").text = star_string
-	# 角色种族
-	var race_string = ""
-	for j in card_data_list[3]:
-		if race_string != "":
-			race_string += ","
-		race_string += j
-	update_attribute_display(card_1,"race",race_string)
-	# 角色战力
-	update_attribute_display(card_1,"strength_1",card_data_list[4])
-	update_attribute_display(card_1,"strength_2",card_data_list[5])
-	# 角色技能时机
-	update_attribute_display(card_1,"time_1",card_data_list[6])
-	update_attribute_display(card_1,"time_2",card_data_list[8])
-	# 角色技能
-	update_attribute_display(card_1,"skill_1",generate_skill_string(card_data_list[7]))
-	update_attribute_display(card_1,"skill_2",generate_skill_string(card_data_list[9]))
-	update_attribute_display(card_1,"skill_3",generate_skill_string(card_data_list[10]))
 
-	# 载入装备属性-图像显示
-	card_1.get_node("addition_sign").visible = true
-	var equip_data_list = card_database_reference.CARDS[equipment_name]
-	card_1.get_node("equipment_name").text = equipment_name
-	# 装备图像
-	card_1.get_node("equip_image").modulate.a = 255
-	var equip_image_path = str("res://assets/cards/"+equipment_name+".png")
-	card_1.get_node("equip_image").texture = load(equip_image_path)
-	card_1.get_node("equip_image").modulate.a = 255
+## 给定 id 生成单张卡牌，按类型决定是角色卡还是装备卡
+static func generate_single_card(id: String):
+	if CardDB.card(id).type == "character":
+		return generate(id)
+	return generate("", id)
+
+
+## 合并两张卡牌：把卡牌 2 合并到卡牌 1 上，只改卡面，不删除卡牌 2，不更新战斗属性
+## 需保证一张为角色、另一张为装备，未做异常处理
+static func union_two_cards(card_1, card_2):
+	var card_id: String = card_1.card_id if card_1.card_id else card_2.card_id
+	var equip_id: String = card_1.equip_id if card_1.equip_id else card_2.equip_id
+	show_cards(card_1, card_id, equip_id)
+	card_1.get_node("card_image").adjust_size()
 	card_1.get_node("equip_image").adjust_size()
-	# 装备星级
-	star_string = ""
-	for j in range(0,equip_data_list[2]):
-		star_string += "★"
-	card_1.get_node("equipment_star").text = star_string
-	# 装备种族
-	# 暂不考虑装备种族
-	# 装备战力
-	update_attribute_display(card_1,"strength_2",equip_data_list[5])
-	# 整备没有基础战力,更新角色战力
-	update_attribute_display(card_1,"strength_1",int(card_1.get_node("strength_1").text) + int(card_1.get_node("strength_2").text))
-	# 装备技能时机, 覆盖角色技能时机
-	update_attribute_display(card_1,"time_1",equip_data_list[6])
-	update_attribute_display(card_1,"time_2",equip_data_list[8])
-	# 装备技能, 覆盖角色技能
-	update_attribute_display(card_1,"skill_1",generate_skill_string(equip_data_list[7]))
-	update_attribute_display(card_1,"skill_2",generate_skill_string(equip_data_list[9]))
-	update_attribute_display(card_1,"skill_3",generate_skill_string(equip_data_list[10]))
+
+
+## 按 card_id / equip_id 重新显示卡面
+static func show_cards(card, card_id: String, equip_id: String):
+	card.card_id = card_id
+	card.equip_id = equip_id
+	clear_UI_text(card)
+	if card_id:
+		_show_character(card, CardDB.card(card_id))
+	if equip_id:
+		_show_equipment(card, CardDB.card(equip_id))
+
+
+static func _show_character(card, data: Dictionary):
+	card.get_node("card_image").texture = load("res://assets/cards/%s.png" % data.id)
+	card.get_node("card_image").modulate.a = 255
+	card.get_node("character_name").text = _t("card." + data.id)
+	card.get_node("character_star").text = "★".repeat(data.star)
+	update_attribute_display(card, "race", ",".join(data.races.map(func(r): return _t("race." + r))))
+	update_attribute_display(card, "strength_1", data.get("strength"))
+	update_attribute_display(card, "strength_2", data.get("weapon_strength"))
+	_show_timings_and_skills(card, data)
+
+
+static func _show_equipment(card, data: Dictionary):
+	card.get_node("addition_sign").visible = true
+	card.get_node("equipment_name").text = _t("card." + data.id)
+	card.get_node("equip_image").modulate.a = 255
+	card.get_node("equip_image").texture = load("res://assets/cards/%s.png" % data.id)
+	card.get_node("equipment_star").text = "★".repeat(data.star)
+	# 装备没有种族
+	update_attribute_display(card, "strength_2", data.get("weapon_strength"))
+	# 装备没有基础战力，把武器战力加到角色战力上
+	update_attribute_display(card, "strength_1", int(card.get_node("strength_1").text) + int(card.get_node("strength_2").text))
+	# 装备的时机和技能显示在角色的上面
+	_show_timings_and_skills(card, data)
+
+
+static func _show_timings_and_skills(card, data: Dictionary):
+	update_attribute_display(card, "time_1", timing_name(data.get("timing")))
+	update_attribute_display(card, "time_2", timing_name(data.get("weapon_timing")))
+	update_attribute_display(card, "skill_1", generate_skill_string(data.get("skills")))
+	update_attribute_display(card, "skill_2", generate_skill_string(data.get("weapon_skills")))
+	update_attribute_display(card, "skill_3", generate_skill_string(data.get("special_skills")))
+
 
 # 清空卡牌UI文本，初始化
 static func clear_UI_text(card):
@@ -164,19 +98,28 @@ static func update_attribute_display(card, attri, target):
 	if target != null:
 		card.get_node(attri).text = str(target)
 
-# 生成技能列表
-static func generate_skill_string(skill_list):
-	# 注意[]!=null
-	if skill_list == null:
+
+## 时机列表的显示文字，如"战前,交战"；单个时机也可以直接传字符串，null 表示没有
+static func timing_name(timings):
+	if timings == null:
 		return null
-	# 空心的空技能
-	if skill_list == []:
+	if timings is String:
+		return _t("timing." + timings)
+	return ",".join(timings.map(func(t): return _t("timing." + t)))
+
+
+## 技能的显示文字，如"狂暴3,腐蚀2"；null 表示没有该栏，空字典表示清空（显示"无"）
+static func generate_skill_string(skills):
+	if skills == null:
+		return null
+	if skills.is_empty():
 		return "无"
-	var skill_string = ""
-	for j in skill_list:
-		if skill_string != "":
-			skill_string += ","
-		skill_string += j.keys()[0]
-		if j.values()[0] > -1:
-			skill_string += str(j.values()[0])
-	return skill_string
+	var parts := []
+	for skill in skills:
+		var value = skills[skill]
+		parts.append(_t("keyword." + skill) + (str(value) if value != null else ""))
+	return ",".join(parts)
+
+
+static func _t(key: String) -> String:
+	return String(TranslationServer.translate(key))

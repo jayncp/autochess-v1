@@ -1,20 +1,16 @@
 extends OptionButton
 
 signal equip_select
-var card_database_reference
-var card_list = []
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	get_parent().connect_equip_select_signal(self)
 	get_popup().add_theme_font_size_override("font_size",25)
 	get_popup().max_size = Vector2(1000,300)
-	card_database_reference = preload("res://scripts/database/card_database.gd")
-	for i in card_database_reference.CARDS.keys():
-		if card_database_reference.CARDS[i][1] == "装备":
-			card_list.append(i)
-	for i in card_list:
-		get_popup().add_item(i)
+	# 第 0 项是"无"；其余每项显示中文名，metadata 存卡牌 id
+	for id in CardDB.ids("equipment"):
+		get_popup().add_item(tr("card." + id))
+		get_popup().set_item_metadata(get_popup().item_count - 1, id)
 	
 	# 修改下拉菜单的主题
 	var popup_theme = Theme.new()

@@ -1,11 +1,7 @@
 extends Node2D
 
-var card_database_reference
-
-var player_cards = {1:["虎人","精灵虎"],
-					2:["毒囊","狮心"]}
-var player_equips = {1:["半精灵人","士兵"],
-					 2:["仙女翅膀","号角"]}
+var player_cards = {1:[],2:[]}
+var player_equips = {1:[],2:[]}
 
 
 var player_slots = {1:[],2:[]}
@@ -33,8 +29,6 @@ func _ready() -> void:
 func pre_load():
 	# 切换整合技能UI
 	$"../skill_union".button_pressed = true
-	# 加载卡牌数据库
-	card_database_reference = preload("res://scripts/database/card_database.gd")
 	# 加载双方卡槽
 	player_slots[1].append($"../card_slots/card_slot1")
 	player_slots[1].append($"../card_slots/card_slot2")
@@ -54,48 +48,21 @@ func pre_load():
 
 func load_player_deck():
 	for i in range(1,3):
-		var num_card = player_cards[i].size()
-		for n in range(0,num_card):
-			var star_string = ""
-			var card_name = player_cards[i][n]
-			var new_card = load_card.generate_single_card(card_name)
+		for n in range(player_cards[i].size()):
+			var card_id: String = player_cards[i][n]
+			var equip_id: String = player_equips[i][n]
+			var new_card = load_card.generate(card_id, equip_id)
 			new_card.position = player_slots[i][n].position
 
-			# 载入装备属性-图像显示
-			if player_equips[i][n]:
-				var new_equip = load_card.generate_single_card(player_equips[i][n])
-				load_card.union_two_cards(new_card,new_equip)
-				new_equip.queue_free()
-			
-			# 载入卡牌属性
-			new_card.strength = int(new_card.get_node("strength_1").text)
-			var all_time = []
-			for time_type in ["战前", "入场", "交战"]:
-				if (time_type in new_card.get_node("time_1").text) or (time_type in new_card.get_node("time_2").text):
-					all_time.append(time_type)
-			new_card.skill_time = all_time
-
-			var skill_list = []
-			var skill_power = 0
-			var skill_names = ["集结", "狂暴", "腐蚀", "振奋"]
-			for skill_name in skill_names:
-				skill_power = union_normal_skill_power(skill_name, player_cards[i][n], player_equips[i][n])
-				if skill_power > 0:
-					skill_list.append({skill_name: skill_power})
-			new_card.normal_skill = skill_list
-			if card_database_reference.CARDS[player_cards[i][n]][10]:
-				new_card.special_skill = card_database_reference.CARDS[player_cards[i][n]][10]
-			if player_equips[i][n]:
-				if card_database_reference.CARDS[player_equips[i][n]][10]:
-					new_card.special_skill = card_database_reference.CARDS[player_equips[i][n]][10]
+			# 载入战斗属性（角色与装备合并后）
+			var stats := CardDB.combine(card_id, equip_id)
+			new_card.strength = stats.strength
+			new_card.skill_time = stats.timings
+			new_card.normal_skill = stats.normal_skills
+			new_card.special_skill = stats.special_skills
 
 			# 整合技能UI
-			var all_time_string = ""
-			for j in all_time:
-				if all_time_string != "":
-					all_time_string += ","
-				all_time_string += j
-			new_card.get_node("all_time").text = all_time_string
+			new_card.get_node("all_time").text = load_card.timing_name(stats.timings)
 			# 显示整合UI
 			new_card.get_node("card_skill_UI").modulate.a = 255
 			new_card.get_node("all_time").visible = true
@@ -103,41 +70,11 @@ func load_player_deck():
 			# 实时状态只显示红色的当前战力，隐藏黑色的装备战力，避免误解
 			new_card.get_node("strength_2").visible = false
 
-			new_card.get_node("all_normal_skill").text = load_card.generate_skill_string(skill_list)
+			new_card.get_node("all_normal_skill").text = load_card.generate_skill_string(stats.normal_skills)
 			# 显示卡牌(加入card_manager)
 			$"../card_manager".add_child(new_card)
 			# 进入玩家战斗队列
 			player_battle_fields[i].append(new_card)
-
-func union_normal_skill_power(skill_name, card_name, equip_name):
-	var skill_pow_1 = 0
-	var skill_pow_2 = 0
-	if card_database_reference.CARDS[card_name][7] != null:
-		for j in card_database_reference.CARDS[card_name][7]:
-			if j.keys()[0] == skill_name:
-				skill_pow_1 = j.values()[0]
-	if card_database_reference.CARDS[card_name][9] != null:
-		for j in card_database_reference.CARDS[card_name][9]:
-			if j.keys()[0] == skill_name:
-				skill_pow_2 = j.values()[0]
-
-	if equip_name:
-		if card_database_reference.CARDS[equip_name][7] != null:
-			for j in card_database_reference.CARDS[equip_name][7]:
-				if j.keys()[0] == skill_name:
-					skill_pow_1 = j.values()[0]
-		# 特判空心的空格技能
-		if card_database_reference.CARDS[equip_name][7] == []:
-			skill_pow_1 = 0
-
-		if card_database_reference.CARDS[equip_name][9] != null:
-			for j in card_database_reference.CARDS[equip_name][9]:
-				if j.keys()[0] == skill_name:
-					skill_pow_2 = j.values()[0]
-		if card_database_reference.CARDS[equip_name][9] == []:
-			skill_pow_2 = 0
-
-	return skill_pow_1 + skill_pow_2
 
 
 #==============================================
@@ -291,12 +228,12 @@ func pre_battle_part():
 		var act_pose_1 = null
 		var act_pose_2 = null
 		if pos_1 != null:
-			if "战前" in pos_1.skill_time:
+			if "pre_battle" in pos_1.skill_time:
 				is_pos_1 = true
 				act_pose_1 = pos_1
 
 		if pos_2 != null:
-			if "战前" in pos_2.skill_time:
+			if "pre_battle" in pos_2.skill_time:
 				is_pos_2 = true
 				act_pose_2 = pos_2
 
@@ -350,11 +287,11 @@ func settlement_entering_part():
 	var is_entering_part = false
 	var head_card_1 = null
 	var head_card_2 = null
-	if ("入场" in player_battle_fields[1][0].skill_time) and (player_battle_fields[1][0].finish_entering==false):
+	if ("on_enter" in player_battle_fields[1][0].skill_time) and (player_battle_fields[1][0].finish_entering==false):
 		head_card_1 = player_battle_fields[1][0]
 		is_entering_part = true
 		head_card_1.finish_entering = true
-	if ("入场" in player_battle_fields[2][0].skill_time) and (player_battle_fields[2][0].finish_entering==false):
+	if ("on_enter" in player_battle_fields[2][0].skill_time) and (player_battle_fields[2][0].finish_entering==false):
 		head_card_2 = player_battle_fields[2][0]
 		is_entering_part = true
 		head_card_2.finish_entering = true
@@ -372,10 +309,10 @@ func settlement_entering_part():
 
 	if head_card_1 != null:
 		if play_animation:
-			buff_text_effect(head_card_1,"入场","blue")
+			buff_text_effect(head_card_1,load_card.timing_name("on_enter"),"blue")
 	if head_card_2 != null:
 		if play_animation:
-			buff_text_effect(head_card_2,"入场","blue")
+			buff_text_effect(head_card_2,load_card.timing_name("on_enter"),"blue")
 	if (head_card_1 != null) or (head_card_2 != null):
 		if play_animation:
 			await get_tree().create_timer(0.1/battle_speed).timeout
@@ -410,10 +347,10 @@ func settlement_fight_part():
 	var is_fight_skill = false
 	var fight_skill_1 = null
 	var fight_skill_2 = null
-	if "交战" in player_battle_fields[1][0].skill_time:
+	if "on_engage" in player_battle_fields[1][0].skill_time:
 		fight_skill_1 = player_battle_fields[1][0]
 		is_fight_skill = true
-	if "交战" in player_battle_fields[2][0].skill_time:
+	if "on_engage" in player_battle_fields[2][0].skill_time:
 		fight_skill_2 = player_battle_fields[2][0]
 		is_fight_skill = true
 	
@@ -424,12 +361,12 @@ func settlement_fight_part():
 				await get_tree().create_timer(0.5/battle_speed).timeout
 		if (fight_skill_1 != null):
 			if play_animation:
-				buff_text_effect(fight_skill_1,"交战","blue")
+				buff_text_effect(fight_skill_1,load_card.timing_name("on_engage"),"blue")
 				await get_tree().create_timer(0.1/battle_speed).timeout
 			settlement_normal_skill(fight_skill_1,1)
 		if (fight_skill_2 != null):
 			if play_animation:
-				buff_text_effect(fight_skill_2,"交战","blue")
+				buff_text_effect(fight_skill_2,load_card.timing_name("on_engage"),"blue")
 				await get_tree().create_timer(0.1/battle_speed).timeout
 			settlement_normal_skill(fight_skill_2,2)
 		if (fight_skill_1 != null) or (fight_skill_2 != null):
@@ -458,11 +395,11 @@ func settlement_fight_part():
 			if is_deadly_1:
 				attack_1 = 10000
 				if play_animation:
-					buff_text_effect(head_card_1,"致命","green")
+					buff_text_effect(head_card_1,tr("keyword.lethal"),"green")
 			if is_deadly_2:
 				attack_2 = 10000
 				if play_animation:
-					buff_text_effect(head_card_2,"致命","green")
+					buff_text_effect(head_card_2,tr("keyword.lethal"),"green")
 			if play_animation:
 				await get_tree().create_timer(0.1/battle_speed).timeout
 	
@@ -497,30 +434,22 @@ func settlement_damage(target_card, damage):
 
 	# 结算坚固
 	var solid_num = 0
-	for skill in target_card.special_skill:
-		if skill.keys()[0]== "坚固":
-			solid_num = skill.values()[0]
-			if play_animation:
-				await get_tree().create_timer(0.1/battle_speed).timeout
-				buff_text_effect(target_card,"坚固"+str(skill.values()[0]),"green")
+	if target_card.special_skill.has("sturdy"):
+		solid_num = target_card.special_skill.sturdy
+		if play_animation:
+			await get_tree().create_timer(0.1/battle_speed).timeout
+			buff_text_effect(target_card,tr("keyword.sturdy")+str(solid_num),"green")
 	damage = max(0, damage - solid_num)
 
-	# 结算庇护
-	for skill in target_card.special_skill:
-		if (skill.keys()[0]== "庇护") and (damage > 0):
-			# 移除庇护
-			var temp_special_list = []
-			for j in target_card.special_skill:
-				if j.keys()[0]== "庇护":
-					continue
-				temp_special_list.append(j)
-			target_card.special_skill = temp_special_list
-			load_card.update_attribute_display(target_card,"skill_3",load_card.generate_skill_string(target_card.special_skill))
+	# 结算庇护（special_skill 是合并时复制出来的，可以直接移除）
+	if target_card.special_skill.has("shelter") and (damage > 0):
+		target_card.special_skill.erase("shelter")
+		load_card.update_attribute_display(target_card,"skill_3",load_card.generate_skill_string(target_card.special_skill))
 
-			damage = 0
-			if play_animation:
-				await get_tree().create_timer(0.1/battle_speed).timeout
-				buff_text_effect(target_card,"庇护","green")
+		damage = 0
+		if play_animation:
+			await get_tree().create_timer(0.1/battle_speed).timeout
+			buff_text_effect(target_card,tr("keyword.shelter"),"green")
 
 	target_card.strength -= damage
 	# 改变战力面板显示
@@ -689,26 +618,23 @@ func settlement_normal_skill(card, card_owner):
 
 # 结算狂暴
 func settlement_raging(card):
-	for skill in card.normal_skill:
-		if skill.keys()[0]== "狂暴":
-			if play_animation:
-				buff_text_effect(card,"狂暴 + "+str(skill.values()[0]),"green")
-			card.strength += skill.values()[0]
-			card.get_node("strength_1").text = str(card.strength)
+	if card.normal_skill.has("rage"):
+		var power = card.normal_skill.rage
+		if play_animation:
+			buff_text_effect(card,tr("keyword.rage")+" + "+str(power),"green")
+		card.strength += power
+		card.get_node("strength_1").text = str(card.strength)
 
 # 结算集结
 func settlement_assembling(card, card_owner):
-	for skill in card.normal_skill:
-		if skill.keys()[0]== "集结":
-			var total_power = 0
-			for partner in player_battle_fields[card_owner]:
-				for partner_skill in partner.normal_skill:
-					if partner_skill.keys()[0]== "集结":
-						total_power += partner_skill.values()[0]
-			if play_animation:
-				buff_text_effect(card,"集结 + "+str(total_power),"green")
-			card.strength += total_power
-			card.get_node("strength_1").text = str(card.strength)
+	if card.normal_skill.has("rally"):
+		var total_power = 0
+		for partner in player_battle_fields[card_owner]:
+			total_power += partner.normal_skill.get("rally", 0)
+		if play_animation:
+			buff_text_effect(card,tr("keyword.rally")+" + "+str(total_power),"green")
+		card.strength += total_power
+		card.get_node("strength_1").text = str(card.strength)
 
 # 结算腐蚀
 func settlement_corrosion(card, card_owner):
@@ -716,22 +642,22 @@ func settlement_corrosion(card, card_owner):
 	if player_battle_fields[3-card_owner].size() == 0:
 		return
 
-	for skill in card.normal_skill:
-		if skill.keys()[0]== "腐蚀":
-			var aim = player_battle_fields[3-card_owner][0]
-			if play_animation:
-				buff_text_effect(aim,"腐蚀 - "+str(skill.values()[0]),"red")
-			settlement_damage(aim, skill.values()[0])
+	if card.normal_skill.has("corrode"):
+		var power = card.normal_skill.corrode
+		var aim = player_battle_fields[3-card_owner][0]
+		if play_animation:
+			buff_text_effect(aim,tr("keyword.corrode")+" - "+str(power),"red")
+		settlement_damage(aim, power)
 
 # 结算振奋
 func settlement_encouraging(card, card_owner):
-	for skill in card.normal_skill:
-		if skill.keys()[0]== "振奋":
-			for aim in player_battle_fields[card_owner]:
-				aim.strength += skill.values()[0]
-				aim.get_node("strength_1").text = str(aim.strength)
-				if play_animation:
-					buff_text_effect(aim,"振奋 + "+str(skill.values()[0]),"green")
+	if card.normal_skill.has("inspire"):
+		var power = card.normal_skill.inspire
+		for aim in player_battle_fields[card_owner]:
+			aim.strength += power
+			aim.get_node("strength_1").text = str(aim.strength)
+			if play_animation:
+				buff_text_effect(aim,tr("keyword.inspire")+" + "+str(power),"green")
 
 
 #==============================================
@@ -740,18 +666,14 @@ func settlement_encouraging(card, card_owner):
 
 # 结算致命
 func settlement_deadly(card):
-	for skill in card.special_skill:
-		if skill.keys()[0]== "致命":
-			return true
-	return false
+	return card.special_skill.has("lethal")
 
 # 结算反噬：走伤害流程（受坚固减免、可被庇护抵挡）
 func settlement_self_hurt(card):
-	var is_hurt = false
-	for skill in card.special_skill:
-		if skill.keys()[0]== "反噬":
-			if play_animation:
-				buff_text_effect(card,"反噬 - "+str(skill.values()[0]),"red")
-			settlement_damage(card, skill.values()[0])
-			is_hurt = true
-	return is_hurt
+	if not card.special_skill.has("backlash"):
+		return false
+	var power = card.special_skill.backlash
+	if play_animation:
+		buff_text_effect(card,tr("keyword.backlash")+" - "+str(power),"red")
+	settlement_damage(card, power)
+	return true

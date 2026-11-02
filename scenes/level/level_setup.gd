@@ -3,10 +3,7 @@ extends Node2D
 signal back_to_level_select
 signal start_battle
 
-var level_name
-
-var level_database_reference
-var level_info
+var level_id
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -18,9 +15,6 @@ func _ready() -> void:
 		0.5, 
 		Vector2(1920, 1080)
 	)
-	level_database_reference = preload("res://scripts/database/level_database.gd")
-	level_info = level_database_reference.LEVEL
-	pass # Replace with function body.
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -33,9 +27,10 @@ func _on_back_button_pressed() -> void:
 
 func _on_start_battle_pressed() -> void:
 	if generate_battle_list()!= null:
-		global_var.battle_card_list_1 = level_info[level_name][0]
+		var enemy: Array = LevelDB.level(level_id).enemy
+		global_var.battle_card_list_1 = enemy.map(func(u): return u[0])
 		global_var.battle_card_list_2 = generate_battle_list()[0]
-		global_var.battle_equip_list_1 = level_info[level_name][1]
+		global_var.battle_equip_list_1 = enemy.map(func(u): return u[1])
 		global_var.battle_equip_list_2 = generate_battle_list()[1]
 		emit_signal("start_battle")
 	else:
@@ -56,8 +51,8 @@ func generate_battle_list():
 				this_card = t_card
 		if this_card == null:
 			continue
-		if (this_card.get_node("character_name").text=="") and (this_card.get_node("equipment_name").text!=""):
+		if (this_card.card_id=="") and (this_card.equip_id!=""):
 			return null
-		battle_card_list.append(this_card.get_node("character_name").text)
-		battle_equip_list.append(this_card.get_node("equipment_name").text)
+		battle_card_list.append(this_card.card_id)
+		battle_equip_list.append(this_card.equip_id)
 	return [battle_card_list,battle_equip_list]

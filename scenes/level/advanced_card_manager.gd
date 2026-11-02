@@ -1,14 +1,13 @@
 extends Node2D
 
 # 场景转换相关
-var level_name
+var level_id
 
 var card_being_dragged
 var is_hovering_on_card
 
 var screen_size
 var player_hand_reference
-var level_database_reference
 
 # 卡牌尺寸变化常数
 const DEFAULT_CARD_SCALE = 1
@@ -27,26 +26,21 @@ func _ready() -> void:
 	screen_size = get_viewport_rect().size
 	player_hand_reference = $"../player_hand"
 	$"../input_manager".connect("left_mouse_button_released",on_left_click_released)
-	level_database_reference = preload("res://scripts/database/level_database.gd")
-	var level_info = level_database_reference.LEVEL
 
 	# 载入关卡
-	level_name = $"..".level_name
-	$"../level_name".text = level_name
+	level_id = $"..".level_id
+	var level := LevelDB.level(level_id)
+	$"../level_name".text = tr("level." + level_id)
 
 	# 初始化玩家手牌
-	init_player_card_list = level_info[level_name][2]+level_info[level_name][3]
-	for c_name in init_player_card_list:
-		add_card_to_hand_by_name(c_name)
+	init_player_card_list = level.hand
+	for id in init_player_card_list:
+		add_card_to_hand_by_id(id)
 
 	# 载入对手卡组
-	for i in range(level_info[level_name][0].size()):
-		var new_card = load_card.generate_single_card(level_info[level_name][0][i])
+	for i in range(level.enemy.size()):
+		var new_card = load_card.generate(level.enemy[i][0], level.enemy[i][1])
 		new_card.position = Vector2(240 * (i+1), 230)
-		if level_info[level_name][1][i] != "":
-			var new_equip = load_card.generate_single_card(level_info[level_name][1][i])
-			load_card.union_two_cards(new_card,new_equip)
-		
 		new_card.z_index = -1
 		new_card.old_z_index = -1
 
@@ -196,8 +190,8 @@ func finish_drag():
 			card_being_dragged = null
 		else:
 			var card_1 = card_slot_found.card_in_slot
-			var char_1 = card_1.get_node("character_name").text
-			var equip_1 = card_1.get_node("equipment_name").text
+			var char_1 = card_1.card_id
+			var equip_1 = card_1.equip_id
 			
 			# 如果卡牌是对手卡牌，则退回手牌
 			if card_1.is_enemy_card == true:
@@ -209,8 +203,8 @@ func finish_drag():
 			else :
 				# 如果卡槽中有卡且未合并过，则检测是否可以合并
 				var card_2 = card_being_dragged
-				var char_2 = card_2.get_node("character_name").text
-				var equip_2 = card_2.get_node("equipment_name").text
+				var char_2 = card_2.card_id
+				var equip_2 = card_2.equip_id
 				# 如果种类相同,则退回手牌
 				if char_1+char_2 == "" or equip_1+equip_2 == "":
 					move_dragged_card_to_hand()
@@ -239,13 +233,13 @@ func finish_drag():
 					is_hovering_on_card = false
 	else:
 		# 如果是合并的卡牌，拆分再回手
-		var chara = card_being_dragged.get_node("character_name").text
-		var equip = card_being_dragged.get_node("equipment_name").text
+		var chara = card_being_dragged.card_id
+		var equip = card_being_dragged.equip_id
 		if chara == "" or equip == "":
 			move_dragged_card_to_hand()
 		else :
-			var new_chara_card = load_card.generate_single_card(chara)
-			var new_equip_card = load_card.generate_single_card(equip)
+			var new_chara_card = load_card.generate(chara)
+			var new_equip_card = load_card.generate("", equip)
 
 			new_chara_card.position = card_being_dragged.position
 			new_equip_card.position = card_being_dragged.position
@@ -264,8 +258,8 @@ func finish_drag():
 			self.add_child(new_chara_card)
 			self.add_child(new_equip_card)
 
-func add_card_to_hand_by_name(card_name):
-	var new_card = load_card.generate_single_card(card_name)
+func add_card_to_hand_by_id(id):
+	var new_card = load_card.generate_single_card(id)
 	player_hand_reference.add_card_to_hand(new_card,CARD_DRAW_SPEED)
 	self.add_child(new_card)
 
