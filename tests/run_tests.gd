@@ -25,6 +25,7 @@ func _initialize() -> void:
 	create_timer(TIMEOUT_SEC).timeout.connect(_on_timeout)
 	await process_frame
 	await _run_battle_cases()
+	await _run_unit_tests()
 	await _run_smoke()
 	await _frames(3)  # 让 queue_free 的节点真正释放，避免退出时报泄漏
 	_finish()
@@ -42,6 +43,28 @@ func _run_battle_cases() -> void:
 			if not Harness.same(mirrored, Harness.mirror(got)):
 				_failures.append("[%s] 交换左右后结果不对称：%s" % [c.id, mirrored])
 	print("战斗用例：%d 条" % cases.size())
+
+
+## 只测对战用例触发不到的情况
+func _run_unit_tests() -> void:
+	# 相邻两个单位同时阵亡时都要移除（B6；现有卡牌只有交战位会阵亡，对战中触发不到，湮灭会触发）
+	global_var.battle_card_list_1 = ["士兵", "士兵", "士兵"]
+	global_var.battle_equip_list_1 = ["", "", ""]
+	global_var.battle_card_list_2 = ["小精灵"]
+	global_var.battle_equip_list_2 = [""]
+	var scene: Node = Harness.BATTLE_SCENE.instantiate()
+	root.add_child(scene)
+	var manager: Node = scene.get_node("battle_manager")
+	manager.play_animation = false
+	var field: Array = manager.player_battle_fields[1]
+	field[0].strength = 0
+	field[1].strength = -1
+	var survivor: Node = field[2]
+	manager.settlement_death()
+	if manager.player_battle_fields[1] != [survivor]:
+		_failures.append("[unit-death-adjacent] 相邻两个阵亡单位应一起移除，实际剩余 %d 个" % manager.player_battle_fields[1].size())
+	scene.free()
+	print("单元测试：1 条")
 
 
 func _run_smoke() -> void:

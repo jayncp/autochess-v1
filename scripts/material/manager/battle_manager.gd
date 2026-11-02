@@ -525,7 +525,7 @@ func settlement_damage(target_card, damage):
 	target_card.get_node("strength_1").text = str(target_card.strength)
 
 
-### 死亡结算
+### 死亡结算（遍历副本再从原数组移除：边遍历边 erase 会漏掉相邻的阵亡单位）
 func settlement_death():
 	var is_death = false
 	for i in player_battle_fields[1]:
@@ -539,7 +539,7 @@ func settlement_death():
 		if play_animation:
 			tween_remove = create_tween().set_parallel(true)
 		
-		for i in player_battle_fields[1]:
+		for i in player_battle_fields[1].duplicate():
 			if i.strength <= 0:
 				if play_animation:
 					tween_remove.tween_property(i,"modulate:a",0,1.0/battle_speed)
@@ -550,7 +550,7 @@ func settlement_death():
 					i.position = i.position+Vector2(0,-500)
 				player_battle_fields[1].erase(i)
 				is_death = true
-		for i in player_battle_fields[2]:
+		for i in player_battle_fields[2].duplicate():
 			if i.strength <= 0:
 				if play_animation:
 					tween_remove.tween_property(i,"modulate:a",0,1.0/battle_speed)
