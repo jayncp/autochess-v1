@@ -1,0 +1,62 @@
+[gd_scene load_steps=3 format=3 uid="uid://r6pjmyn3ohtg"]
+
+[ext_resource type="Script" path="res://scripts/level_select_scene.gd" id="1_w4dbt"]
+[ext_resource type="Texture2D" uid="uid://dv3up2w20cvgv" path="res://assets/background/level_select_background.png" id="2_odxgp"]
+
+[node name="LevelSelectScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_w4dbt")
+metadata/_edit_vertical_guides_ = [960.0]
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("2_odxgp")
+
+[node name="title" type="Label" parent="."]
+modulate = Color(0.321065, 0.588764, 1, 1)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -347.0
+offset_top = 34.0
+offset_right = 347.0
+offset_bottom = 171.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 80
+text = "闯关模式   关卡选择"
+horizontal_alignment = 1
+
+[node name="back_button" type="Button" parent="."]
+layout_mode = 2
+offset_left = 27.0
+offset_top = 20.0
+offset_right = 121.0
+offset_bottom = 78.0
+theme_override_font_sizes/font_size = 35
+text = "返回"
+
+[node name="FlowContainer" type="FlowContainer" parent="."]
+custom_minimum_size = Vector2(1100, 400)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -547.0
+offset_top = -244.0
+offset_right = 553.0
+offset_bottom = 385.0
+grow_horizontal = 2
+grow_vertical = 2
+last_wrap_alignment = 2
+
+[connection signal="pressed" from="back_button" to="." method="_on_back_button_pressed"]
