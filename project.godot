@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="自走棋v1"
-run/main_scene="res://scenes/scene_manager.tscn"
+run/main_scene="res://scenes/app/scene_manager.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
 
@@ -32,6 +32,11 @@ window/stretch/mode="canvas_items"
 [gui]
 
 theme/custom="res://assets/fonts/hei_font.tres"
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://i18n/data.zh_CN.translation", "res://i18n/ui.zh_CN.translation")
+locale/fallback="zh_CN"
 
 [input_devices]
 

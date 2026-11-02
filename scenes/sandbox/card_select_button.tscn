@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3 uid="uid://csk6asgcxotnj"]
+
+[ext_resource type="Script" path="res://scenes/sandbox/card_select_button.gd" id="1_pek0o"]
+
+[sub_resource type="Theme" id="Theme_heop4"]
+
+[node name="card_select_button" type="OptionButton"]
+offset_right = 206.0
+offset_bottom = 51.0
+size_flags_horizontal = 4
+size_flags_vertical = 0
+theme = SubResource("Theme_heop4")
+theme_override_font_sizes/font_size = 30
+alignment = 1
+selected = 0
+allow_reselect = true
+item_count = 1
+popup/item_0/text = "ui.common.none"
+script = ExtResource("1_pek0o")
+
+[connection signal="item_selected" from="." to="." method="_on_item_selected"]

@@ -4,7 +4,6 @@ extends SceneTree
 ## 用法：just levels
 
 const Harness := preload("res://tests/battle_harness.gd")
-const LEVELS := preload("res://scripts/database/level_database.gd").LEVEL
 const CASES_PATH := "res://tests/golden/battles.jsonl"
 
 
@@ -12,21 +11,21 @@ func _initialize() -> void:
 	await process_frame
 	var harness := Harness.new(self)
 	var cases := Harness.load_cases(CASES_PATH).filter(func(c): return c.group != "level")
-	for level_name in LEVELS:
-		var data: Array = LEVELS[level_name]
-		var enemy := []
-		for i in data[0].size():
-			enemy.append([data[0][i], data[1][i]])
-		var arrangements := _arrangements(data[2], data[3])
+	for level_id in LevelDB.all():
+		var level := LevelDB.level(level_id)
+		var enemy: Array = level.enemy
+		var chars: Array = level.hand.filter(func(id): return CardDB.card(id).type == "character")
+		var equips: Array = level.hand.filter(func(id): return CardDB.card(id).type == "equipment")
+		var arrangements := _arrangements(chars, equips)
 		var solutions := []
 		for team in arrangements:
 			var got: Dictionary = await harness.run(enemy, team)
 			if got.winner == 2:
 				solutions.append(team)
-		print("%s：%d 种摆法，%d 个解，通过率 %.2f%%" % [level_name, arrangements.size(), solutions.size(), 100.0 * solutions.size() / arrangements.size()])
+		print("%s：%d 种摆法，%d 个解，通过率 %.2f%%" % [tr("level." + level_id), arrangements.size(), solutions.size(), 100.0 * solutions.size() / arrangements.size()])
 		for i in solutions.size():
 			print("  ", _describe(solutions[i]))
-			cases.append({"id": "level-%s-%d" % [level_name, i + 1], "group": "level", "p1": enemy, "p2": solutions[i]})
+			cases.append({"id": "level-%s-%d" % [level_id, i + 1], "group": "level", "p1": enemy, "p2": solutions[i]})
 	Harness.save_cases(CASES_PATH, cases)
 	quit()
 
@@ -68,4 +67,4 @@ func _equip(team: Array, equips: Array, index: int) -> Array:
 
 
 func _describe(team: Array) -> String:
-	return " / ".join(team.map(func(u): return u[0] + ("+" + u[1] if u[1] != "" else "")))
+	return " / ".join(team.map(func(u): return tr("card." + u[0]) + ("+" + tr("card." + u[1]) if u[1] != "" else "")))

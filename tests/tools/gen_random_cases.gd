@@ -4,7 +4,6 @@ extends SceneTree
 ## 用法：just gen-random
 
 const Harness := preload("res://tests/battle_harness.gd")
-const CARDS := preload("res://scripts/database/card_database.gd").CARDS
 const CASES_PATH := "res://tests/golden/battles.jsonl"
 const COUNT := 100
 const SEED := 20261102
@@ -14,8 +13,8 @@ const SKIP_IDS: Array[String] = []
 
 
 func _initialize() -> void:
-	var chars := CARDS.keys().filter(func(k): return CARDS[k][1] == "角色")
-	var equips := CARDS.keys().filter(func(k): return CARDS[k][1] == "装备")
+	var chars := CardDB.ids("character")
+	var equips := CardDB.ids("equipment")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	var cases := Harness.load_cases(CASES_PATH).filter(func(c): return c.group != "random")

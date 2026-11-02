@@ -1,0 +1,164 @@
+[gd_scene load_steps=6 format=3 uid="uid://chrmft17cb2o3"]
+
+[ext_resource type="Script" path="res://scenes/battle/battle.gd" id="1_cpj55"]
+[ext_resource type="Script" path="res://scenes/components/card_manager.gd" id="1_cxuwj"]
+[ext_resource type="Texture2D" uid="uid://cyncfc7fi8ndm" path="res://assets/backgrounds/battle.png" id="2_c26nl"]
+[ext_resource type="PackedScene" uid="uid://c1qbgbypq8ghe" path="res://scenes/components/card_slot.tscn" id="2_wpbw6"]
+[ext_resource type="Script" path="res://scenes/battle/battle_manager.gd" id="4_3egiu"]
+
+[node name="main" type="Node2D"]
+script = ExtResource("1_cpj55")
+metadata/_edit_vertical_guides_ = [960.0, 1680.0, 1680.0, 1746.0, 1746.0, 1440.0, 16.0]
+metadata/_edit_horizontal_guides_ = [0.0, 540.0, 900.0, 180.0, 450.0, 0.0, 450.0, 0.0, 0.0, 230.0, 630.0, 630.0, 540.0, 365.0]
+
+[node name="Background" type="TextureRect" parent="."]
+z_index = -10
+offset_right = 1920.0
+offset_bottom = 1080.0
+texture = ExtResource("2_c26nl")
+
+[node name="card_manager" type="Node2D" parent="."]
+script = ExtResource("1_cxuwj")
+
+[node name="input_manager" type="Node2D" parent="."]
+
+[node name="battle_manager" type="Node2D" parent="."]
+script = ExtResource("4_3egiu")
+
+[node name="card_slots" type="Node2D" parent="."]
+
+[node name="card_slot1" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(240, 230)
+
+[node name="card_slot2" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(480, 230)
+
+[node name="card_slot3" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(720, 230)
+
+[node name="card_slot4" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(960, 230)
+
+[node name="card_slot5" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(1200, 230)
+
+[node name="card_slot6" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(1440, 230)
+
+[node name="card_slot7" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(1680, 230)
+
+[node name="card_slot8" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(240, 850)
+
+[node name="card_slot9" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(480, 850)
+
+[node name="card_slot10" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(720, 850)
+
+[node name="card_slot11" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(960, 850)
+
+[node name="card_slot12" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(1200, 850)
+
+[node name="card_slot13" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(1440, 850)
+
+[node name="card_slot14" parent="card_slots" instance=ExtResource("2_wpbw6")]
+z_index = -2
+position = Vector2(1680, 850)
+
+[node name="skill_union" type="CheckButton" parent="."]
+offset_left = 1615.0
+offset_top = 415.0
+offset_right = 1659.0
+offset_bottom = 439.0
+scale = Vector2(3, 3)
+icon_alignment = 1
+
+[node name="skill_union_label" type="Label" parent="."]
+offset_left = 1745.0
+offset_top = 425.0
+offset_right = 1809.0
+offset_bottom = 448.0
+scale = Vector2(2, 2)
+text = "ui.battle.realtime"
+
+[node name="start_battle" type="Button" parent="."]
+offset_left = 1570.0
+offset_top = 494.0
+offset_right = 1642.0
+offset_bottom = 525.0
+scale = Vector2(3, 3)
+text = "ui.battle.start"
+
+[node name="speed_button" type="Button" parent="."]
+offset_left = 16.0
+offset_top = 230.0
+offset_right = 53.0
+offset_bottom = 275.0
+scale = Vector2(3, 3)
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 1
+
+[node name="skip_button" type="Button" parent="."]
+offset_left = 16.0
+offset_top = 714.0
+offset_right = 53.0
+offset_bottom = 759.0
+scale = Vector2(3, 3)
+theme_override_font_sizes/font_size = 12
+text = "ui.battle.skip"
+autowrap_mode = 1
+
+[node name="output_text" type="Label" parent="."]
+modulate = Color(0, 0, 0, 1)
+offset_left = 480.0
+offset_top = 505.0
+offset_right = 1440.0
+offset_bottom = 576.0
+theme_override_font_sizes/font_size = 50
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="attribute_text_1" type="Label" parent="."]
+modulate = Color(0, 0, 0, 1)
+offset_left = 480.0
+offset_top = 415.0
+offset_right = 1440.0
+offset_bottom = 484.0
+theme_override_font_sizes/font_size = 50
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="attribute_text_2" type="Label" parent="."]
+modulate = Color(0, 0, 0, 1)
+offset_left = 480.0
+offset_top = 595.0
+offset_right = 1440.0
+offset_bottom = 664.0
+theme_override_font_sizes/font_size = 50
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="buff_text_container" type="Node2D" parent="."]
+
+[connection signal="pressed" from="skill_union" to="card_manager" method="_on_check_button_pressed"]
+[connection signal="pressed" from="start_battle" to="battle_manager" method="_on_start_battle_pressed_battle"]
+[connection signal="pressed" from="speed_button" to="battle_manager" method="_on_speed_button_pressed"]
+[connection signal="pressed" from="skip_button" to="battle_manager" method="_on_skip_button_pressed"]
