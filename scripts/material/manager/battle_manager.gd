@@ -145,7 +145,7 @@ func union_normal_skill_power(skill_name, card_name, equip_name):
 # 检查胜利条件
 func update_winner():
 	# 检查特殊平局
-	if check_special_draw():
+	if check_special_draw() or no_death_rounds >= NO_DEATH_DRAW_ROUNDS:
 		winner = 3
 		return 3
 	if player_battle_fields[1].size() == 0 and player_battle_fields[2].size() == 0:
@@ -160,7 +160,11 @@ func update_winner():
 	else:
 		return 0
 
-# 特殊平局，连续三回合双方所有角色战斗力均为改变
+# 特殊平局二：主战斗连续 20 轮无人阵亡（振奋等持续加成会绕过特殊平局一，导致战斗无限进行）
+const NO_DEATH_DRAW_ROUNDS = 20
+var no_death_rounds = 0
+
+# 特殊平局一：连续 7 次检查，双方所有角色战斗力均未改变
 var not_change_cnt = 0
 var strength_list_1 = []
 var strength_list_2 = []
@@ -331,10 +335,13 @@ func main_battle_part():
 		if (await settlement_entering_part()) == false:
 			await settlement_fight_part()
 		if await settlement_death():
+			no_death_rounds = 0
 			if play_animation:
 				await get_tree().create_timer(1.5/battle_speed).timeout
 				await move_character()
 				await get_tree().create_timer(1.5/battle_speed).timeout
+		else:
+			no_death_rounds += 1
 
 # 入场技能结算
 func settlement_entering_part():
