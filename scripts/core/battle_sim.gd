@@ -11,7 +11,7 @@ const LETHAL_ATTACK := 10000
 ## 平局：连续多少次交战无人阵亡
 const NO_DEATH_ENGAGES := 20
 ## 普通技能的结算拍，先加后减
-const BEATS := ["rage", "rally", "inspire", "corrode"]
+const BEATS := ["rage", "rally", "inspire", "corrode", "annihilate"]
 
 
 class Unit:
@@ -172,6 +172,8 @@ func apply_skill(u: Unit, skill: String, value: int) -> Array:
 			if enemies.is_empty():
 				return []
 			return [damage(enemies[0], value, skill)]
+		"annihilate":
+			return enemies.map(func(target): return damage(target, value, skill))
 	push_error("BattleSim：未知的普通技能 %s" % skill)
 	return []
 

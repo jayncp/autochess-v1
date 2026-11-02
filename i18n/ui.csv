@@ -2,6 +2,7 @@ keys,zh_CN
 ui.common.back,返回
 ui.common.start,开始
 ui.common.none,无
+ui.card.clear,空
 ui.menu.title,牛马自走棋
 ui.menu.sandbox,科研模式
 ui.menu.levels,闯关模式

@@ -84,7 +84,45 @@ func _run_unit_tests() -> void:
 	sim.settle_death()
 	if sim.fields[1].map(func(u): return u.uid) != ["1-2"]:
 		_failures.append("[unit-death-adjacent] 相邻两个阵亡单位应一起移除，实际剩余 %s" % [sim.fields[1].map(func(u): return u.uid)])
-	print("单元测试：1 条")
+	_test_annihilate()
+	_test_overlay()
+	print("单元测试：3 条")
+
+
+## 湮灭（目前没有卡带湮灭）：打对方全体、走伤害流程；同一时间节点先腐蚀后湮灭，所以庇护挡的是腐蚀
+func _test_annihilate() -> void:
+	var sim := BattleSim.new([["soldier", ""]], [["paladin", ""], ["soldier", ""], ["shield_guard", ""], ["soldier", ""]])
+	var actor = sim.fields[1][0]
+	actor.normal_skills = {"corrode": 2, "annihilate": 3}
+	sim.resolve_timing([actor])
+	sim.settle_death()
+	var got := {
+		"strengths": sim.fields[2].map(func(u): return u.strength),
+		"paladin_shelter": sim.fields[2][0].special_skills.has("shelter"),
+		"beats": sim.events.filter(func(e): return e.type == "beat").map(func(e): return e.skill),
+	}
+	# 圣骑士 8：腐蚀 2 被庇护挡下，湮灭 3 打中 → 5；士兵 3 → 0 阵亡；盾卫 6 坚固 4 → 不掉血
+	var expected := {"strengths": [5, 6], "paladin_shelter": false, "beats": ["corrode", "annihilate"]}
+	if got != expected:
+		_failures.append("[unit-annihilate] 期望 %s，实际 %s" % [expected, got])
+
+
+## 装备叠放模型：有就覆盖，"clear" 清空，{} 和省略等价都沿用；武器格叠加
+func _test_overlay() -> void:
+	var vulture := CardDB.card("vulture")  # 秃鹫：交战，狂暴3、腐蚀2
+	var paladin := CardDB.card("paladin")  # 圣骑士：入场，庇护
+	var cases := [
+		[vulture, {"skills": {"corrode": 15}}, "normal_skills", {"corrode": 15}, "基础技能整体覆盖"],
+		[vulture, {"weapon_strength": 12, "skills": "clear"}, "normal_skills", {}, "基础技能清空（空心）"],
+		[vulture, {"weapon_skills": {"rage": 2}}, "normal_skills", {"rage": 5, "corrode": 2}, "武器技能同名相加"],
+		[vulture, {"timing": "clear", "weapon_timing": "pre_battle"}, "timings", ["pre_battle"], "基础时机清空，武器时机保留"],
+		[paladin, {"special_skills": "clear"}, "special_skills", {}, "特殊技能清空"],
+		[paladin, {"special_skills": {"lethal": null}}, "special_skills", {"lethal": null}, "特殊技能整体覆盖"],
+	]
+	for c in cases:
+		var got = CardDB.combine_data(c[0], c[1])[c[2]]
+		if got != c[3]:
+			_failures.append("[unit-overlay] %s：期望 %s，实际 %s" % [c[4], c[3], got])
 
 
 func _run_smoke() -> void:
