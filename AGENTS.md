@@ -5,14 +5,14 @@
 
 ## 现状
 
-- 阶段：阶段 0.5（行为基线测试与规则修复）已完成，下一步是阶段 1（规范整理）。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 阶段：阶段 1（规范整理）已完成，下一步是阶段 2（战斗核心）。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
 - 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关）、图鉴、战斗演出（速度/跳过）。冒险、线下对战未实现。
-- 战斗逻辑在 `scripts/material/manager/battle_manager.gd`，与 UI 强耦合（战力从 Label 文本解析），计划抽成纯逻辑模块。
-- 已修复 B1（反噬短路）、B6（死亡漏删）、B7（无限战斗）。剩下的是 UI 小 bug B3/B4/B5/B8，阶段 1 修（见 `docs/roadmap.md` 阶段 1）。规则的待实现项见 `docs/design/battle-rules.md`。
+- 战斗逻辑在 `scenes/battle/battle_manager.gd`，结算和动画写在一起，计划抽成纯逻辑模块（阶段 2）。装备合并规则已在 `CardDB.combine`。
+- 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
 
 ## 核心规则（详见 `docs/design/`，以 `docs/decisions.md` 为准）
 
-- 卡牌名称和数值以 `scripts/database/card_database.gd` 为准；旧表格只作参考。
+- 卡牌数值以 `data/cards.json` 为准，中文名以 `i18n/data.csv` 为准；旧表格只作参考。
 - 核心理念"大毒盾"：大克盾、盾克毒、毒克大。致命+庇护叠加是天花板级机制。
 - 战斗是确定性的：只有交战位互相攻击；普通技能按 狂暴 → 集结 → 腐蚀 → 振奋 → 湮灭 的顺序结算。
 - 装备：武器战力、武器时机、武器技能**叠加**；基础技能、特殊技能**整体替换**角色的。
@@ -20,12 +20,18 @@
 - 平衡：角色和装备各自平衡；角色各档有效战力均值 6/13/21/30/40。
 - 羁绊和升星暂不做。
 
-## 目录（整理前）
+## 目录
 
-- `scenes/`：各模式场景；`scenes/material/` 是卡牌、卡槽等组件
-- `scripts/`：场景脚本；`database/` 放卡牌和关卡数据，`material/manager/` 放各管理器
-- `assets/`：`自走棋卡图/`（按中文卡名动态加载）、`background/`、`fonts/`、卡面 UI 图
-- 计划改为英文 id、按功能分组的目录；Python 工具放 `tools/`（带 `.gdignore`），GDScript 无头命令放 `cli/`（`docs/roadmap.md` 阶段 1）
+- `data/`：`cards.json`（一卡一行，字段见 `docs/plans/stage-1-reorg.md` 第 2 节）、`levels.json`
+- `i18n/`：翻译表 `data.csv`（`card.<id>`、`race.<id>`、`keyword.<id>`、`timing.<id>`、`level.<id>`）、`ui.csv`（`ui.<场景>.<名称>`）
+- `scenes/`：场景和脚本放在一起
+  - `app/`：启动场景
+  - `menu/`、`sandbox/`（科研模式）、`level/`（关卡选择和布阵）、`battle/`、`book/`（图鉴）
+  - `components/`：卡牌、卡槽等共用组件；`components/card/load_card.gd` 按 id 生成卡牌、刷新卡面
+- `scripts/`：`core/`（`CardDB`、`LevelDB`）、`global_var.gd`（场景之间传阵容）
+- `assets/`：`cards/<id>.png`、`backgrounds/`、`ui/`、`fonts/`
+- `tests/`：基线测试，说明见 `tests/README.md`
+- 阶段 2 新建：GDScript 无头命令放 `cli/`，Python 工具放 `tools/`（带 `.gdignore`）
 
 ## 命令
 
@@ -52,7 +58,11 @@
 ## 约定
 
 - 文档放 `docs/`，计划放 `docs/plans/`，复杂任务记在 `PROCESS.md`。
-- 先做中文版，预留 i18n：界面文字和卡牌显示名不要和内部英文 id 混用。
+- 先做中文版，预留 i18n：
+  - 内部一律用英文 id，显示文字一律走翻译表：场景里写 key，代码里用 `tr()`；
+  - 给开发者看的报错信息可以直接写中文；
+  - 改了 CSV 后要重新导入（`godot --import`），生成的 `*.translation` 一起提交。
+- 新增卡牌：在 `data/cards.json` 加数据，`assets/cards/<id>.png` 放卡图，`i18n/data.csv` 加中文名；测试的数据检查会核对三者是否齐全。
 - 协议暂定：代码 AGPL-3.0-or-later，美术/数据/文档 CC BY-SA 4.0。
 - 开发流程：阶段性任务先在 `docs/plans/` 写计划，用户确认后开 issue，在分支上开发，通过 PR 合并；小修改直接提交到 main。
 - 每次开 PR 之前检查文档：`AGENTS.md`、`PROCESS.md` 和 `docs/` 下的活文档，删掉过时内容，同步代码改动，更新进度。

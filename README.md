@@ -34,7 +34,7 @@ godot --path .
 | 美术资源（`assets/` 下的图片）、卡牌与关卡数据、文档（`docs/`） | [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt) |
 | 字体 Noto Sans SC（`assets/fonts/NotoSansSC-Regular.ttf`） | [SIL OFL 1.1](assets/fonts/OFL.txt)，© Adobe |
 
-- 卡牌与关卡数据目前写在 `scripts/database/` 的脚本里，按数据适用 CC BY-SA 4.0；以后会移到 `data/` 目录。
+- 卡牌与关卡数据在 `data/`，翻译表在 `i18n/`，都按数据适用 CC BY-SA 4.0。
 - 卡图和背景由 AI 辅助生成，并经过人工处理。
 
 Copyright © 2025–2026 jayncp

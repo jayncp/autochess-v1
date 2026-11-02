@@ -35,56 +35,20 @@
    - 数据：圣水改为仅战前时机 +2 战力。
 4. 两个关卡的已知解：用户只记得可行解不多，去掉对称后大约 1–4 组。用枚举找出全部解作为基线，修复反噬前后对比解的数量和通过率；变化大的话和用户讨论怎么调这一关。
 
-## 阶段 1：规范整理（不改功能）
+## 阶段 1：规范整理（不改功能）✅
 
-### 1.1 英文 id
+计划和英文 id 对照表见 [plans/stage-1-reorg.md](plans/stage-1-reorg.md)。
 
-卡名现在同时充当数据 key、显示名、图片文件名和关卡引用，需要一次性迁移。英文 id 对照表在计划文档里给用户过目。
-
-- **卡牌**：英文单词 snake_case，如 `soldier`、`tiger`、`fey_tiger`、`wooden_sword`、`spiked_gauntlet`；原数字序号保留为字段。
-- **词条**：如 `assemble`（集结）、`rage`（狂暴）、`corrode`（腐蚀）、`inspire`（振奋）、`annihilate`（湮灭）、`wealth`（财富）、`lethal`（致命）、`sturdy`（坚固）、`backlash`（反噬）、`shelter`（庇护）。
-- **时机**：`pre_battle`、`on_enter`、`on_engage`、`on_sell`。
-- **种族**：`human`、`beast`、`nature`、`divine`、`elf`、`treasure`、`demon`。
-- **关卡**：如 `boar_rush`（猪突猛进）。
-- **资源**：卡图 `assets/cards/<card_id>.png`，背景 `bg_<场景>.png`，界面图 `ui_<名称>.png`。
-- **节点名**：`实时状态` 等中文节点名改成英文。
-
-### 1.2 数据外置
-
-- `card_database.gd` 的 11 列匿名数组改为带字段名的 `data/cards.json`，关卡改为 `data/levels.json`。
-- 由 `CardDB` 统一加载。Godot 和 Python 工具读同一份数据。
-
-### 1.3 多语言预留
-
-- 卡牌显示名和界面文字从代码、数据中分离，放进 Godot 的翻译表，目前只有中文一列。
-- 代码里通过翻译 key 取文字，与内部英文 id 相互独立。
-
-### 1.4 目录结构（按功能分组，脚本和场景放在一起）
-
-```
-autochess-v1/
-├── assets/          cards/、backgrounds/、ui/、fonts/
-├── data/            cards.json、levels.json
-├── i18n/            翻译表
-├── scenes/          main/、menu/、sandbox/（科研）、level/、battle/、book/、components/
-├── scripts/         不依赖场景的逻辑：core/（战斗核心、CardDB）、util/
-├── cli/             GDScript 无头命令入口：模拟、关卡验证等（godot --headless --script）
-├── tools/           Python 工具（目录内放 .gdignore，Godot 不会扫描）
-│   ├── pyproject.toml   用 uv 管理；重依赖（如 torch）放可选依赖组
-│   └── ...              分析、报表、阵容码、调用 cli/ 批量模拟、以后的 RL
-├── tests/
-├── docs/
-└── justfile
-```
-
-- **Python 和 Godot 放同一个仓库**：两边读同一份 `data/`，战斗规则只有 GDScript 一份实现，Python 通过 `cli/` 调用它。
-  - Python 的 `.venv`、实验输出、RL 模型权重都不进 git；
-  - 导出游戏时排除 `tools/`、`docs/`、`tests/`。
-- **移动资源**：`.import`、`.uid` 文件要一起移，并改写 `.tscn` 里的路径，否则引用会断。用脚本批量做，之后跑导入和冒烟测试验证。
-- **删除**：项目里未被引用的旧 UI 图（`卡槽.png`、`自走棋测试UI*.png`）。8 张生图过程图建议也移出项目（资源库里有一模一样的副本），执行前再确认。
-- **顺手修的小 UI bug**：拖到敌方卡上的空指针、图鉴多出一页空页、飘字节点不释放、布阵界面的敌方装备卡没有释放（B8，测试退出时报泄漏）。
-
-**验收**：基线测试全部通过；用户手动把各模式玩一遍。
+- **英文 id**：卡牌、词条、时机、种族、关卡、资源文件都用英文 snake_case id；中文名只用于显示、文档和沟通。
+- **数据外置**：卡牌在 `data/cards.json`，关卡在 `data/levels.json`，由 `CardDB`、`LevelDB`（`scripts/core/`）加载并校验。
+- **多语言预留**：显示文字都在翻译表 `i18n/data.csv`（卡牌、词条等）和 `i18n/ui.csv`（界面），目前只有中文一列。
+- **目录**：场景和脚本放在一起，按 `scenes/app、menu、sandbox、level、battle、book、components` 分组。
+- **清理**：删掉未引用的旧 UI 图、8 张生图过程图和空脚本。
+- **UI 小 bug**：修了 B3/B4/B5/B8。
+- **验证方式**：
+  - 基线用例期望值未重录；
+  - 关卡解数不变；
+  - 前后截图逐像素一致。
 
 ## 阶段 2：战斗核心
 
@@ -99,6 +63,11 @@ BattleSim（纯 GDScript RefCounted，不依赖节点）
     └── tests/：基线不变 + 左右对称 + 战斗必然结束
 ```
 
+- **新建 `cli/` 和 `tools/`**：
+  - `cli/` 放 GDScript 无头命令入口，比如模拟、关卡验证（`godot --headless --script`）；
+  - `tools/` 放 Python 工具（目录内放 `.gdignore`，用 uv 管理，重依赖放可选依赖组），比如分析、报表、阵容码、批量模拟、以后的 RL；
+  - Python 读同一份 `data/` 和 `i18n/`；战斗规则只有 GDScript 一份实现，Python 通过 `cli/` 调用它；
+  - `.venv`、实验输出、模型权重不进 git；导出游戏时排除 `cli/`、`tests/`。
 - 词条和复杂效果用"时机钩子 + 效果处理器"注册，不在主流程里写特判，给三星/四星的机制预留位置。
 - 实现湮灭；动画模式与跳过模式结算顺序不一致的问题，随着抽离自然消除。
 - **工具**：
