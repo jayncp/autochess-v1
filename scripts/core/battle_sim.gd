@@ -8,10 +8,8 @@ extends RefCounted
 const VERSION := 1
 ## 致命的攻击值
 const LETHAL_ATTACK := 10000
-## 平局：连续多少次检查全场战力不变
-const STALL_CHECKS := 7
-## 平局：主循环连续多少步无人阵亡
-const NO_DEATH_ROUNDS := 20
+## 平局：连续多少次交战无人阵亡
+const NO_DEATH_ENGAGES := 20
 ## 普通技能的结算拍，先加后减
 const BEATS := ["rage", "rally", "inspire", "corrode"]
 
@@ -49,9 +47,7 @@ var fields := {1: [], 2: []}
 var events: Array = []
 ## 0 = 未结束，1/2 = 该方胜，3 = 平局
 var winner := 0
-var _stall_count := 0
-var _last_strengths := [[], []]
-var _no_death_rounds := 0
+var _no_death_engages := 0
 
 
 func _init(p1: Array, p2: Array) -> void:
@@ -100,15 +96,18 @@ func pre_battle_phase() -> void:
 		settle_death()
 
 
-## 主循环：有未触发的入场就先入场，否则交战；每步之后判死
+## 主循环：有未触发的入场就先入场，否则交战；每步之后判死。
+## 有人阵亡则"无人阵亡"计数清零，否则每次交战加一（入场不算）
 func main_phase() -> void:
 	while not check_winner():
+		var engaged := false
 		if not entering_step():
 			engage_step()
+			engaged = true
 		if settle_death():
-			_no_death_rounds = 0
-		else:
-			_no_death_rounds += 1
+			_no_death_engages = 0
+		elif engaged:
+			_no_death_engages += 1
 
 
 ## 双方交战位里有入场时机、还没入场的单位执行入场；都没有则返回 false
@@ -210,33 +209,20 @@ func settle_death() -> bool:
 	return true
 
 
-## 判胜负和平局，结束时记下 end 事件，返回是否结束
+## 判胜负和平局，结束时记下 end 事件，返回是否结束。
+## 平局：双方同时全灭，或连续 NO_DEATH_ENGAGES 次交战无人阵亡（只在主循环里计数）
 func check_winner() -> bool:
-	var reason := ""
-	if check_stall() or _no_death_rounds >= NO_DEATH_ROUNDS:
+	var reason := "wipe"
+	if fields[1].is_empty() and fields[2].is_empty():
 		winner = 3
-		reason = "stall" if _stall_count >= STALL_CHECKS else "no_death"
-	elif fields[1].is_empty() and fields[2].is_empty():
-		winner = 3
-		reason = "wipe"
 	elif fields[2].is_empty():
 		winner = 1
-		reason = "wipe"
 	elif fields[1].is_empty():
 		winner = 2
-		reason = "wipe"
+	elif _no_death_engages >= NO_DEATH_ENGAGES:
+		winner = 3
+		reason = "no_death"
 	else:
 		return false
 	events.append({"type": "end", "winner": winner, "reason": reason})
 	return true
-
-
-## 连续 STALL_CHECKS 次检查，双方全场战力都不变
-func check_stall() -> bool:
-	var now := [fields[1].map(func(u): return u.strength), fields[2].map(func(u): return u.strength)]
-	if now == _last_strengths:
-		_stall_count += 1
-		return _stall_count >= STALL_CHECKS
-	_last_strengths = now
-	_stall_count = 0
-	return false
