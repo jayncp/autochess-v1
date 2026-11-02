@@ -86,6 +86,7 @@ func _on_check_button_pressed():
 				j.get_node("card_skill_UI").modulate.a = 255
 				j.get_node("all_time").visible = true
 				j.get_node("all_normal_skill").visible = true
+				j.get_node("strength_2").visible = false
 	else:
 		is_union_UI = false
 		for i in range(1,3):
@@ -93,3 +94,4 @@ func _on_check_button_pressed():
 				j.get_node("card_skill_UI").modulate.a = 0
 				j.get_node("all_time").visible = false
 				j.get_node("all_normal_skill").visible = false
+				j.get_node("strength_2").visible = true

@@ -152,6 +152,11 @@ BattleSim（纯 GDScript RefCounted，不依赖节点）
   - 渲染器暂不换；
   - iOS 到联机阶段再说。
 - **开发方式**：日常在 PC 上开发调试，定期真机测试；尽早建好 PC 导出预设，两端都保持可构建。
+- **开发环境跨平台**（目前只在 macOS 开发，换平台时处理）：
+  - `justfile` 里 Godot 的默认路径是 macOS 的 app 路径。其他系统要设环境变量 `GODOT`，或者改成按 `os()` 选默认值，比如在 PATH 里找 `godot`；
+  - `timeout` 是 GNU 命令，Windows 没有（cmd 的 `timeout` 是"等待几秒"，含义完全不同）。修复 B7 后战斗必然结束，CI 也有作业超时，这层外层超时可以去掉；
+  - just 在 Windows 上默认用 sh 执行，需要 Git Bash，或者在 justfile 里设置 `windows-shell`；
+  - Windows 要用 Godot 的 `_console.exe` 版本，终端里才能看到输出。
 - **以后要处理**：
   - 卡面以图标和数字为主：现在的 12px 技能字在手机上只有约 0.7mm 高；
   - 拉伸改为 `expand` 加锚点布局，适配刘海屏；

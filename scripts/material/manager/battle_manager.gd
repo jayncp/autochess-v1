@@ -100,6 +100,8 @@ func load_player_deck():
 			new_card.get_node("card_skill_UI").modulate.a = 255
 			new_card.get_node("all_time").visible = true
 			new_card.get_node("all_normal_skill").visible = true
+			# 实时状态只显示红色的当前战力，隐藏黑色的装备战力，避免误解
+			new_card.get_node("strength_2").visible = false
 
 			new_card.get_node("all_normal_skill").text = load_card.generate_skill_string(skill_list)
 			# 显示卡牌(加入card_manager)
