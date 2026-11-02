@@ -1,8 +1,22 @@
 class_name BattleSim
 extends RefCounted
 ## 纯逻辑战斗核心：给定双方阵容，一次算完整场战斗，返回结果和事件日志。不依赖场景节点。
-## 规则见 docs/design/battle-rules.md；事件格式见 docs/plans/stage-2-battle-core.md 1.4 节。
+## 规则见 docs/design/battle-rules.md。
 ## 用法：BattleSim.simulate([[角色 id, 装备 id], ...], [...])
+##
+## 事件日志（单位用"座位-初始序号"标识，如 "1-0"）：
+## - start：version，p1/p2 为双方单位的初始属性（uid、card_id、equip_id、strength、timings、normal_skills、special_skills）
+## - pre_battle：units 为战前这一步的双方单位（没有则为 ""），actors 为其中执行战前技能的单位
+## - enter：units 为执行入场的交战位
+## - engage：units 为双方交战位，actors 为其中有交战时机的单位
+## - beat：一拍。skill 为技能，effects 为这一拍的全部效果
+## - clash：attacks 为双方攻击值（致命为 LETHAL_ATTACK），effects 为双方受到的伤害
+## - backlash：effects 为反噬伤害
+## - death：units 为阵亡单位
+## - end：winner（1/2 = 该方胜，3 = 平局），reason（wipe = 全灭，no_death = 连续无人阵亡）
+## 效果：buff {source, unit, skill, amount, strength}；
+##       damage {unit, source（clash/corrode/annihilate/backlash）, amount, sturdy, shelter, dealt, strength}。
+##       strength 是结算后的战力。
 
 ## 事件日志的版本，规则或事件格式变化时加一，供以后的重播判断版本是否一致
 const VERSION := 1

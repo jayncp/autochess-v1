@@ -1,6 +1,6 @@
 extends Node2D
 ## 战斗场景：开战时用 BattleSim 一次算完整场，再按事件日志播放动画。
-## 动画和跳过用的是同一份结算，结果必然一致。事件格式见 docs/plans/stage-2-battle-core.md 1.4 节。
+## 动画和跳过用的是同一份结算，结果必然一致。事件格式见 scripts/core/battle_sim.gd 开头。
 
 signal back_to_last_scene
 
