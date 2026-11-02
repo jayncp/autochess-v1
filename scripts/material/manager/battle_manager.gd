@@ -303,7 +303,7 @@ func pre_battle_part():
 			settlement_normal_skill(pos_1,1)
 		if is_pos_2:
 			settlement_normal_skill(pos_2,2)
-		if is_pos_1 or is_pos_2:
+		if (is_pos_1 or is_pos_2) and play_animation:
 			await get_tree().create_timer(0.5/battle_speed).timeout
 
 		# 卡牌退出技能释放状态
