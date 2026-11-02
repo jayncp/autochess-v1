@@ -2,7 +2,7 @@ extends RefCounted
 ## 用现有战斗场景跑一场战斗（关闭动画），返回胜负和双方幸存单位的战力。
 ## 阵容格式：[[角色, 装备], ...]，装备为空字符串表示不带。
 
-const BATTLE_SCENE := preload("res://scenes/main.tscn")
+const BATTLE_SCENE := preload("res://scenes/battle/battle.tscn")
 
 var _tree: SceneTree
 

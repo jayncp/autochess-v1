@@ -1,0 +1,116 @@
+[gd_scene load_steps=6 format=3 uid="uid://cpr2agdiwp66v"]
+
+[ext_resource type="Script" path="res://scenes/sandbox/sandbox.gd" id="1_2pdes"]
+[ext_resource type="Texture2D" uid="uid://dbf1c1s0xxoxb" path="res://assets/backgrounds/solid_blue.png" id="1_2w82n"]
+[ext_resource type="Script" path="res://scenes/components/card_manager.gd" id="2_lymuw"]
+[ext_resource type="PackedScene" uid="uid://c1qbgbypq8ghe" path="res://scenes/components/card_slot.tscn" id="4_sli5a"]
+[ext_resource type="Script" path="res://scenes/sandbox/select_manager.gd" id="4_uqtow"]
+
+[node name="TestScene" type="Node2D"]
+script = ExtResource("1_2pdes")
+metadata/_edit_vertical_guides_ = [960.0, 1680.0, 1680.0, 1746.0, 1783.0, 240.0, 74.0]
+metadata/_edit_horizontal_guides_ = [0.0, 540.0, 900.0, 180.0, 450.0, 0.0, 450.0, 0.0, 0.0, 0.0, 405.0, 850.0, 0.0, 380.0, 50.0]
+
+[node name="Background" type="TextureRect" parent="."]
+z_index = -10
+offset_right = 1920.0
+offset_bottom = 1080.0
+texture = ExtResource("1_2w82n")
+
+[node name="card_manager" type="Node2D" parent="."]
+script = ExtResource("2_lymuw")
+
+[node name="input_manager" type="Node2D" parent="."]
+
+[node name="select_manager" type="Node2D" parent="."]
+script = ExtResource("4_uqtow")
+
+[node name="card_slots" type="Node2D" parent="."]
+
+[node name="card_slot1" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(240, 230)
+
+[node name="card_slot2" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(480, 230)
+
+[node name="card_slot3" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(720, 230)
+
+[node name="card_slot4" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(960, 230)
+
+[node name="card_slot5" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(1200, 230)
+
+[node name="card_slot6" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(1440, 230)
+
+[node name="card_slot7" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(1680, 230)
+
+[node name="card_slot8" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(240, 850)
+
+[node name="card_slot9" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(480, 850)
+
+[node name="card_slot10" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(720, 850)
+
+[node name="card_slot11" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(960, 850)
+
+[node name="card_slot12" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(1200, 850)
+
+[node name="card_slot13" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(1440, 850)
+
+[node name="card_slot14" parent="card_slots" instance=ExtResource("4_sli5a")]
+z_index = -2
+position = Vector2(1680, 850)
+
+[node name="start_battle" type="Button" parent="."]
+offset_left = 1805.0
+offset_top = 450.0
+offset_right = 1887.0
+offset_bottom = 629.0
+theme_override_font_sizes/font_size = 50
+text = "开始"
+autowrap_mode = 1
+
+[node name="buff_text_container" type="Node2D" parent="."]
+
+[node name="output_text" type="Label" parent="."]
+modulate = Color(0, 0, 0, 1)
+offset_left = 240.0
+offset_top = 514.0
+offset_right = 1680.0
+offset_bottom = 571.0
+theme_override_font_sizes/font_size = 40
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="back_button" type="Button" parent="."]
+offset_left = 27.0
+offset_top = 20.0
+offset_right = 121.0
+offset_bottom = 78.0
+theme_override_font_sizes/font_size = 35
+text = "返回"
+
+[connection signal="pressed" from="start_battle" to="select_manager" method="_on_start_battle_pressed"]
+[connection signal="pressed" from="back_button" to="." method="_on_back_button_pressed"]

@@ -1,0 +1,253 @@
+[gd_scene load_steps=7 format=3 uid="uid://pcdmfoppb1ms"]
+
+[ext_resource type="Script" path="res://scenes/book/book.gd" id="1_vcj1x"]
+[ext_resource type="Texture2D" uid="uid://cpsnj5a6hkr6o" path="res://assets/backgrounds/book.png" id="2_i70xx"]
+[ext_resource type="Script" path="res://scenes/components/card_manager.gd" id="3_5mo1v"]
+[ext_resource type="Script" path="res://scenes/book/filter_star_button.gd" id="3_ot48t"]
+[ext_resource type="Script" path="res://scenes/book/book_manager.gd" id="5_8m7n8"]
+[ext_resource type="PackedScene" uid="uid://c1qbgbypq8ghe" path="res://scenes/components/card_slot.tscn" id="5_78a1y"]
+
+[node name="BookScene" type="Node2D"]
+script = ExtResource("1_vcj1x")
+metadata/_edit_vertical_guides_ = [960.0, 1680.0, 1680.0, 0.0, 1783.0, 240.0, 74.0, 240.0, 1080.0, 857.0, 1303.0, 121.0, 377.0, 187.0]
+metadata/_edit_horizontal_guides_ = [0.0, 540.0, 0.0, 230.0, 450.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 850.0, 0.0, 0.0, 50.0, 89.0, 991.0, 1035.0, 150.0, 305.0]
+
+[node name="Background" type="TextureRect" parent="."]
+z_index = -10
+offset_left = 4.0
+offset_right = 1924.0
+offset_bottom = 1080.0
+texture = ExtResource("2_i70xx")
+
+[node name="book_title" type="Label" parent="."]
+modulate = Color(0, 0, 0, 1)
+offset_left = 857.0
+offset_top = 14.0
+offset_right = 1303.0
+offset_bottom = 85.0
+theme_override_font_sizes/font_size = 50
+text = "图  鉴"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="pages" type="Label" parent="."]
+modulate = Color(0, 0, 0, 1)
+offset_left = 960.0
+offset_top = 1001.0
+offset_right = 1200.0
+offset_bottom = 1070.0
+theme_override_font_sizes/font_size = 40
+text = "1/1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="last_page_button" type="Button" parent="."]
+offset_left = 268.0
+offset_top = 810.0
+offset_right = 349.0
+offset_bottom = 989.0
+theme_override_font_sizes/font_size = 40
+text = "上一页"
+autowrap_mode = 3
+icon_alignment = 1
+
+[node name="next_page_button" type="Button" parent="."]
+offset_left = 1810.0
+offset_top = 791.0
+offset_right = 1891.0
+offset_bottom = 988.0
+theme_override_font_sizes/font_size = 40
+text = "下一页"
+autowrap_mode = 3
+icon_alignment = 1
+
+[node name="filter_character" type="Label" parent="."]
+modulate = Color(0, 0, 0, 1)
+offset_left = 48.0
+offset_top = 102.0
+offset_right = 128.0
+offset_bottom = 159.0
+rotation = -0.000805978
+theme_override_font_sizes/font_size = 40
+text = "角色"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="filter_character_button" type="CheckButton" parent="."]
+offset_left = 152.0
+offset_top = 94.0
+offset_right = 196.0
+offset_bottom = 118.0
+scale = Vector2(3, 3)
+
+[node name="filter_equipment" type="Label" parent="."]
+modulate = Color(0, 0, 0, 1)
+offset_left = 48.0
+offset_top = 181.0
+offset_right = 128.0
+offset_bottom = 238.0
+theme_override_font_sizes/font_size = 40
+text = "装备"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="filter_equipment_button" type="CheckButton" parent="."]
+offset_left = 152.0
+offset_top = 174.0
+offset_right = 196.0
+offset_bottom = 198.0
+scale = Vector2(3, 3)
+
+[node name="filter_star" type="Label" parent="."]
+modulate = Color(0, 0, 0, 1)
+offset_left = 48.0
+offset_top = 261.0
+offset_right = 128.0
+offset_bottom = 318.0
+theme_override_font_sizes/font_size = 40
+text = "星级"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="filter_star_button" type="OptionButton" parent="."]
+offset_left = 143.0
+offset_top = 261.0
+offset_right = 273.0
+offset_bottom = 319.0
+theme_override_font_sizes/font_size = 35
+alignment = 1
+selected = 0
+item_count = 4
+popup/item_0/text = "不限"
+popup/item_1/text = "1星"
+popup/item_1/id = 1
+popup/item_2/text = "2星"
+popup/item_2/id = 2
+popup/item_3/text = "3星"
+popup/item_3/id = 3
+script = ExtResource("3_ot48t")
+
+[node name="filter_string" type="Label" parent="."]
+modulate = Color(0, 0, 0, 1)
+offset_left = 74.0
+offset_top = 512.0
+offset_right = 234.0
+offset_bottom = 569.0
+theme_override_font_sizes/font_size = 40
+text = "搜索筛选"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="filter_string_input" type="TextEdit" parent="."]
+offset_left = 28.0
+offset_top = 569.0
+offset_right = 274.0
+offset_bottom = 635.0
+theme_override_font_sizes/font_size = 35
+placeholder_text = "请输入关键词"
+
+[node name="filter_string_button" type="Button" parent="."]
+offset_left = 110.0
+offset_top = 648.0
+offset_right = 198.0
+offset_bottom = 713.0
+theme_override_font_sizes/font_size = 40
+text = "确认"
+
+[node name="card_slots" type="Node2D" parent="."]
+
+[node name="card_slot1" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(480, 230)
+
+[node name="card_slot2" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(720, 230)
+
+[node name="card_slot3" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(960, 230)
+
+[node name="card_slot4" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(1200, 230)
+
+[node name="card_slot5" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(1440, 230)
+
+[node name="card_slot6" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(1680, 230)
+
+[node name="card_slot7" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(480, 540)
+
+[node name="card_slot8" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(720, 540)
+
+[node name="card_slot9" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(960, 540)
+
+[node name="card_slot10" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(1200, 540)
+
+[node name="card_slot11" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(1440, 540)
+
+[node name="card_slot12" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(1680, 540)
+
+[node name="card_slot13" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(480, 850)
+
+[node name="card_slot14" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(720, 850)
+
+[node name="card_slot15" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(960, 850)
+
+[node name="card_slot16" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(1200, 850)
+
+[node name="card_slot17" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(1440, 850)
+
+[node name="card_slot18" parent="card_slots" instance=ExtResource("5_78a1y")]
+z_index = -2
+position = Vector2(1680, 850)
+
+[node name="card_manager" type="Node2D" parent="."]
+script = ExtResource("3_5mo1v")
+
+[node name="input_manager" type="Node2D" parent="."]
+
+[node name="book_manager" type="Node2D" parent="."]
+script = ExtResource("5_8m7n8")
+
+[node name="back_button" type="Button" parent="."]
+offset_left = 27.0
+offset_top = 20.0
+offset_right = 121.0
+offset_bottom = 78.0
+theme_override_font_sizes/font_size = 35
+text = "返回"
+
+[connection signal="pressed" from="last_page_button" to="book_manager" method="_on_last_page_button_pressed"]
+[connection signal="pressed" from="next_page_button" to="book_manager" method="_on_next_page_button_pressed"]
+[connection signal="pressed" from="filter_character_button" to="book_manager" method="_on_filter_character_button_pressed"]
+[connection signal="pressed" from="filter_equipment_button" to="book_manager" method="_on_filter_equipment_button_pressed"]
+[connection signal="item_selected" from="filter_star_button" to="book_manager" method="_on_filter_star_button_item_selected"]
+[connection signal="pressed" from="filter_string_button" to="book_manager" method="_on_filter_string_button_pressed"]
+[connection signal="pressed" from="back_button" to="." method="_on_back_button_pressed"]

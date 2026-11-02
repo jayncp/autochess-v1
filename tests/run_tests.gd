@@ -68,7 +68,7 @@ func _run_unit_tests() -> void:
 
 
 func _run_smoke() -> void:
-	var manager: Node = load("res://scenes/scene_manager.tscn").instantiate()
+	var manager: Node = load("res://scenes/app/scene_manager.tscn").instantiate()
 	root.add_child(manager)
 	await _frames(2)
 
