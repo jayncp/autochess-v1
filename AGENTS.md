@@ -5,10 +5,10 @@
 
 ## 现状
 
-- 阶段：接手整理，仓库已建立（`main`，远程 `jayncp/autochess-v1`，公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 阶段：阶段 0.5（行为基线测试与规则修复）已完成，下一步是阶段 1（规范整理）。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
 - 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关）、图鉴、战斗演出（速度/跳过）。冒险、线下对战未实现。
 - 战斗逻辑在 `scripts/material/manager/battle_manager.gd`，与 UI 强耦合（战力从 Label 文本解析），计划抽成纯逻辑模块。
-- 已知 bug：B1 反噬短路、B6 死亡漏删、B7 战斗可能无限进行。规则偏差和待实现项见 `docs/design/battle-rules.md`，bug 详情见 `docs/takeover/01-godot-project.md` 第 7 节。
+- 已修复 B1（反噬短路）、B6（死亡漏删）、B7（无限战斗）。剩下的是 UI 小 bug B3/B4/B5/B8，阶段 1 修（见 `docs/roadmap.md` 阶段 1）。规则的待实现项见 `docs/design/battle-rules.md`。
 
 ## 核心规则（详见 `docs/design/`，以 `docs/decisions.md` 为准）
 
@@ -33,7 +33,7 @@
 - Godot：`/Applications/Godot.app/Contents/MacOS/Godot`（`justfile` 里可用环境变量 `GODOT` 覆盖）
 - 无头脚本：`... --headless --path . --script <file.gd>`
   - 脚本 `extends SceneTree`；
-  - 跑战斗时设 `battle_manager.play_animation = false`，约 30 场/秒。
+  - 跑战斗时设 `battle_manager.play_animation = false`，约 100 场/秒（测试工具见 `tests/battle_harness.gd`）。
 
 ## 文档（索引见 `docs/README.md`）
 
