@@ -7,21 +7,18 @@ const CASES_PATH := "res://tests/golden/battles.jsonl"
 
 
 func _initialize() -> void:
-	await process_frame
-	var harness := Harness.new(self)
 	var cases := Harness.load_cases(CASES_PATH)
 	var changed := 0
 	for c in cases:
-		print("运行 ", c.id)  # 引擎卡死时，最后一行就是出问题的用例
-		var got: Dictionary = await harness.run(c.p1, c.p2)
+		var got := Harness.run(c.p1, c.p2)
 		if not c.has("expect") or not Harness.same(got, c.expect):
-			print("  变化：%s -> %s" % [c.get("expect"), got])
+			print("%s 变化：%s -> %s" % [c.id, c.get("expect"), got])
 			changed += 1
 		c.expect = got
-		var mirrored: Dictionary = await harness.run(c.p2, c.p1)
+		var mirrored := Harness.run(c.p2, c.p1)
 		var symmetric := Harness.same(mirrored, Harness.mirror(got))
 		if symmetric == c.get("asymmetric", false):
-			print("  对称性与标记不符：交换左右%s" % ["对称" if symmetric else "不对称"])
+			print("%s 对称性与标记不符：交换左右%s" % [c.id, "对称" if symmetric else "不对称"])
 	Harness.save_cases(CASES_PATH, cases)
 	print("共 %d 条，结果变化 %d 条" % [cases.size(), changed])
 	quit()

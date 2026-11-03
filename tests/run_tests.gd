@@ -27,6 +27,7 @@ func _initialize() -> void:
 	_check_data()
 	await _run_battle_cases()
 	await _run_unit_tests()
+	await _run_replay_checks()
 	await _run_smoke()
 	await _frames(3)  # 让 queue_free 的节点真正释放，避免退出时报泄漏
 	_finish()
@@ -58,16 +59,19 @@ func _check_data() -> void:
 	print("数据检查：%d 张卡，%d 个关卡" % [CardDB.all().size(), LevelDB.all().size()])
 
 
+## 每条用例：结果符合期望、交换左右后对称、事件日志自洽
 func _run_battle_cases() -> void:
-	var harness := Harness.new(self)
 	var cases := Harness.load_cases(CASES_PATH)
 	for c in cases:
-		var got: Dictionary = await harness.run(c.p1, c.p2)
-		if not Harness.same(got, c.expect):
-			_failures.append("[%s] 期望 %s，实际 %s" % [c.id, c.expect, got])
+		var result := BattleSim.simulate(c.p1, c.p2)
+		if not Harness.same(result, c.expect):
+			_failures.append("[%s] 期望 %s，实际 %s" % [c.id, c.expect, Harness.run(c.p1, c.p2)])
+		var inconsistency := Harness.check_events(result)
+		if inconsistency != "":
+			_failures.append("[%s] 事件日志不自洽：%s" % [c.id, inconsistency])
 		if not c.get("asymmetric", false):
-			var mirrored: Dictionary = await harness.run(c.p2, c.p1)
-			if not Harness.same(mirrored, Harness.mirror(got)):
+			var mirrored := Harness.run(c.p2, c.p1)
+			if not Harness.same(mirrored, Harness.mirror(result)):
 				_failures.append("[%s] 交换左右后结果不对称：%s" % [c.id, mirrored])
 	print("战斗用例：%d 条" % cases.size())
 
@@ -75,23 +79,97 @@ func _run_battle_cases() -> void:
 ## 只测对战用例触发不到的情况
 func _run_unit_tests() -> void:
 	# 相邻两个单位同时阵亡时都要移除（B6；现有卡牌只有交战位会阵亡，对战中触发不到，湮灭会触发）
-	global_var.battle_card_list_1 = ["soldier", "soldier", "soldier"]
-	global_var.battle_equip_list_1 = ["", "", ""]
-	global_var.battle_card_list_2 = ["pixie"]
-	global_var.battle_equip_list_2 = [""]
-	var scene: Node = Harness.BATTLE_SCENE.instantiate()
-	root.add_child(scene)
-	var manager: Node = scene.get_node("battle_manager")
-	manager.play_animation = false
-	var field: Array = manager.player_battle_fields[1]
-	field[0].strength = 0
-	field[1].strength = -1
-	var survivor: Node = field[2]
-	manager.settlement_death()
-	if manager.player_battle_fields[1] != [survivor]:
-		_failures.append("[unit-death-adjacent] 相邻两个阵亡单位应一起移除，实际剩余 %d 个" % manager.player_battle_fields[1].size())
-	scene.free()
-	print("单元测试：1 条")
+	var sim := BattleSim.new([["soldier", ""], ["soldier", ""], ["soldier", ""]], [["pixie", ""]])
+	sim.fields[1][0].strength = 0
+	sim.fields[1][1].strength = -1
+	sim.settle_death()
+	if sim.fields[1].map(func(u): return u.uid) != ["1-2"]:
+		_failures.append("[unit-death-adjacent] 相邻两个阵亡单位应一起移除，实际剩余 %s" % [sim.fields[1].map(func(u): return u.uid)])
+	_test_annihilate()
+	_test_overlay()
+	print("单元测试：3 条")
+
+
+## 湮灭（目前没有卡带湮灭）：打对方全体、走伤害流程；同一时间节点先腐蚀后湮灭，所以庇护挡的是腐蚀
+func _test_annihilate() -> void:
+	var sim := BattleSim.new([["soldier", ""]], [["paladin", ""], ["soldier", ""], ["shield_guard", ""], ["soldier", ""]])
+	var actor = sim.fields[1][0]
+	actor.normal_skills = {"corrode": 2, "annihilate": 3}
+	sim.resolve_timing([actor])
+	sim.settle_death()
+	var got := {
+		"strengths": sim.fields[2].map(func(u): return u.strength),
+		"paladin_shelter": sim.fields[2][0].special_skills.has("shelter"),
+		"beats": sim.events.filter(func(e): return e.type == "beat").map(func(e): return e.skill),
+	}
+	# 圣骑士 8：腐蚀 2 被庇护挡下，湮灭 3 打中 → 5；士兵 3 → 0 阵亡；盾卫 6 坚固 4 → 不掉血
+	var expected := {"strengths": [5, 6], "paladin_shelter": false, "beats": ["corrode", "annihilate"]}
+	if got != expected:
+		_failures.append("[unit-annihilate] 期望 %s，实际 %s" % [expected, got])
+
+
+## 装备叠放模型：有就覆盖，"clear" 清空，{} 和省略等价都沿用；武器格叠加
+func _test_overlay() -> void:
+	var vulture := CardDB.card("vulture")  # 秃鹫：交战，狂暴3、腐蚀2
+	var paladin := CardDB.card("paladin")  # 圣骑士：入场，庇护
+	var cases := [
+		[vulture, {"skills": {"corrode": 15}}, "normal_skills", {"corrode": 15}, "基础技能整体覆盖"],
+		[vulture, {"weapon_strength": 12, "skills": "clear"}, "normal_skills", {}, "基础技能清空（空心）"],
+		[vulture, {"weapon_skills": {"rage": 2}}, "normal_skills", {"rage": 5, "corrode": 2}, "武器技能同名相加"],
+		[vulture, {"timing": "clear", "weapon_timing": "pre_battle"}, "timings", ["pre_battle"], "基础时机清空，武器时机保留"],
+		[paladin, {"special_skills": "clear"}, "special_skills", {}, "特殊技能清空"],
+		[paladin, {"special_skills": {"lethal": null}}, "special_skills", {"lethal": null}, "特殊技能整体覆盖"],
+	]
+	for c in cases:
+		var got = CardDB.combine_data(c[0], c[1])[c[2]]
+		if got != c[3]:
+			_failures.append("[unit-overlay] %s：期望 %s，实际 %s" % [c[4], c[3], got])
+
+
+## 回放检查：战斗场景最后显示的局面和 BattleSim 的结果一致。
+## 覆盖动画播完、僵持压缩、动画中途跳过三种情况（高速播放）
+func _run_replay_checks() -> void:
+	var cases := [
+		["animated", [["tiger_man", "lionheart"], ["fairy", ""]], [["porcupine", "holy_shield"], ["paladin", ""]], -1],
+		["stalemate", [["angel", "riot_helmet"]], [["angel", "riot_helmet"]], -1],
+		["skip-midway", [["soldier", ""], ["soldier", ""], ["tiger", "holy_water"]], [["sludge", "thorns"], ["shield_guard", ""]], 30],
+	]
+	for c in cases:
+		global_var.battle_card_list_1 = c[1].map(func(u): return u[0])
+		global_var.battle_equip_list_1 = c[1].map(func(u): return u[1])
+		global_var.battle_card_list_2 = c[2].map(func(u): return u[0])
+		global_var.battle_equip_list_2 = c[2].map(func(u): return u[1])
+		var scene: Node = load("res://scenes/battle/battle.tscn").instantiate()
+		root.add_child(scene)
+		var battle_manager: Node = scene.get_node("battle_manager")
+		battle_manager.battle_speed = 1000.0
+		battle_manager._on_start_battle_pressed_battle()
+		if c[3] >= 0:
+			await _frames(c[3])
+			battle_manager._on_skip_button_pressed()
+		while battle_manager.winner == 0:
+			await process_frame
+		if c[3] >= 0 and not battle_manager.have_been_skipped:
+			_failures.append("[replay-%s] 战斗在跳过之前就播完了，没测到中途跳过" % c[0])
+		_check_replay(battle_manager, "replay-" + c[0])
+		scene.free()
+	print("回放检查：%d 条" % cases.size())
+
+
+## 场景里显示的胜负和双方幸存单位的战力，应与 BattleSim 的结果一致
+func _check_replay(battle_manager: Node, label: String) -> void:
+	var lineups := {1: [], 2: []}
+	for side in [1, 2]:
+		var cards: Array = global_var.battle_card_list_1 if side == 1 else global_var.battle_card_list_2
+		var equips: Array = global_var.battle_equip_list_1 if side == 1 else global_var.battle_equip_list_2
+		for n in cards.size():
+			lineups[side].append([cards[n], equips[n]])
+	var expected := Harness.run(lineups[1], lineups[2])
+	var shown := {"winner": battle_manager.winner}
+	for side in [1, 2]:
+		shown["p%d" % side] = battle_manager.player_battle_fields[side].map(func(card): return int(card.get_node("strength_1").text))
+	if not Harness.same(shown, expected):
+		_failures.append("[%s] 场景显示 %s，BattleSim 结果 %s" % [label, shown, expected])
 
 
 func _run_smoke() -> void:
@@ -224,7 +302,7 @@ func _play_battle_and_return(manager: Node) -> void:
 	battle_manager._on_skip_button_pressed()
 	while battle_manager.winner == 0:
 		await process_frame
-	await create_timer(1.0).timeout  # 等跳过后的补位动画
+	_check_replay(battle_manager, "smoke-battle")
 	battle_manager._on_start_battle_pressed_battle()
 	await _frames(2)
 

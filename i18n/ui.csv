@@ -2,6 +2,7 @@ keys,zh_CN
 ui.common.back,返回
 ui.common.start,开始
 ui.common.none,无
+ui.card.clear,空
 ui.menu.title,牛马自走棋
 ui.menu.sandbox,科研模式
 ui.menu.levels,闯关模式
@@ -21,6 +22,8 @@ ui.battle.running,战斗中
 ui.battle.p1_win,"战斗结束,玩家1获胜!"
 ui.battle.p2_win,"战斗结束,玩家2获胜!"
 ui.battle.draw,"战斗结束,双方平局!"
+ui.battle.no_death,无人阵亡 %d/%d
+ui.battle.stalemate,双方僵持
 ui.book.title,图  鉴
 ui.book.prev,上一页
 ui.book.next,下一页

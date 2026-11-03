@@ -8,8 +8,6 @@ const CASES_PATH := "res://tests/golden/battles.jsonl"
 
 
 func _initialize() -> void:
-	await process_frame
-	var harness := Harness.new(self)
 	var cases := Harness.load_cases(CASES_PATH).filter(func(c): return c.group != "level")
 	for level_id in LevelDB.all():
 		var level := LevelDB.level(level_id)
@@ -19,7 +17,7 @@ func _initialize() -> void:
 		var arrangements := _arrangements(chars, equips)
 		var solutions := []
 		for team in arrangements:
-			var got: Dictionary = await harness.run(enemy, team)
+			var got := Harness.run(enemy, team)
 			if got.winner == 2:
 				solutions.append(team)
 		print("%s：%d 种摆法，%d 个解，通过率 %.2f%%" % [tr("level." + level_id), arrangements.size(), solutions.size(), 100.0 * solutions.size() / arrangements.size()])

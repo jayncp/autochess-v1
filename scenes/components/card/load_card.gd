@@ -99,19 +99,21 @@ static func update_attribute_display(card, attri, target):
 		card.get_node(attri).text = str(target)
 
 
-## 时机列表的显示文字，如"战前,交战"；单个时机也可以直接传字符串，null 表示没有
+## 时机列表的显示文字，如"战前,交战"；单个时机也可以直接传字符串，null 表示没有，"clear" 显示"空"
 static func timing_name(timings):
 	if timings == null:
 		return null
 	if timings is String:
-		return _t("timing." + timings)
+		return _t("ui.card.clear") if timings == CardDB.CLEAR else _t("timing." + timings)
 	return ",".join(timings.map(func(t): return _t("timing." + t)))
 
 
-## 技能的显示文字，如"狂暴3,腐蚀2"；null 表示没有该栏，空字典表示清空（显示"无"）
+## 技能的显示文字，如"狂暴3,腐蚀2"；null 表示没有该栏，"clear" 显示"空"，战斗中技能被清空显示"无"
 static func generate_skill_string(skills):
 	if skills == null:
 		return null
+	if skills is String:
+		return _t("ui.card.clear")
 	if skills.is_empty():
 		return _t("ui.common.none")
 	var parts := []

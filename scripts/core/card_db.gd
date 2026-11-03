@@ -7,11 +7,14 @@ const TYPES := ["character", "equipment"]
 const RACES := ["human", "beast", "nature", "divine", "elf"]
 ## 时机，也是合并后的排列顺序
 const TIMINGS := ["pre_battle", "on_enter", "on_engage"]
-## 普通技能，也是合并后的排列顺序
-const NORMAL_SKILLS := ["rally", "rage", "corrode", "inspire"]
+## 普通技能，也是合并后的排列顺序（结算顺序见 BattleSim.BEATS）
+const NORMAL_SKILLS := ["rally", "rage", "corrode", "inspire", "annihilate"]
 const SPECIAL_SKILLS := ["lethal", "shelter", "sturdy", "backlash"]
 const FIELDS := ["id", "no", "type", "star", "races", "strength", "timing", "skills",
 	"weapon_strength", "weapon_timing", "weapon_skills", "special_skills"]
+## 装备上可以写"空"（清空角色对应格子）的字段
+const CLEARABLE := ["timing", "skills", "special_skills"]
+const CLEAR := "clear"
 
 static var _cards := {}
 
@@ -33,18 +36,24 @@ static func ids(type: String) -> Array:
 
 
 ## 角色带上装备（可为空）之后的战斗属性：战力、时机、普通技能、特殊技能。
-## 规则见 docs/design/battle-rules.md 第 6 节；基础技能目前按技能名逐个覆盖，尚未整体替换。
 static func combine(card_id: String, equip_id: String) -> Dictionary:
-	var c := card(card_id)
-	var e: Dictionary = card(equip_id) if equip_id else {}
-	var timing = e.get("timing", c.get("timing"))
-	var weapon_timing = e.get("weapon_timing", c.get("weapon_timing"))
+	return combine_data(card(card_id), card(equip_id) if equip_id else {})
+
+
+## 装备像一张卡盖在角色卡上（docs/design/battle-rules.md 第 6 节）：
+## 装备那一格没有就沿用角色的，有就覆盖，写"空"就清空；武器战力加到角色战力上，
+## 基础技能和武器技能同名相加。
+static func combine_data(c: Dictionary, e: Dictionary) -> Dictionary:
+	var timing = _overlay(c, e, "timing")
+	var weapon_timing = _overlay(c, e, "weapon_timing")
+	var skills: Dictionary = _overlay(c, e, "skills", {})
+	var weapon_skills: Dictionary = _overlay(c, e, "weapon_skills", {})
 	var normal_skills := {}
 	for skill in NORMAL_SKILLS:
-		var power: int = _skill_power(skill, "skills", c, e) + _skill_power(skill, "weapon_skills", c, e)
+		var power: int = skills.get(skill, 0) + weapon_skills.get(skill, 0)
 		if power > 0:
 			normal_skills[skill] = power
-	var special: Dictionary = e.special_skills if e.get("special_skills") else c.get("special_skills", {})
+	var special: Dictionary = _overlay(c, e, "special_skills", {})
 	return {
 		"strength": c.strength + e.get("weapon_strength", 0),
 		"timings": TIMINGS.filter(func(t): return t == timing or t == weapon_timing),
@@ -53,12 +62,10 @@ static func combine(card_id: String, equip_id: String) -> Dictionary:
 	}
 
 
-## 装备有同名技能时覆盖角色的；装备该栏为空字典（空心）时清零
-static func _skill_power(skill: String, field: String, c: Dictionary, e: Dictionary) -> int:
-	var power: int = c.get(field, {}).get(skill, 0)
-	if e.has(field):
-		power = 0 if e[field].is_empty() else e[field].get(skill, power)
-	return power
+## 一格的叠放结果：装备有这格就用装备的（"空"表示清空），否则沿用角色的
+static func _overlay(c: Dictionary, e: Dictionary, field: String, empty: Variant = null) -> Variant:
+	var value = e[field] if e.has(field) else c.get(field)
+	return empty if value == null or value is String and value == CLEAR else value
 
 
 static func _load() -> void:
@@ -77,7 +84,11 @@ static func _normalize(raw: Dictionary) -> Dictionary:
 		if c.has(field):
 			c[field] = int(c[field])
 	for field in ["skills", "weapon_skills", "special_skills"]:
-		if c.has(field):
+		if c.get(field) is Dictionary:
+			# {} 和省略等价：都表示沿用角色的
+			if c[field].is_empty():
+				c.erase(field)
+				continue
 			for skill in c[field]:
 				if c[field][skill] != null:
 					c[field][skill] = int(c[field][skill])
@@ -94,15 +105,21 @@ static func _check(c: Dictionary) -> void:
 	for race in c.get("races", []):
 		if race not in RACES:
 			bad.append("种族 " + race)
+	for field in CLEARABLE:
+		if c.get(field) is String and c[field] == CLEAR and c.get("type") != "equipment":
+			bad.append("只有装备能写\"空\"：" + field)
 	for field in ["timing", "weapon_timing"]:
-		if c.has(field) and c[field] not in TIMINGS:
+		if c.has(field) and c[field] not in TIMINGS and not (field in CLEARABLE and c[field] == CLEAR):
 			bad.append("时机 " + c[field])
-	for field in ["skills", "weapon_skills"]:
-		for skill in c.get(field, {}):
-			if skill not in NORMAL_SKILLS:
-				bad.append("普通技能 " + skill)
-	for skill in c.get("special_skills", {}):
-		if skill not in SPECIAL_SKILLS:
-			bad.append("特殊技能 " + skill)
+	for field in ["skills", "weapon_skills", "special_skills"]:
+		var value = c.get(field, {})
+		if value is String:
+			if not (field in CLEARABLE and value == CLEAR):
+				bad.append("%s 应为技能字典或 \"clear\"" % field)
+			continue
+		var known: Array = SPECIAL_SKILLS if field == "special_skills" else NORMAL_SKILLS
+		for skill in value:
+			if skill not in known:
+				bad.append("技能 " + skill)
 	if not bad.is_empty():
 		push_error("cards.json：%s 有误：%s" % [c.get("id"), ", ".join(bad)])
