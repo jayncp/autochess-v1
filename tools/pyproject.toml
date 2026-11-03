@@ -1,0 +1,19 @@
+[project]
+name = "autochess-tools"
+version = "0.1.0"
+description = "牛马自走棋的分析和平衡实验工具：通过 cli/sim.gd 批量模拟，自己不实现战斗规则"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.8", "ty>=0.0.1a1"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

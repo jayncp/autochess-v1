@@ -29,3 +29,11 @@ level-check *file:
 # 批量模拟：输入 JSONL 每行 {"p1": [...], "p2": [...]}，输出每行一个结果；加 --log 带事件日志，--cards <文件> 加额外卡牌
 sim input output *flags:
     {{limit}} {{godot}} --headless --path . --script res://cli/sim.gd -- {{input}} {{output}} {{flags}}
+
+# Python 工具：代码检查和测试
+tools-check:
+    cd tools && uv run ruff check && uv run ruff format --check && uv run ty check && uv run pytest -q
+
+# 运行平衡实验（tools/autochess_tools/experiments/<名字>.py），结果打印到终端
+experiment name:
+    cd tools && uv run python -m autochess_tools.experiments.{{name}}
