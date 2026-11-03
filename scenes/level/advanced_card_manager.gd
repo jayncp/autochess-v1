@@ -77,8 +77,11 @@ func on_hovered_over_card(card):
 		is_hovering_on_card = true
 		highlight_card(card,true)
 
-# 放大突出显示卡牌		
+# 放大突出显示卡牌
 func highlight_card(card, hovered):
+	# 正在拖动的卡保持在最上层：鼠标移动太快时会先移出卡牌区域触发"离开"，不能因此恢复它的图层
+	if card == card_being_dragged:
+		return
 	if hovered:
 		# 有卡牌被拖拽时不放大
 		if card_being_dragged:

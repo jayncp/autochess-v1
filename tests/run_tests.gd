@@ -167,6 +167,14 @@ func _check_lineup_rules(manager: Node) -> void:
 	await _frames(1)
 	if manager.has_node("main"):
 		_failures.append("[smoke-lineup] 一个角色都没上场也开始了战斗")
+	# 拖动中鼠标移出卡牌区域（移动太快时会发生），卡牌仍要在最上层
+	var cards: Node = setup.get_node("advanced_card_manager")
+	var dragged := _hand_card(setup, "vulture")
+	cards.start_drag(dragged)
+	cards.on_hovered_off_card(dragged)
+	if dragged.z_index != 1001:
+		_failures.append("[smoke-lineup] 拖动中触发鼠标离开后，卡牌图层降到了 %d" % dragged.z_index)
+	cards.drop_card(null)
 	var steps := [
 		["war_banner", 0, [[]], "装备不能单独上场"],
 		["vulture", 0, [["vulture", ""]], "角色放入空格"],
