@@ -5,7 +5,7 @@
 
 ## 现状
 
-- 阶段：阶段 2（战斗核心）已完成，下一步是阶段 3（卡牌补全）。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 阶段：阶段 2（战斗核心）已完成；阶段 3（卡牌补全）中，用户正在 `docs/design/card-workbook.xlsx` 里设计新卡，之后带设计来讨论。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
 - 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关）、图鉴、战斗演出（速度/跳过）。冒险、线下对战未实现。
 - 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并在 `CardDB.combine_data`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。
 - 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
