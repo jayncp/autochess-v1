@@ -23,7 +23,7 @@
 - [x] 阶段 0：git 初始化 + 协议 + 首次提交原样快照 + 推送
 - [x] 阶段 0.5：行为基线测试与规则修复（PR #2 已合并，issue #1 已关闭；关卡复核见 `docs/design/levels.md`）
 - [x] 阶段 1：英文 id、数据外置、多语言预留、目录整理（PR #4 已合并，issue #3 已关闭；计划见 `docs/plans/stage-1-reorg.md`）
-- [ ] 布阵互换（小 PR，阶段 2 之前）：规则见 `docs/design/game-design.md` 第 7 节 ← **进行中**
+- [ ] 布阵互换（小 PR，阶段 2 之前）：规则见 `docs/design/game-design.md` 第 7 节；issue #5，分支 `lineup-swap`，待用户手动试玩后合并
 - [ ] 阶段 2：战斗核心纯逻辑化 + 回放 + 无头模拟 CLI + 测试（含湮灭）+ 工具
   - [x] 计划 `docs/plans/stage-2-battle-core.md`（实测：现有 134 条用例动画模式与跳过模式结果全部一致）
   - [x] 讨论定稿：分拍、先加后减、特殊技能模型、装备叠放模型、平局只留 20 次交战、B9；写入 `battle-rules.md`、`decisions.md`

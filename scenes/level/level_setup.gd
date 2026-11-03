@@ -26,33 +26,26 @@ func _on_back_button_pressed() -> void:
 	emit_signal("back_to_level_select")
 
 func _on_start_battle_pressed() -> void:
-	if generate_battle_list()!= null:
-		var enemy: Array = LevelDB.level(level_id).enemy
-		global_var.battle_card_list_1 = enemy.map(func(u): return u[0])
-		global_var.battle_card_list_2 = generate_battle_list()[0]
-		global_var.battle_equip_list_1 = enemy.map(func(u): return u[1])
-		global_var.battle_equip_list_2 = generate_battle_list()[1]
-		emit_signal("start_battle")
-	else:
-		$"output_text".text = tr("ui.level_setup.invalid")
+	var lineup = generate_battle_list()
+	# 至少上场一个角色（装备不能单独上场，所以场上的卡都有角色）
+	if lineup[0].is_empty():
+		$"output_text".text = tr("ui.level_setup.need_character")
+		return
+	var enemy: Array = LevelDB.level(level_id).enemy
+	global_var.battle_card_list_1 = enemy.map(func(u): return u[0])
+	global_var.battle_card_list_2 = lineup[0]
+	global_var.battle_equip_list_1 = enemy.map(func(u): return u[1])
+	global_var.battle_equip_list_2 = lineup[1]
+	emit_signal("start_battle")
 
-# 检索我方队伍
+# 检索我方队伍：按卡槽从左到右
 func generate_battle_list():
 	var battle_card_list = []
 	var battle_equip_list = []
-	# 通过卡牌位置检索
-	for j in range(0,7):
-		var card_x = (j+1)*240
-		var card_y = 540
-
-		var this_card = null
-		for t_card in $"advanced_card_manager".get_children():
-			if t_card.position.x == card_x and t_card.position.y == card_y:
-				this_card = t_card
-		if this_card == null:
+	for slot in $"player_card_slots".get_children():
+		var card = slot.card_in_slot
+		if card == null:
 			continue
-		if (this_card.card_id=="") and (this_card.equip_id!=""):
-			return null
-		battle_card_list.append(this_card.card_id)
-		battle_equip_list.append(this_card.equip_id)
+		battle_card_list.append(card.card_id)
+		battle_equip_list.append(card.equip_id)
 	return [battle_card_list,battle_equip_list]
