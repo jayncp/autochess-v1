@@ -5,7 +5,7 @@
 
 ## 现状
 
-- 阶段：阶段 2（战斗核心）进行中：PR A（战斗核心）已完成，下一步是 PR B（工具）。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 阶段：阶段 2（战斗核心）已完成，下一步是阶段 3（卡牌补全）。圣水补偿数值待用户定（见 `docs/design/balance-report-2026-11-03.md` 第 2 节）。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
 - 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关）、图鉴、战斗演出（速度/跳过）。冒险、线下对战未实现。
 - 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并在 `CardDB.combine_data`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。
 - 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
@@ -34,12 +34,13 @@
 - `cli/`：GDScript 无头命令，如 `sim.gd`（批量模拟）
 - `assets/`：`cards/<id>.png`、`backgrounds/`、`ui/`、`fonts/`
 - `tests/`：基线测试，说明见 `tests/README.md`
-- 阶段 2 PR B 新建：Python 工具放 `tools/`（带 `.gdignore`），通过 `cli/` 调用战斗核心
+- `tools/`：Python 分析和平衡实验（uv 管理，带 `.gdignore`），通过 `cli/sim.gd` 调用战斗核心，说明见 `tools/README.md`
 
 ## 命令
 
 - 运行：`just run`；测试：`just test`（约 2 秒，说明和维护方法见 `tests/README.md`）
-- 批量模拟：`just sim <输入.jsonl> <输出.jsonl> [--log]`，单线程约 7400 场/秒（带事件日志约 4700）
+- 批量模拟：`just sim <输入.jsonl> <输出.jsonl> [--log] [--cards <额外卡牌.json>]`，单线程约 7400 场/秒（带事件日志约 4700）
+- 关卡检查：`just level-check [关卡文件.json]`；平衡实验：`just experiment <名字>`；Python 检查：`just tools-check`
 - Godot：`/Applications/Godot.app/Contents/MacOS/Godot`（`justfile` 里可用环境变量 `GODOT` 覆盖）
 - 无头脚本：`... --headless --path . --script <file.gd>`
   - 脚本 `extends SceneTree`；

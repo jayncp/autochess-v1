@@ -28,3 +28,8 @@ jobs:
 
       - name: Test
         run: just test
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      - name: Python tools
+        run: just tools-check
