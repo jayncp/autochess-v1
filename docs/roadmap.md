@@ -80,7 +80,7 @@ BattleSim（纯 GDScript RefCounted，不依赖节点）
   - 关卡通过率枚举（重做 `single_loop_test_launcher`）；
   - 平衡实验：有效战力、对局矩阵、星级平衡，能复现 balance-report 里的数据；
   - 实测吞吐量，决定以后做 RL 时是否需要更快的实现。
-- 用模拟器校准圣水的补偿数值。
+- 用模拟器校准圣水的补偿数值（已定 +3，见 decisions.md 11-03）。
 - 详细计划见 [plans/stage-2-battle-core.md](plans/stage-2-battle-core.md)。
 
 ## 阶段 3：卡牌补全

@@ -22,7 +22,7 @@
 {"id": "holy_shield", "no": 218, "type": "equipment", "star": 2, "special_skills": {"shelter": null}},
 {"id": "venom_dagger", "no": 209, "type": "equipment", "star": 2, "special_skills": {"lethal": null}},
 {"id": "riot_helmet", "no": 210, "type": "equipment", "star": 2, "special_skills": {"sturdy": 3}},
-{"id": "holy_water", "no": 211, "type": "equipment", "star": 2, "weapon_strength": 2, "weapon_timing": "pre_battle"},
+{"id": "holy_water", "no": 211, "type": "equipment", "star": 2, "weapon_strength": 3, "weapon_timing": "pre_battle"},
 {"id": "war_banner", "no": 212, "type": "equipment", "star": 2, "weapon_skills": {"rally": 2}},
 {"id": "venom_sac", "no": 213, "type": "equipment", "star": 2, "weapon_skills": {"corrode": 4}},
 {"id": "iron_sword", "no": 214, "type": "equipment", "star": 2, "weapon_strength": 8},
