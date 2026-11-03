@@ -1,9 +1,9 @@
 extends SceneTree
-## 枚举每个关卡里玩家的全部摆法（可只上部分角色、装备可不用，相同卡互换算一种），
-## 打印通过率和全部解，并把解写入 level 组用例（之后运行 just record 录制期望值）。
+## 枚举每个关卡的全部解（用 cli/levels.gd），打印并写入 level 组用例，之后运行 just record 录制期望值。
 ## 用法：just levels
 
 const Harness := preload("res://tests/battle_harness.gd")
+const Levels := preload("res://cli/levels.gd")
 const CASES_PATH := "res://tests/golden/battles.jsonl"
 
 
@@ -11,58 +11,10 @@ func _initialize() -> void:
 	var cases := Harness.load_cases(CASES_PATH).filter(func(c): return c.group != "level")
 	for level_id in LevelDB.all():
 		var level := LevelDB.level(level_id)
-		var enemy: Array = level.enemy
-		var chars: Array = level.hand.filter(func(id): return CardDB.card(id).type == "character")
-		var equips: Array = level.hand.filter(func(id): return CardDB.card(id).type == "equipment")
-		var arrangements := _arrangements(chars, equips)
-		var solutions := []
-		for team in arrangements:
-			var got := Harness.run(enemy, team)
-			if got.winner == 2:
-				solutions.append(team)
-		print("%s：%d 种摆法，%d 个解，通过率 %.2f%%" % [tr("level." + level_id), arrangements.size(), solutions.size(), 100.0 * solutions.size() / arrangements.size()])
-		for i in solutions.size():
-			print("  ", _describe(solutions[i]))
-			cases.append({"id": "level-%s-%d" % [level_id, i + 1], "group": "level", "p1": enemy, "p2": solutions[i]})
+		var report := Levels.solve(level)
+		print(Levels.describe_report(level_id, report))
+		for i in report.solutions.size():
+			print("  ", Levels.describe_team(report.solutions[i]))
+			cases.append({"id": "level-%s-%d" % [level_id, i + 1], "group": "level", "p1": level.enemy, "p2": report.solutions[i]})
 	Harness.save_cases(CASES_PATH, cases)
 	quit()
-
-
-## 全部不同的摆法：角色有序选取 k 个（k ≥ 1），每件装备不用或装给一个没装备的角色
-func _arrangements(chars: Array, equips: Array) -> Array:
-	var seen := {}
-	var result := []
-	for order in _orders(chars):
-		for team in _equip(order.map(func(c): return [c, ""]), equips, 0):
-			var key := JSON.stringify(team)
-			if not seen.has(key):
-				seen[key] = true
-				result.append(team)
-	return result
-
-
-func _orders(pool: Array) -> Array:
-	var result := []
-	for i in pool.size():
-		var rest := pool.duplicate()
-		rest.remove_at(i)
-		result.append([pool[i]])
-		for tail in _orders(rest):
-			result.append([pool[i]] + tail)
-	return result
-
-
-func _equip(team: Array, equips: Array, index: int) -> Array:
-	if index == equips.size():
-		return [team]
-	var result := _equip(team, equips, index + 1)  # 这件装备不用
-	for i in team.size():
-		if team[i][1] == "":
-			var next := team.duplicate(true)
-			next[i][1] = equips[index]
-			result += _equip(next, equips, index + 1)
-	return result
-
-
-func _describe(team: Array) -> String:
-	return " / ".join(team.map(func(u): return tr("card." + u[0]) + ("+" + tr("card." + u[1]) if u[1] != "" else "")))

@@ -30,6 +30,16 @@ static func card(id: String) -> Dictionary:
 	return all()[id]
 
 
+## 临时加入额外的卡牌（只在本次运行有效），供平衡实验使用，比如白板单位、某张卡的不同数值版本。
+## 与已有 id 相同时覆盖原卡
+static func add_cards(raw_cards: Array) -> void:
+	all()
+	for raw in raw_cards:
+		var c := _normalize(raw)
+		_check(c)
+		_cards[c.id] = c
+
+
 ## 某一类型的全部 id，顺序与文件一致
 static func ids(type: String) -> Array:
 	return all().keys().filter(func(id): return _cards[id].type == type)

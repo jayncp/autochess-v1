@@ -22,6 +22,10 @@ gen-random:
 levels:
     {{limit}} {{godot}} --headless --path . --script res://tests/tools/level_solutions.gd
 
-# 批量模拟：输入 JSONL 每行 {"p1": [...], "p2": [...]}，输出每行一个结果；加 --log 带事件日志
+# 检查关卡：枚举全部摆法，打印解数、通过率和全部解；可指定关卡文件（格式同 data/levels.json）
+level-check *file:
+    {{limit}} {{godot}} --headless --path . --script res://cli/levels.gd -- {{file}}
+
+# 批量模拟：输入 JSONL 每行 {"p1": [...], "p2": [...]}，输出每行一个结果；加 --log 带事件日志，--cards <文件> 加额外卡牌
 sim input output *flags:
     {{limit}} {{godot}} --headless --path . --script res://cli/sim.gd -- {{input}} {{output}} {{flags}}
