@@ -191,20 +191,26 @@ func _run_smoke() -> void:
 	sandbox._on_back_button_pressed()
 	await _frames(2)
 
-	# 闯关：两关各布阵一次 → 开始战斗 → 返回
+	# 闯关：第一关检查布阵交互规则；两关各布阵一次 → 开始战斗 → 返回
 	manager.get_node("MenuScene")._on_single_mode_pressed()
+	await _frames(2)
+	manager.current_scene._on_level_select_button_pressed(LevelDB.all().keys()[0])
+	await create_timer(0.3).timeout  # 等手牌入场动画
+	await _check_lineup_rules(manager)
+	manager.current_scene._on_back_button_pressed()
 	await _frames(2)
 	for level_id in LevelDB.all():
 		manager.current_scene._on_level_select_button_pressed(level_id)
-		await create_timer(0.3).timeout  # 等手牌入场动画
-		var pre_battle: Node = manager.current_scene
-		var chars: Array = pre_battle.get_node("advanced_card_manager").get_children().filter(
-			func(card): return card.card_id != "")
+		await create_timer(0.3).timeout
+		var setup: Node = manager.current_scene
+		var slots: Array = setup.get_node("player_card_slots").get_children()
+		var hand: Array = setup.get_node("player_hand").player_hand.duplicate()
+		var chars := hand.filter(func(card): return card.card_id != "")
 		for i in chars.size():
-			chars[i].position = Vector2((i + 1) * 240, 540)
-		pre_battle._on_start_battle_pressed()
+			_drag(setup, chars[i], slots[i])
+		setup._on_start_battle_pressed()
 		await _play_battle_and_return(manager)
-		pre_battle._on_back_button_pressed()
+		setup._on_back_button_pressed()
 		await _frames(2)
 	manager.current_scene._on_back_button_pressed()
 	await _frames(2)
@@ -228,6 +234,63 @@ func _run_smoke() -> void:
 
 	manager.free()
 	print("冒烟流程：完成")
+
+
+## 布阵交互规则（docs/design/game-design.md 第 7 节），用第一关的手牌：
+## 秃鹫、食人花、半精灵人、虎人、战旗、尖刺拳套
+func _check_lineup_rules(manager: Node) -> void:
+	var setup: Node = manager.current_scene
+	var s: Array = setup.get_node("player_card_slots").get_children()
+	setup._on_start_battle_pressed()
+	await _frames(1)
+	if manager.has_node("main"):
+		_failures.append("[smoke-lineup] 一个角色都没上场也开始了战斗")
+	# 拖动中鼠标移出卡牌区域（移动太快时会发生），卡牌仍要在最上层
+	var cards: Node = setup.get_node("advanced_card_manager")
+	var dragged := _hand_card(setup, "vulture")
+	cards.start_drag(dragged)
+	cards.on_hovered_off_card(dragged)
+	if dragged.z_index != 1001:
+		_failures.append("[smoke-lineup] 拖动中触发鼠标离开后，卡牌图层降到了 %d" % dragged.z_index)
+	cards.drop_card(null)
+	var steps := [
+		["war_banner", 0, [[]], "装备不能单独上场"],
+		["vulture", 0, [["vulture", ""]], "角色放入空格"],
+		["maneater", 1, [["vulture", ""], ["maneater", ""]], "角色放入空格"],
+		["war_banner", 0, [["vulture", "war_banner"], ["maneater", ""]], "装备拖到角色上：合并"],
+		["spiked_gauntlet", 0, [["vulture", "spiked_gauntlet"], ["maneater", ""]], "装备拖到已合并的卡上：换装备"],
+		[1, 0, [["maneater", ""], ["vulture", "spiked_gauntlet"]], "场上互换"],
+		["half_elf", 0, [["half_elf", ""], ["vulture", "spiked_gauntlet"]], "手牌占位"],
+		[1, -1, [["half_elf", ""], []], "拖到格子以外：拆开回手"],
+		[0, 0, [["half_elf", ""], []], "拖回原来的格子：不变"],
+	]
+	for step in steps:
+		var card = s[step[0]].card_in_slot if step[0] is int else _hand_card(setup, step[0])
+		_drag(setup, card, s[step[1]] if step[1] >= 0 else null)
+		await _frames(1)
+		var got := []
+		for i in step[2].size():
+			var c = s[i].card_in_slot
+			got.append([c.card_id, c.equip_id] if c else [])
+		if got != step[2]:
+			_failures.append("[smoke-lineup] %s：期望 %s，实际 %s" % [step[3], step[2], got])
+	for id in ["war_banner", "maneater", "vulture", "spiked_gauntlet"]:
+		if _hand_card(setup, id) == null:
+			_failures.append("[smoke-lineup] %s 应该回到手牌" % id)
+
+
+## 模拟玩家把卡拖到某个格子（null 表示格子以外）
+func _drag(setup: Node, card: Node, slot: Node) -> void:
+	var cards: Node = setup.get_node("advanced_card_manager")
+	cards.start_drag(card)
+	cards.drop_card(slot)
+
+
+func _hand_card(setup: Node, id: String) -> Node:
+	for card in setup.get_node("player_hand").player_hand:
+		if (card.card_id if card.card_id else card.equip_id) == id:
+			return card
+	return null
 
 
 ## 模拟玩家点击：开始战斗 → 跳过 → 等结束 → 返回
