@@ -24,5 +24,6 @@
 | `matrix_1star` | 1★ 基准对局矩阵，与 `docs/design/card-design.md` 第 3 节逐格对比 |
 | `effective_strength` | 角色在 1★、2★ 环境的有效战力，对照 2026-11-01 报告 |
 | `star_totals` | 同总星级的多个低星对少量高星，对照星级报告第 1 节 |
+| `holy_water` | 装备有效战力，以及圣水 +0 到 +4 各版本按宿主的价值 |
 
 实验结果写成 `docs/design/balance-report-<日期>.md`（带时效的快照）。
