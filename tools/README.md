@@ -7,7 +7,7 @@
 - 环境：用 uv 管理。第一次运行 `just` 命令时会自动创建 `tools/.venv`。
 - Godot 路径默认是 `/Applications/Godot.app/Contents/MacOS/Godot`，可用环境变量 `GODOT` 覆盖。
 - `just experiment <名字>`：运行 `autochess_tools/experiments/<名字>.py`，结果打印到终端。
-- `just tools-check`：ruff 检查和格式、ty 类型检查、pytest。CI 也会运行。
+- `just tools-check`：ruff 检查和格式、ty 类型检查、pytest。提交前在本地运行（CI 目前停用）。
 
 ## 模块
 
