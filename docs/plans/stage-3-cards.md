@@ -1,6 +1,6 @@
 # 阶段 3 计划：卡牌补全（第一轮：1★/2★ 打底）
 
-> **状态**：待确认。
+> **状态**：已确认（2026-11-06），执行中。issue #10。
 > 设计稿：[card-workbook.xlsx](../design/card-workbook.xlsx)（用户原稿见提交 `f3e5851`）。讨论结论见 [decisions.md](../decisions.md) 11-06 的条目。
 
 ## 目标
