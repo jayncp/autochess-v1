@@ -10,7 +10,7 @@ REPO = Path(__file__).resolve().parents[2]
 
 
 class Card(TypedDict):
-    """卡牌数据，字段说明见 docs/plans/stage-1-reorg.md 第 2 节。"""
+    """卡牌数据，字段说明见 data/README.md。"""
 
     id: str
     no: int
@@ -18,11 +18,10 @@ class Card(TypedDict):
     star: int
     races: NotRequired[list[str]]
     strength: NotRequired[int]
-    timing: NotRequired[str]
-    skills: NotRequired[dict[str, int | None] | str]
-    weapon_strength: NotRequired[int]
-    weapon_timing: NotRequired[str]
-    weapon_skills: NotRequired[dict[str, int | None]]
+    timing_1: NotRequired[str]
+    timing_2: NotRequired[str]
+    skills_1: NotRequired[dict[str, int | None] | str]
+    skills_2: NotRequired[dict[str, int | None] | str]
     special_skills: NotRequired[dict[str, int | None] | str]
 
 

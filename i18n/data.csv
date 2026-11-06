@@ -1,48 +1,57 @@
 keys,zh_CN
-card.soldier,士兵
 card.tiger,老虎
-card.sludge,淤泥怪
-card.angel,天使
+card.soldier,士兵
 card.pixie,小精灵
-card.fey_tiger,精灵虎
-card.half_elf,半精灵人
-card.dryad,树精
-card.fairy,仙女
-card.vulture,秃鹫
+card.angel,天使
+card.sludge,淤泥怪
 card.tiger_man,虎人
-card.maneater,食人花
-card.paladin,圣骑士
-card.shield_guard,盾卫
+card.fey_tiger,精灵虎
+card.vulture,秃鹫
+card.half_elf,半精灵人
+card.fairy,仙女
+card.dryad,树精
 card.porcupine,豪猪
-card.war_horn,号角
+card.shield_guard,盾卫
+card.paladin,圣骑士
+card.maneater,食人花
 card.lionheart,狮心
-card.thorns,荆棘
+card.war_horn,号角
 card.halo,光环
+card.thorns,荆棘
 card.wooden_sword,木剑
-card.holy_shield,圣盾
-card.venom_dagger,剧毒匕首
-card.riot_helmet,防爆头盔
-card.holy_water,圣水
 card.war_banner,战旗
 card.venom_sac,毒囊
-card.iron_sword,铁剑
 card.spiked_gauntlet,尖刺拳套
-race.human,人族
+card.riot_helmet,防爆头盔
+card.holy_shield,圣盾
+card.venom_fang,剧毒之牙
+card.iron_sword,铁剑
+card.holy_water,圣水
 race.beast,动物
-race.nature,自然
-race.divine,神族
+race.human,人族
 race.elf,精灵
+race.divine,神族
+race.nature,自然
 timing.pre_battle,战前
 timing.on_enter,入场
 timing.on_engage,交战
-keyword.rally,集结
 keyword.rage,狂暴
-keyword.corrode,腐蚀
+keyword.rally,集结
 keyword.inspire,振奋
+keyword.corrode,腐蚀
 keyword.annihilate,湮灭
-keyword.lethal,致命
-keyword.shelter,庇护
-keyword.sturdy,坚固
 keyword.backlash,反噬
+keyword.sturdy,坚固
+keyword.shelter,庇护
+keyword.lethal,致命
+keyword_desc.rage,自身战斗力 +N
+keyword_desc.rally,自身战斗力 + 己方全体的集结值之和（没有时机的也算）
+keyword_desc.inspire,己方全体战斗力 +N
+keyword_desc.corrode,对方交战位受到 N 点伤害
+keyword_desc.annihilate,对方全体各受到 N 点伤害
+keyword_desc.backlash,每次交战后，自身受到 N 点伤害
+keyword_desc.sturdy,每次受到的伤害 −N（最低为 0，优先于庇护）
+keyword_desc.shelter,抵挡一次伤害
+keyword_desc.lethal,交战时攻击视为无穷大，可被庇护抵挡
 level.boar_rush,猪突猛进
 level.tiger_gale,虎虎生风

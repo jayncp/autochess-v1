@@ -35,6 +35,6 @@ def test_extra_cards() -> None:
 
 def test_bad_extra_card_raises() -> None:
     bad = vanilla_character(3)
-    bad["timing"] = "nope"
+    bad["timing_1"] = "nope"
     with pytest.raises(RuntimeError, match="有误"):
         simulate([([["vanilla_3", ""]], [["pixie", ""]])], [bad])

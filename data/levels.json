@@ -1,4 +1,4 @@
 [
-{"id": "boar_rush", "enemy": [["porcupine", "venom_sac"], ["porcupine", "venom_dagger"], ["porcupine", "riot_helmet"], ["porcupine", "iron_sword"]], "hand": ["vulture", "maneater", "half_elf", "tiger_man", "war_banner", "spiked_gauntlet"]},
-{"id": "tiger_gale", "enemy": [["tiger_man", "thorns"], ["tiger_man", "halo"], ["tiger_man", "wooden_sword"], ["tiger_man", "war_horn"]], "hand": ["shield_guard", "half_elf", "tiger_man", "tiger_man", "venom_dagger", "lionheart"]}
+{"id": "boar_rush", "enemy": [["porcupine", "venom_sac"], ["porcupine", "venom_fang"], ["porcupine", "riot_helmet"], ["porcupine", "iron_sword"]], "hand": ["vulture", "maneater", "half_elf", "tiger_man", "war_banner", "spiked_gauntlet"]},
+{"id": "tiger_gale", "enemy": [["tiger_man", "thorns"], ["tiger_man", "halo"], ["tiger_man", "wooden_sword"], ["tiger_man", "war_horn"]], "hand": ["shield_guard", "half_elf", "tiger_man", "tiger_man", "venom_fang", "lionheart"]}
 ]

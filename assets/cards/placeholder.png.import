@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d1pvnw2txatka"
-path="res://.godot/imported/venom_dagger.png-d0c301eb26271a389570c697aeccb099.ctex"
+uid="uid://ca5qqwlejsak8"
+path="res://.godot/imported/placeholder.png-e8c742d432f142dcd57a692be957f21e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/cards/venom_dagger.png"
-dest_files=["res://.godot/imported/venom_dagger.png-d0c301eb26271a389570c697aeccb099.ctex"]
+source_file="res://assets/cards/placeholder.png"
+dest_files=["res://.godot/imported/placeholder.png-e8c742d432f142dcd57a692be957f21e.ctex"]
 
 [params]
 

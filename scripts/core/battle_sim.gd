@@ -5,7 +5,7 @@ extends RefCounted
 ## 用法：BattleSim.simulate([[角色 id, 装备 id], ...], [...])
 ##
 ## 事件日志（单位用"座位-初始序号"标识，如 "1-0"）：
-## - start：version，p1/p2 为双方单位的初始属性（uid、card_id、equip_id、strength、timings、normal_skills、special_skills）
+## - start：version，p1/p2 为双方单位的初始属性（uid、card_id、equip_id、strength、timings、base_skills、special_skills）
 ## - pre_battle：units 为战前这一步的双方单位（没有则为 ""），actors 为其中执行战前技能的单位
 ## - enter：units 为执行入场的交战位
 ## - engage：units 为双方交战位，actors 为其中有交战时机的单位
@@ -19,13 +19,11 @@ extends RefCounted
 ##       strength 是结算后的战力。
 
 ## 事件日志的版本，规则或事件格式变化时加一，供以后的重播判断版本是否一致
-const VERSION := 1
+const VERSION := 2
 ## 致命的攻击值
 const LETHAL_ATTACK := 10000
 ## 平局：连续多少次交战无人阵亡
 const NO_DEATH_ENGAGES := 20
-## 普通技能的结算拍，先加后减
-const BEATS := ["rage", "rally", "inspire", "corrode", "annihilate"]
 
 
 class Unit:
@@ -35,7 +33,7 @@ class Unit:
 	var equip_id: String
 	var strength: int
 	var timings: Array
-	var normal_skills: Dictionary
+	var base_skills: Dictionary
 	var special_skills: Dictionary
 	var done_pre_battle := false
 	var done_entering := false
@@ -48,12 +46,12 @@ class Unit:
 		var stats := CardDB.combine(card_id, equip_id)
 		strength = stats.strength
 		timings = stats.timings
-		normal_skills = stats.normal_skills
+		base_skills = stats.base_skills
 		special_skills = stats.special_skills
 
 	func describe() -> Dictionary:
 		return {"uid": uid, "card_id": card_id, "equip_id": equip_id, "strength": strength, "timings": timings,
-			"normal_skills": normal_skills.duplicate(), "special_skills": special_skills.duplicate()}
+			"base_skills": base_skills.duplicate(), "special_skills": special_skills.duplicate()}
 
 
 ## 双方队列：side -> [Unit]，第 0 个是交战位
@@ -91,7 +89,7 @@ func run() -> void:
 		main_phase()
 
 
-## 战前阶段：第 k 步取双方各自第 k 个未执行过的单位，有战前时机的执行普通技能，之后判死
+## 战前阶段：第 k 步取双方各自第 k 个未执行过的单位，有战前时机的执行基础技能，之后判死
 func pre_battle_phase() -> void:
 	while not check_winner():
 		var pair := []
@@ -141,7 +139,7 @@ func entering_step() -> bool:
 	return true
 
 
-## 交战：有交战时机的交战位执行普通技能；双方都活着则对撞，再结算反噬
+## 交战：有交战时机的交战位执行基础技能；双方都活着则对撞，再结算反噬
 func engage_step() -> void:
 	var fronts: Array = [fields[1][0], fields[2][0]]
 	var actors := fronts.filter(func(u): return "on_engage" in u.timings)
@@ -160,18 +158,18 @@ func engage_step() -> void:
 		events.append({"type": "backlash", "effects": backlash})
 
 
-## 一个时间节点：按拍结算这些单位的普通技能，每拍双方同时
+## 一个时间节点：按拍结算这些单位的基础技能，每拍双方同时；拍的顺序就是 CardDB.BASE_SKILLS
 func resolve_timing(actors: Array) -> void:
-	for skill in BEATS:
+	for skill in CardDB.BASE_SKILLS:
 		var effects := []
 		for u in actors:
-			if u.normal_skills.has(skill):
-				effects.append_array(apply_skill(u, skill, u.normal_skills[skill]))
+			if u.base_skills.has(skill):
+				effects.append_array(apply_skill(u, skill, u.base_skills[skill]))
 		if not effects.is_empty():
 			events.append({"type": "beat", "skill": skill, "effects": effects})
 
 
-## 结算一条普通技能，返回产生的效果
+## 结算一条基础技能，返回产生的效果
 func apply_skill(u: Unit, skill: String, value: int) -> Array:
 	var enemies: Array = fields[3 - u.side]
 	match skill:
@@ -180,7 +178,7 @@ func apply_skill(u: Unit, skill: String, value: int) -> Array:
 		"rally":
 			var total := 0
 			for partner in fields[u.side]:
-				total += partner.normal_skills.get("rally", 0)
+				total += partner.base_skills.get("rally", 0)
 			return [buff(u, u, total, skill)]
 		"inspire":
 			return fields[u.side].map(func(target): return buff(u, target, value, skill))
@@ -190,7 +188,7 @@ func apply_skill(u: Unit, skill: String, value: int) -> Array:
 			return [damage(enemies[0], value, skill)]
 		"annihilate":
 			return enemies.map(func(target): return damage(target, value, skill))
-	push_error("BattleSim：未知的普通技能 %s" % skill)
+	push_error("BattleSim：未知的基础技能 %s" % skill)
 	return []
 
 

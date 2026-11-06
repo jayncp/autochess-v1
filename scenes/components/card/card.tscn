@@ -229,7 +229,7 @@ vertical_alignment = 1
 autowrap_mode = 3
 clip_text = true
 
-[node name="all_normal_skill" type="Label" parent="."]
+[node name="all_base_skill" type="Label" parent="."]
 visible = false
 modulate = Color(0, 0, 0, 1)
 z_index = -1

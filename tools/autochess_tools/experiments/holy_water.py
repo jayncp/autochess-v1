@@ -20,9 +20,9 @@ BONUSES = range(5)
 
 
 def holy_water(bonus: int) -> Card:
-    card: Card = {"id": f"holy_water_{bonus}", "no": 0, "type": "equipment", "star": 2, "weapon_timing": "pre_battle"}
+    card: Card = {"id": f"holy_water_{bonus}", "no": 0, "type": "equipment", "star": 2, "timing_2": "pre_battle"}
     if bonus:
-        card["weapon_strength"] = bonus
+        card["strength"] = bonus
     return card
 
 
@@ -32,8 +32,8 @@ OLD_HOLY_WATER: Card = {
     "no": 0,
     "type": "equipment",
     "star": 2,
-    "weapon_timing": "pre_battle",
-    "weapon_skills": {"inspire": 1},
+    "timing_2": "pre_battle",
+    "skills_2": {"inspire": 1},
 }
 VARIANTS = [holy_water(b) for b in BONUSES] + [OLD_HOLY_WATER]
 LABELS = {f"holy_water_{b}": f"圣水 +{b}" for b in BONUSES} | {"holy_water_old": "旧版圣水（振奋1）"}
