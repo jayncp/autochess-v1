@@ -68,7 +68,8 @@
 | 11-02 | Python 工具与 Godot 同仓库：Python 放 `tools/`（带 `.gdignore`，用 uv 管理），GDScript 无头命令放 `cli/`；`.venv`、实验输出、模型权重不进 git（默认） |
 | 11-02 | **游戏数据用 JSON**（`data/`），翻译用 CSV（`i18n/`），暂不引入数据库。以后存档放 `user://`（JSON 或 ConfigFile），大规模模拟记录由 `tools/` 的 Python 处理（默认） |
 | 11-02 | **开发流程**：首次提交之后，阶段性开发任务走 issue + PR；小修改直接提交到 main |
-| 11-02 | **测试原则**：精简、有代表性，避免冗余；随规则、数据、卡牌的改动同步维护。GitHub Actions 在推送和 PR 时自动运行 |
+| 11-02 | **测试原则**：精简、有代表性，避免冗余；随规则、数据、卡牌的改动同步维护。提交和合并前在本地跑 `just test`、`just tools-check` |
+| 11-06 | **GitHub Actions 暂停**（产生了费用）：工作流 `test.yml` 保留但已停用，需要时用 `gh workflow enable test.yml` 恢复 |
 
 ## 平台与 UI
 

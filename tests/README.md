@@ -10,7 +10,7 @@
 | `just levels` | 枚举两个关卡的全部摆法，打印解，并把解写入 level 组，之后运行 `just record` |
 
 - Godot 路径默认是 `/Applications/Godot.app/Contents/MacOS/Godot`，可以用环境变量 `GODOT` 覆盖。
-- CI（`.github/workflows/test.yml`）在推送到 main 和提交 PR 时运行 `just test`。
+- CI（`.github/workflows/test.yml`）目前已停用（见 `docs/decisions.md` 11-06），提交和合并前在本地运行 `just test`。
 ## 测试项（`run_tests.gd`）
 
 | 测试 | 内容 |
