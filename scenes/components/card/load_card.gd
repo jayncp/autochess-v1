@@ -151,7 +151,7 @@ static func base_skill_text(skills):
 	return _skill_text(skills, _t("ui.card.separator"))
 
 
-## 特殊技能的显示文字，如"坚固4；致命"
+## 特殊技能的显示文字，如"坚固4；致命"；带时机的写成"战前：唤醒"，描述型的写整句
 static func special_skill_text(skills):
 	return _skill_text(skills, _t("ui.card.special_separator"))
 
@@ -166,9 +166,16 @@ static func _skill_text(skills, separator: String):
 		return _t("ui.common.none")
 	var parts := []
 	for skill in CardDB.sorted_skills(skills):
-		var value = skills[skill]
-		parts.append(_t("keyword." + skill) + (str(value) if value != null else ""))
+		parts.append(_one_skill_text(skill, skills[skill]))
 	return separator.join(parts)
+
+
+static func _one_skill_text(skill: String, value) -> String:
+	if skill in CardDB.DESCRIPTIVE_SPECIALS:
+		return _t("effect." + skill) % value
+	if value is Dictionary:
+		return _t("ui.card.timed_special") % [_t("timing." + value.timing), _t("keyword." + skill)]
+	return _t("keyword." + skill) + (str(value) if value != null else "")
 
 
 static func _t(key: String) -> String:

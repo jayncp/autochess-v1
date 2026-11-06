@@ -5,6 +5,7 @@ ui.common.none,无
 ui.card.clear,空
 ui.card.separator,、
 ui.card.special_separator,；
+ui.card.timed_special,%s：%s
 ui.menu.title,牛马自走棋
 ui.menu.sandbox,科研模式
 ui.menu.levels,闯关模式

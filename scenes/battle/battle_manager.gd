@@ -126,7 +126,7 @@ func show_winner():
 ##### 播放 #####
 #==============================================
 
-## 按事件逐步播放；每一步（战前一步、入场、交战）包含它后面的拍、对撞和反噬
+## 按事件逐步播放；每一步（战前一步、入场、交战）包含它后面的特殊技能、拍、对撞和反噬
 func play_events() -> void:
 	var events: Array = _result.events
 	var no_death_engages := 0
@@ -137,7 +137,7 @@ func play_events() -> void:
 		var e: Dictionary = events[i]
 		var step := [e]
 		i += 1
-		while i < events.size() and events[i].type in ["beat", "clash", "backlash"]:
+		while i < events.size() and events[i].type in ["special", "beat", "clash", "backlash"]:
 			step.append(events[i])
 			i += 1
 		match e.type:
@@ -172,7 +172,7 @@ func play_events() -> void:
 				break
 
 
-## 一步：上前 → 放技能（时机蓝字）→ 逐拍 → 对撞 → 反噬 → 收回
+## 一步：上前 → 放技能（时机蓝字）→ 特殊技能 → 逐拍 → 对撞 → 反噬 → 收回
 func play_step(units: Array, actors: Array, timing: String, step: Array) -> void:
 	var unit_cards := units.map(func(uid): return _cards[uid])
 	var actor_cards := actors.map(func(uid): return _cards[uid])
@@ -191,6 +191,8 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 		if have_been_skipped:
 			return
 		match e.type:
+			"special":
+				await play_special(e)
 			"beat":
 				await play_effects(e.effects, e.skill)
 				await wait(BEAT_TIME)
@@ -228,13 +230,26 @@ func play_clash(e: Dictionary, unit_cards: Array) -> void:
 	await wait(0.2)
 
 
-## 同时显示一组效果：增益绿字、伤害红字（交战伤害不显示数字），坚固、庇护随后显示绿字
+## 特殊技能阶段：唤醒在发动者和被唤醒者身上都显示蓝字，被唤醒者的技能随后在各拍里结算
+func play_special(e: Dictionary) -> void:
+	for f in e.effects:
+		buff_text_effect(_cards[f.source], tr("keyword." + e.skill), "blue")
+		buff_text_effect(_cards[f.unit], tr("keyword." + e.skill), "blue")
+	await wait(BEAT_TIME)
+
+
+## 同时显示一组效果：增益绿字、财富黄字、伤害红字（交战伤害不显示数字），坚固、庇护随后显示绿字。
+## 描述型特殊技能带来的增益（如队长）用这一拍的技能名
 func play_effects(effects: Array, skill: String) -> void:
 	var defenses := []
 	for f in effects:
 		var card = _cards[f.unit]
 		if f.kind == "buff":
-			buff_text_effect(card, tr("keyword." + skill) + " + " + str(f.amount), "green")
+			var shown: String = skill if f.skill in CardDB.DESCRIPTIVE_SPECIALS else f.skill
+			buff_text_effect(card, tr("keyword." + shown) + " + " + str(f.amount), "green")
+		elif f.kind == "wealth":
+			buff_text_effect(card, tr("keyword.wealth") + " + " + str(f.amount), "yellow")
+			continue
 		else:
 			if f.source != "clash":
 				buff_text_effect(card, tr("keyword." + f.source) + " - " + str(f.amount), "red")

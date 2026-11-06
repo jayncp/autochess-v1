@@ -6,20 +6,23 @@ extends RefCounted
 ##
 ## 事件日志（单位用"座位-初始序号"标识，如 "1-0"）：
 ## - start：version，p1/p2 为双方单位的初始属性（uid、card_id、equip_id、strength、timings、base_skills、special_skills）
-## - pre_battle：units 为战前这一步的双方单位（没有则为 ""），actors 为其中执行战前技能的单位
+## - pre_battle：units 为战前这一步的双方单位（没有则为 ""），actors 为其中在战前触发的单位
 ## - enter：units 为执行入场的交战位
-## - engage：units 为双方交战位，actors 为其中有交战时机的单位
+## - engage：units 为双方交战位，actors 为其中在交战时触发的单位
+##   （"触发"指时机是它，或者带这个时机的特殊技能）
+## - special：特殊技能阶段。skill 为技能，effects 为效果
 ## - beat：一拍。skill 为技能，effects 为这一拍的全部效果
 ## - clash：attacks 为双方攻击值（致命为 LETHAL_ATTACK），effects 为双方受到的伤害
 ## - backlash：effects 为反噬伤害
 ## - death：units 为阵亡单位
 ## - end：winner（1/2 = 该方胜，3 = 平局），reason（wipe = 全灭，no_death = 连续无人阵亡）
 ## 效果：buff {source, unit, skill, amount, strength}；
-##       damage {unit, source（clash/corrode/annihilate/backlash）, amount, sturdy, shelter, dealt, strength}。
+##       damage {unit, source（clash/corrode/annihilate/backlash）, amount, sturdy, shelter, dealt, strength}；
+##       wealth {source, unit, amount}（只做特效，不改战力）；awaken {source, unit}（unit 是被唤醒的单位）。
 ##       strength 是结算后的战力。
 
 ## 事件日志的版本，规则或事件格式变化时加一，供以后的重播判断版本是否一致
-const VERSION := 2
+const VERSION := 3
 ## 致命的攻击值
 const LETHAL_ATTACK := 10000
 ## 平局：连续多少次交战无人阵亡
@@ -35,6 +38,8 @@ class Unit:
 	var timings: Array
 	var base_skills: Dictionary
 	var special_skills: Dictionary
+	## 在哪些时机触发：自己的时机，加上带时机的特殊技能的时机
+	var acting_timings: Array
 	var done_pre_battle := false
 	var done_entering := false
 
@@ -48,6 +53,13 @@ class Unit:
 		timings = stats.timings
 		base_skills = stats.base_skills
 		special_skills = stats.special_skills
+		acting_timings = timings.duplicate()
+		for skill in special_skills:
+			if special_skills[skill] is Dictionary:
+				acting_timings.append(special_skills[skill].timing)
+
+	func acts_at(timing: String) -> bool:
+		return timing in acting_timings
 
 	func describe() -> Dictionary:
 		return {"uid": uid, "card_id": card_id, "equip_id": equip_id, "strength": strength, "timings": timings,
@@ -89,7 +101,7 @@ func run() -> void:
 		main_phase()
 
 
-## 战前阶段：第 k 步取双方各自第 k 个未执行过的单位，有战前时机的执行基础技能，之后判死
+## 战前阶段：第 k 步取双方各自第 k 个未执行过的单位，在战前触发的按 resolve_timing 结算，之后判死
 func pre_battle_phase() -> void:
 	while not check_winner():
 		var pair := []
@@ -103,10 +115,10 @@ func pre_battle_phase() -> void:
 			pair.append(unit)
 		if pair[0] == null and pair[1] == null:
 			return
-		var actors := pair.filter(func(u): return u != null and "pre_battle" in u.timings)
+		var actors := pair.filter(func(u): return u != null and u.acts_at("pre_battle"))
 		events.append({"type": "pre_battle", "units": pair.map(func(u): return u.uid if u else ""),
 			"actors": actors.map(func(u): return u.uid)})
-		resolve_timing(actors)
+		resolve_timing(actors, "pre_battle")
 		settle_death()
 
 
@@ -124,27 +136,27 @@ func main_phase() -> void:
 			_no_death_engages += 1
 
 
-## 双方交战位里有入场时机、还没入场的单位执行入场；都没有则返回 false
+## 双方交战位里在入场时触发、还没入场的单位执行入场；都没有则返回 false
 func entering_step() -> bool:
 	var actors := []
 	for side in [1, 2]:
 		var front: Unit = fields[side][0]
-		if "on_enter" in front.timings and not front.done_entering:
+		if front.acts_at("on_enter") and not front.done_entering:
 			front.done_entering = true
 			actors.append(front)
 	if actors.is_empty():
 		return false
 	events.append({"type": "enter", "units": actors.map(func(u): return u.uid)})
-	resolve_timing(actors)
+	resolve_timing(actors, "on_enter")
 	return true
 
 
-## 交战：有交战时机的交战位执行基础技能；双方都活着则对撞，再结算反噬
+## 交战：在交战时触发的交战位按 resolve_timing 结算；双方都活着则对撞，再结算反噬
 func engage_step() -> void:
 	var fronts: Array = [fields[1][0], fields[2][0]]
-	var actors := fronts.filter(func(u): return "on_engage" in u.timings)
+	var actors := fronts.filter(func(u): return u.acts_at("on_engage"))
 	events.append({"type": "engage", "units": fronts.map(func(u): return u.uid), "actors": actors.map(func(u): return u.uid)})
-	resolve_timing(actors)
+	resolve_timing(actors, "on_engage")
 	if fronts[0].strength <= 0 or fronts[1].strength <= 0:
 		return
 	var attacks := fronts.map(func(u): return LETHAL_ATTACK if u.special_skills.has("lethal") else u.strength)
@@ -158,15 +170,42 @@ func engage_step() -> void:
 		events.append({"type": "backlash", "effects": backlash})
 
 
-## 一个时间节点：按拍结算这些单位的基础技能，每拍双方同时；拍的顺序就是 CardDB.BASE_SKILLS
-func resolve_timing(actors: Array) -> void:
+## 一个时间节点：先特殊技能阶段，再按拍结算基础技能，每拍双方同时；拍的顺序就是 CardDB.BASE_SKILLS。
+## 触发基础技能的是时机为 timing 的单位，加上被唤醒的单位（排在后面，同一方按位置从前往后）
+func resolve_timing(actors: Array, timing: String) -> void:
+	var triggered := actors.filter(func(u): return timing in u.timings)
+	triggered.append_array(special_phase(actors, timing))
 	for skill in CardDB.BASE_SKILLS:
 		var effects := []
-		for u in actors:
+		for u in triggered:
 			if u.base_skills.has(skill):
 				effects.append_array(apply_skill(u, skill, u.base_skills[skill]))
 		if not effects.is_empty():
 			events.append({"type": "beat", "skill": skill, "effects": effects})
+
+
+## 特殊技能阶段：带这个时机的特殊技能，双方同时触发。现在只有唤醒：返回被唤醒的单位。
+## 唤醒不造成伤害，所以之后不用判死
+func special_phase(actors: Array, timing: String) -> Array:
+	var woken := []
+	var effects := []
+	for u in actors:
+		var awaken = u.special_skills.get("awaken")
+		if awaken is Dictionary and awaken.timing == timing:
+			var next = next_unit(u)
+			if next:
+				woken.append(next)
+				effects.append({"kind": "awaken", "source": u.uid, "unit": next.uid})
+	if not effects.is_empty():
+		events.append({"type": "special", "skill": "awaken", "effects": effects})
+	return woken
+
+
+## 队列里紧挨在后面的己方单位，没有则返回 null
+func next_unit(u: Unit) -> Unit:
+	var line: Array = fields[u.side]
+	var i := line.find(u)
+	return line[i + 1] if i + 1 < line.size() else null
 
 
 ## 结算一条基础技能，返回产生的效果
@@ -179,15 +218,29 @@ func apply_skill(u: Unit, skill: String, value: int) -> Array:
 			var total := 0
 			for partner in fields[u.side]:
 				total += partner.base_skills.get("rally", 0)
-			return [buff(u, u, total, skill)]
+			var effects := [buff(u, u, total, skill)]
+			# 队长：己方角色触发集结时，自身战斗力 +N
+			for partner in fields[u.side]:
+				if partner.special_skills.has("rally_gain"):
+					effects.append(buff(partner, partner, partner.special_skills.rally_gain, "rally_gain"))
+			return effects
+		"support":
+			var next := next_unit(u)
+			return [buff(u, next, value, skill)] if next else []
 		"inspire":
 			return fields[u.side].map(func(target): return buff(u, target, value, skill))
 		"corrode":
 			if enemies.is_empty():
 				return []
-			return [damage(enemies[0], value, skill)]
+			# 蟾蜍：己方角色触发腐蚀时，腐蚀值 +N（加完再进伤害流程）
+			var boost := 0
+			for partner in fields[u.side]:
+				boost += partner.special_skills.get("corrode_boost", 0)
+			return [damage(enemies[0], value + boost, skill)]
 		"annihilate":
 			return enemies.map(func(target): return damage(target, value, skill))
+		"wealth":
+			return [{"kind": "wealth", "source": u.uid, "unit": u.uid, "amount": value}]
 	push_error("BattleSim：未知的基础技能 %s" % skill)
 	return []
 

@@ -32,26 +32,35 @@ race.human,人族
 race.elf,精灵
 race.divine,神族
 race.nature,自然
+race.treasure,财宝
 timing.pre_battle,战前
 timing.on_enter,入场
 timing.on_engage,交战
 keyword.rage,狂暴
 keyword.rally,集结
+keyword.support,支援
 keyword.inspire,振奋
 keyword.corrode,腐蚀
 keyword.annihilate,湮灭
+keyword.wealth,财富
 keyword.backlash,反噬
 keyword.sturdy,坚固
+keyword.awaken,唤醒
 keyword.shelter,庇护
 keyword.lethal,致命
 keyword_desc.rage,自身战斗力 +N
 keyword_desc.rally,自身战斗力 + 己方全体的集结值之和（没有时机的也算）
+keyword_desc.support,下一位角色战斗力 +N
 keyword_desc.inspire,己方全体战斗力 +N
 keyword_desc.corrode,对方交战位受到 N 点伤害
 keyword_desc.annihilate,对方全体各受到 N 点伤害
+keyword_desc.wealth,获得 N 金币（现在只有特效）
 keyword_desc.backlash,每次交战后，自身受到 N 点伤害
 keyword_desc.sturdy,每次受到的伤害 −N（最低为 0，优先于庇护）
+keyword_desc.awaken,触发下一位角色的基础技能
 keyword_desc.shelter,抵挡一次伤害
 keyword_desc.lethal,交战时攻击视为无穷大，可被庇护抵挡
+effect.rally_gain,己方角色触发集结时，自身战斗力 +%d
+effect.corrode_boost,己方角色触发腐蚀时，腐蚀值 +%d
 level.boar_rush,猪突猛进
 level.tiger_gale,虎虎生风

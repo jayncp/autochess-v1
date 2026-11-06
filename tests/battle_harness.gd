@@ -39,6 +39,8 @@ static func check_events(result: Dictionary) -> String:
 			alive[side].append(u.uid)
 	for e in events:
 		for f in e.get("effects", []):
+			if f.kind not in ["buff", "damage"]:
+				continue  # 唤醒、财富不改战力
 			strength[f.unit] += f.amount if f.kind == "buff" else -f.dealt
 			if strength[f.unit] != f.strength:
 				return "%s 的战力推演为 %d，事件记录为 %d" % [f.unit, strength[f.unit], f.strength]

@@ -22,7 +22,7 @@ class Card(TypedDict):
     timing_2: NotRequired[str]
     skills_1: NotRequired[dict[str, int | None] | str]
     skills_2: NotRequired[dict[str, int | None] | str]
-    special_skills: NotRequired[dict[str, int | None] | str]
+    special_skills: NotRequired[dict[str, int | dict[str, str] | None] | str]
 
 
 @cache
