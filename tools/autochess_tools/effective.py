@@ -39,8 +39,8 @@ def vanilla_character(strength: int) -> Card:
     return {"id": f"vanilla_{strength}", "no": 0, "type": "character", "star": 0, "races": [], "strength": strength}
 
 
-def vanilla_weapon(strength: int) -> Card:
-    return {"id": f"sword_{strength}", "no": 0, "type": "equipment", "star": 0, "weapon_strength": strength}
+def vanilla_sword(strength: int) -> Card:
+    return {"id": f"sword_{strength}", "no": 0, "type": "equipment", "star": 0, "strength": strength}
 
 
 def with_character(card_id: str) -> Callable[[Sample], Lineup]:
@@ -104,9 +104,9 @@ def equipment_values(
     equipment: Sequence[str], battles: Sequence[Sample], max_strength: int, extra_cards: Sequence[Card] = ()
 ) -> dict[str, Estimate]:
     """装备的有效战力：给同一个角色装上它，相当于装上多大战力的白板武器。"""
-    swords = [vanilla_weapon(k) for k in range(1, max_strength + 1)]
+    swords = [vanilla_sword(k) for k in range(1, max_strength + 1)]
     subjects = {e: with_equipment(e) for e in equipment}
     subjects |= {"": with_equipment("")} | {s["id"]: with_equipment(s["id"]) for s in swords}
     scores = average_scores(subjects, battles, [*swords, *extra_cards])
-    curve = [(0, scores[""])] + [(s["weapon_strength"], scores[s["id"]]) for s in swords]
+    curve = [(0, scores[""])] + [(s["strength"], scores[s["id"]]) for s in swords]
     return {e: interpolate(curve, scores[e]) for e in equipment}

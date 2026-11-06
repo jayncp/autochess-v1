@@ -74,12 +74,13 @@ func matches_filter_string(data: Dictionary) -> bool:
 	var names := [tr("card." + data.id)]
 	for race in data.get("races", []):
 		names.append(tr("race." + race))
-	for field in ["timing", "weapon_timing"]:
-		if data.has(field):
-			names.append(tr("timing." + data[field]))
-	for field in ["skills", "weapon_skills", "special_skills"]:
-		for skill in data.get(field, {}):
-			names.append(tr("keyword." + skill))
+	for slot in CardDB.TIMING_SLOTS:
+		if data.get(slot, CardDB.CLEAR) != CardDB.CLEAR:
+			names.append(tr("timing." + data[slot]))
+	for slot in CardDB.SKILL_SLOTS + ["special_skills"]:
+		if data.get(slot) is Dictionary:
+			for skill in data[slot]:
+				names.append(tr("keyword." + skill))
 	return names.any(func(n): return filter_string in n)
 
 func _on_last_page_button_pressed() -> void:

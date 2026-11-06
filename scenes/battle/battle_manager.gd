@@ -60,12 +60,12 @@ func load_player_deck():
 			var u: Dictionary = units[n]
 			var new_card = load_card.generate(u.card_id, u.equip_id)
 			new_card.position = player_slots[side][n].position
-			# 整合技能UI：合并后的时机和普通技能
-			new_card.get_node("all_time").text = load_card.timing_name(u.timings)
-			new_card.get_node("all_normal_skill").text = load_card.generate_skill_string(u.normal_skills)
+			# 整合技能UI：合并后的时机和基础技能
+			load_card.update_attribute_display(new_card, "all_time", load_card.timing_name(u.timings))
+			load_card.update_attribute_display(new_card, "all_base_skill", load_card.base_skill_text(u.base_skills))
 			new_card.get_node("card_skill_UI").modulate.a = 255
 			new_card.get_node("all_time").visible = true
-			new_card.get_node("all_normal_skill").visible = true
+			new_card.get_node("all_base_skill").visible = true
 			# 实时状态只显示红色的当前战力，隐藏黑色的装备战力，避免误解
 			new_card.get_node("strength_2").visible = false
 			$"../card_manager".add_child(new_card)
@@ -260,7 +260,7 @@ func apply_effect(f: Dictionary) -> void:
 	card.get_node("strength_1").text = str(f.strength)
 	if f.kind == "damage" and f.shelter:
 		_specials[f.unit].erase("shelter")
-		load_card.update_attribute_display(card, "skill_3", load_card.generate_skill_string(_specials[f.unit]))
+		load_card.update_attribute_display(card, "skill_3", load_card.special_skill_text(_specials[f.unit]))
 
 
 ## 阵亡：淡出并移出（P1 向上、P2 向下），之后后排补位
@@ -315,7 +315,7 @@ func show_final_state() -> void:
 		card.strength = _result["p%d" % side][n]
 		card.get_node("strength_1").text = str(card.strength)
 		if sheltered.has(uid):
-			load_card.update_attribute_display(card, "skill_3", load_card.generate_skill_string(_specials[uid]))
+			load_card.update_attribute_display(card, "skill_3", load_card.special_skill_text(_specials[uid]))
 		card.position = player_slots[side][n].position
 		card.scale = Vector2.ONE
 		card.modulate.a = 1

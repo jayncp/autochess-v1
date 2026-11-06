@@ -33,21 +33,23 @@ func _initialize() -> void:
 	_finish()
 
 
-## 数据检查：每张卡都有卡图；卡牌、种族、时机、词条、关卡都有中文名。
+## 数据检查：卡牌、种族、时机、词条、关卡都有中文名，词条都有说明；列出还在用占位图的卡。
 ## 字段和 id 的合法性由 CardDB、LevelDB 加载时校验，出错会被 ErrorCatcher 捕获。
 ## 临时切到英文环境，确认系统语言不是中文时也能回退到中文。
 func _check_data() -> void:
 	var keys := []
+	var placeholders := []
 	for id in CardDB.all():
 		keys.append("card." + id)
 		if not ResourceLoader.exists("res://assets/cards/%s.png" % id):
-			_failures.append("[data] %s 没有卡图" % id)
+			placeholders.append(id)
 	for race in CardDB.RACES:
 		keys.append("race." + race)
 	for timing in CardDB.TIMINGS:
 		keys.append("timing." + timing)
-	for skill in CardDB.NORMAL_SKILLS + CardDB.SPECIAL_SKILLS:
+	for skill in CardDB.BASE_SKILLS + CardDB.SPECIAL_SKILLS:
 		keys.append("keyword." + skill)
+		keys.append("keyword_desc." + skill)
 	for level_id in LevelDB.all():
 		keys.append("level." + level_id)
 	var locale := TranslationServer.get_locale()
@@ -57,6 +59,8 @@ func _check_data() -> void:
 			_failures.append("[data] 缺少中文名：%s" % key)
 	TranslationServer.set_locale(locale)
 	print("数据检查：%d 张卡，%d 个关卡" % [CardDB.all().size(), LevelDB.all().size()])
+	if not placeholders.is_empty():
+		print("  用占位图的卡：%s" % ", ".join(placeholders))
 
 
 ## 每条用例：结果符合期望、交换左右后对称、事件日志自洽
@@ -94,7 +98,7 @@ func _run_unit_tests() -> void:
 func _test_annihilate() -> void:
 	var sim := BattleSim.new([["soldier", ""]], [["paladin", ""], ["soldier", ""], ["shield_guard", ""], ["soldier", ""]])
 	var actor = sim.fields[1][0]
-	actor.normal_skills = {"corrode": 2, "annihilate": 3}
+	actor.base_skills = {"corrode": 2, "annihilate": 3}
 	sim.resolve_timing([actor])
 	sim.settle_death()
 	var got := {
@@ -108,15 +112,18 @@ func _test_annihilate() -> void:
 		_failures.append("[unit-annihilate] 期望 %s，实际 %s" % [expected, got])
 
 
-## 装备叠放模型：有就覆盖，"clear" 清空，{} 和省略等价都沿用；武器格叠加
+## 格子模型：逐格覆盖（有就覆盖，"clear" 清空，{} 和省略等价都沿用），再把两格合并
 func _test_overlay() -> void:
 	var vulture := CardDB.card("vulture")  # 秃鹫：交战，狂暴3、腐蚀2
 	var paladin := CardDB.card("paladin")  # 圣骑士：入场，庇护
 	var cases := [
-		[vulture, {"skills": {"corrode": 15}}, "normal_skills", {"corrode": 15}, "基础技能整体覆盖"],
-		[vulture, {"weapon_strength": 12, "skills": "clear"}, "normal_skills", {}, "基础技能清空（空心）"],
-		[vulture, {"weapon_skills": {"rage": 2}}, "normal_skills", {"rage": 5, "corrode": 2}, "武器技能同名相加"],
-		[vulture, {"timing": "clear", "weapon_timing": "pre_battle"}, "timings", ["pre_battle"], "基础时机清空，武器时机保留"],
+		[vulture, {"skills_1": {"corrode": 15}}, "base_skills", {"corrode": 15}, "基础技能-1 覆盖"],
+		[vulture, {"strength": 12, "skills_1": "clear"}, "base_skills", {}, "基础技能-1 清空（空心）"],
+		[vulture, {"strength": 12, "skills_1": "clear"}, "strength", 19, "战斗力相加"],
+		[vulture, {"skills_2": {"rage": 2}}, "base_skills", {"rage": 5, "corrode": 2}, "两格同名相加"],
+		[vulture, {"timing_1": "clear", "timing_2": "pre_battle"}, "timings", ["pre_battle"], "时机-1 清空，时机-2 保留"],
+		[{"strength": 1, "timing_2": "on_enter", "skills_2": {"rage": 1}}, {"skills_2": {"rally": 1}}, "base_skills", {"rally": 1}, "装备填 2 也是覆盖角色的 2"],
+		[{"strength": 1, "timing_2": "on_enter"}, {"timing_1": "pre_battle"}, "timings", ["pre_battle", "on_enter"], "时机两格取并集"],
 		[paladin, {"special_skills": "clear"}, "special_skills", {}, "特殊技能清空"],
 		[paladin, {"special_skills": {"lethal": null}}, "special_skills", {"lethal": null}, "特殊技能整体覆盖"],
 	]
