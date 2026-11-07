@@ -5,7 +5,7 @@
 
 ## 现状
 
-- 阶段：阶段 3（卡牌补全）第一轮进行中：1★/2★ 打底，顺序是 规范 → 机制 → 新卡，计划见 `docs/plans/stage-3-cards.md`（issue #10）。设计稿在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 阶段：阶段 3（卡牌补全）第一轮收尾：1★/2★ 共 27 张角色、19 件装备已录入（新卡用占位图），计划见 `docs/plans/stage-3-cards.md`（issue #10）。之后先停下，和用户一起规划卡图、UI、强度测试。设计稿在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
 - 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关）、图鉴、战斗演出（速度/跳过）。冒险、线下对战未实现。
 - 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并和各种显示顺序在 `CardDB`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。
 - 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
