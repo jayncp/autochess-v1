@@ -6,7 +6,7 @@
 - 游戏只有"战斗力"一个数值，既是攻击也是生命。
 - 战斗没有随机，胜负取决于构筑和站位。
 
-项目目前处于重启整理阶段。
+项目重启后持续开发中：战斗核心和 1★/2★ 卡牌已完成（新卡暂用占位图），下一步是 UI 美化。
 
 ## 现状
 
@@ -26,6 +26,8 @@
 godot --path .
 ```
 
+装了 [just](https://github.com/casey/just) 的话：`just run` 运行，`just test` 跑测试（说明见 [tests/README.md](tests/README.md)）。
+
 ## 协议
 
 | 内容 | 协议 |
@@ -35,6 +37,6 @@ godot --path .
 | 字体 Noto Sans SC（`assets/fonts/NotoSansSC-Regular.ttf`） | [SIL OFL 1.1](assets/fonts/OFL.txt)，© Adobe |
 
 - 卡牌与关卡数据在 `data/`，翻译表在 `i18n/`，都按数据适用 CC BY-SA 4.0。
-- 卡图和背景由 AI 辅助生成，并经过人工处理。
+- 卡图和背景由 AI 辅助生成，并经过人工处理；还没有卡图的卡暂用占位图。
 
 Copyright © 2025–2026 jayncp
