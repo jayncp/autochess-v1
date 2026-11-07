@@ -11,7 +11,7 @@ extends RefCounted
 ## - engage：units 为双方交战位，actors 为其中在交战时触发的单位
 ##   （"触发"指时机是它，或者带这个时机的特殊技能）
 ## - special：特殊技能阶段。skill 为技能，effects 为效果
-## - beat：一拍。skill 为技能，effects 为这一拍的全部效果
+## - beat：一拍。skill 为技能，effects 为这一拍的全部效果；woken 为真表示是被唤醒那一组的拍
 ## - clash：attacks 为双方攻击值（致命为 LETHAL_ATTACK），effects 为双方受到的伤害
 ## - backlash：effects 为反噬伤害
 ## - death：units 为阵亡单位
@@ -170,22 +170,30 @@ func engage_step() -> void:
 		events.append({"type": "backlash", "effects": backlash})
 
 
-## 一个时间节点：先特殊技能阶段，再按拍结算基础技能，每拍双方同时；拍的顺序就是 CardDB.BASE_SKILLS。
-## 触发基础技能的是时机为 timing 的单位，加上被唤醒的单位（排在后面，同一方按位置从前往后）
+## 一个时间节点（docs/design/battle-rules.md 2.1），从上到下：
+## 特殊技能阶段 → 被唤醒的单位结算基础技能 → 原本在这个时机触发的单位结算基础技能。
+## 每组都按拍结算，每拍双方同时，拍的顺序就是 CardDB.BASE_SKILLS。中途不判死
 func resolve_timing(actors: Array, timing: String) -> void:
-	var triggered := actors.filter(func(u): return timing in u.timings)
-	triggered.append_array(special_phase(actors, timing))
+	resolve_beats(special_phase(actors, timing), true)
+	resolve_beats(actors.filter(func(u): return timing in u.timings), false)
+
+
+## 一组单位按拍结算基础技能；woken 标记被唤醒的那一组，回放据此让它们出列
+func resolve_beats(units: Array, woken: bool) -> void:
 	for skill in CardDB.BASE_SKILLS:
 		var effects := []
-		for u in triggered:
+		for u in units:
 			if u.base_skills.has(skill):
 				effects.append_array(apply_skill(u, skill, u.base_skills[skill]))
-		if not effects.is_empty():
-			events.append({"type": "beat", "skill": skill, "effects": effects})
+		if effects.is_empty():
+			continue
+		var beat := {"type": "beat", "skill": skill, "effects": effects}
+		if woken:
+			beat.woken = true
+		events.append(beat)
 
 
-## 特殊技能阶段：带这个时机的特殊技能，双方同时触发。现在只有唤醒：返回被唤醒的单位。
-## 唤醒不造成伤害，所以之后不用判死
+## 特殊技能阶段：带这个时机的特殊技能，双方同时触发。现在只有唤醒：返回被唤醒的单位
 func special_phase(actors: Array, timing: String) -> Array:
 	var woken := []
 	var effects := []

@@ -168,6 +168,8 @@ func _test_mechanics() -> void:
 			[[8, 8, 25], [6]]],
 		["唤醒：时机属于特殊技能，装在交战角色身上也只在战前", [["tiger", "test_awaken_equip"], ["fey_tiger", ""]], [["pixie", ""]], "pre_battle",
 			[[4, 25], [6]]],
+		["唤醒：被唤醒的先出手，蟾蜍的 7 被庇护挡下，树精的 12 打中", [["dryad", "test_awaken_equip"], ["test_corrode_boost", ""]], [["paladin", ""]],
+			"pre_battle", [[5, 6], []]],
 		["唤醒：被唤醒的腐蚀也吃蟾蜍加成", [["test_awaken", ""], ["test_corrode_boost", ""]], [["pixie", ""]], "all",
 			{"winner": 1, "p1": [8, 6], "p2": []}],
 		["队长：队友触发集结时 +2", [["soldier", ""], ["tiger_man", ""], ["test_rally_gain", ""]], [["pixie", ""]], "enter", [[7, 9, 10], [6]]],

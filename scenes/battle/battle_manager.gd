@@ -172,7 +172,7 @@ func play_events() -> void:
 				break
 
 
-## 一步：上前 → 放技能（时机蓝字）→ 特殊技能 → 逐拍 → 对撞 → 反噬 → 收回
+## 一步：上前 → 出列（时机蓝字）→ 特殊技能（被唤醒的出列、出手、收回）→ 原本的逐拍 → 对撞 → 反噬 → 收回
 func play_step(units: Array, actors: Array, timing: String, step: Array) -> void:
 	var unit_cards := units.map(func(uid): return _cards[uid])
 	var actor_cards := actors.map(func(uid): return _cards[uid])
@@ -187,12 +187,16 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 			for card in actor_cards:
 				buff_text_effect(card, load_card.timing_name(timing), "blue")
 			await wait(TRIGGER_TEXT_TIME)
+	var woken_cards := []
 	for e in step:
 		if have_been_skipped:
 			return
+		if not woken_cards.is_empty() and not e.get("woken", false):
+			await retract(woken_cards)
+			woken_cards = []
 		match e.type:
 			"special":
-				await play_special(e)
+				woken_cards = await play_special(e)
 			"beat":
 				await play_effects(e.effects, e.skill)
 				await wait(BEAT_TIME)
@@ -205,6 +209,8 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 			"backlash":
 				await play_effects(e.effects, "backlash")
 				await wait(TRIGGER_TEXT_TIME)
+	if not woken_cards.is_empty():
+		await retract(woken_cards)
 	if not actor_cards.is_empty():
 		animate_cards(actor_cards, -40, 1.1)
 		await wait(ACT_DOWN_TIME)
@@ -230,12 +236,21 @@ func play_clash(e: Dictionary, unit_cards: Array) -> void:
 	await wait(0.2)
 
 
-## 特殊技能阶段：唤醒在发动者和被唤醒者身上都显示蓝字，被唤醒者的技能随后在各拍里结算
-func play_special(e: Dictionary) -> void:
+## 特殊技能阶段：发动者显示唤醒蓝字，被唤醒的出列；返回出列的卡，它们的拍播完后收回
+func play_special(e: Dictionary) -> Array:
 	for f in e.effects:
 		buff_text_effect(_cards[f.source], tr("keyword." + e.skill), "blue")
-		buff_text_effect(_cards[f.unit], tr("keyword." + e.skill), "blue")
-	await wait(BEAT_TIME)
+	await wait(TRIGGER_TEXT_TIME)
+	var woken: Array = e.effects.map(func(f): return _cards[f.unit])
+	animate_cards(woken, 40, 1.2)
+	await wait(ACT_TIME)
+	return woken
+
+
+## 被唤醒的卡收回原位
+func retract(cards: Array) -> void:
+	animate_cards(cards, -40, 1.0)
+	await wait(ACT_DOWN_TIME)
 
 
 ## 同时显示一组效果：增益绿字、财富黄字、伤害红字（交战伤害不显示数字），坚固、庇护随后显示绿字。
