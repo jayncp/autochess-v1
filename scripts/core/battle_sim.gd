@@ -17,7 +17,7 @@ extends RefCounted
 ## - death：units 为阵亡单位
 ## - end：winner（1/2 = 该方胜，3 = 平局），reason（wipe = 全灭，no_death = 连续无人阵亡）
 ## 效果：buff {source, unit, skill, amount, strength}；
-##       damage {unit, source（clash/corrode/annihilate/backlash）, amount, sturdy, shelter, dealt, strength}；
+##       damage {unit, source（clash/corrode/annihilate/backlash）, amount, sturdy, shelter（是否被庇护挡下）, dealt, strength}；
 ##       wealth {source, unit, amount}（只做特效，不改战力）；awaken {source, unit}（unit 是被唤醒的单位）。
 ##       strength 是结算后的战力。
 
@@ -258,15 +258,18 @@ func buff(source: Unit, target: Unit, amount: int, skill: String) -> Dictionary:
 	return {"kind": "buff", "source": source.uid, "unit": target.uid, "skill": skill, "amount": amount, "strength": target.strength}
 
 
-## 伤害流程：减去坚固（最低 0）→ 仍大于 0 且有庇护则挡下并消耗庇护 → 扣战力
+## 伤害流程：有庇护就挡下这次伤害、消耗一层（先于坚固）→ 否则减去坚固（最低 0）→ 扣战力
 func damage(target: Unit, amount: int, source: String) -> Dictionary:
-	var sturdy: int = target.special_skills.get("sturdy", 0)
-	var dealt := maxi(0, amount - sturdy)
-	var sheltered := false
-	if dealt > 0 and target.special_skills.has("shelter"):
-		target.special_skills.erase("shelter")
-		sheltered = true
-		dealt = 0
+	var sheltered := amount > 0 and target.special_skills.has("shelter")
+	var sturdy := 0
+	var dealt := 0
+	if sheltered:
+		target.special_skills.shelter -= 1
+		if target.special_skills.shelter <= 0:
+			target.special_skills.erase("shelter")
+	else:
+		sturdy = target.special_skills.get("sturdy", 0)
+		dealt = maxi(0, amount - sturdy)
 	target.strength -= dealt
 	return {"kind": "damage", "unit": target.uid, "source": source, "amount": amount,
 		"sturdy": sturdy, "shelter": sheltered, "dealt": dealt, "strength": target.strength}

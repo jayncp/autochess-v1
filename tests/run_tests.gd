@@ -16,6 +16,9 @@ const TEST_CARDS := [
 	{"id": "test_rally_gain", "no": 0, "type": "character", "star": 2, "races": ["human"], "strength": 8, "timing_1": "on_enter", "skills_1": {"rally": 1}, "special_skills": {"rally_gain": 2}},
 	{"id": "test_corrode_boost", "no": 0, "type": "character", "star": 2, "races": ["nature"], "strength": 6, "timing_1": "on_enter", "skills_1": {"corrode": 5}, "special_skills": {"corrode_boost": 2}},
 	{"id": "test_general", "no": 0, "type": "character", "star": 3, "races": ["human"], "strength": 15, "skills_1": {"rally": 5}},
+	{"id": "test_shelter_sturdy", "no": 0, "type": "character", "star": 3, "races": ["divine"], "strength": 6, "timing_1": "on_enter", "special_skills": {"shelter": 1, "sturdy": 4}},
+	{"id": "test_shelter_2", "no": 0, "type": "character", "star": 3, "races": ["divine"], "strength": 8, "timing_1": "on_enter", "special_skills": {"shelter": 2}},
+	{"id": "test_shelter_3", "no": 0, "type": "character", "star": 3, "races": ["divine"], "strength": 8, "timing_1": "on_enter", "special_skills": {"shelter": 3}},
 ]
 
 
@@ -172,6 +175,9 @@ func _test_mechanics() -> void:
 			"pre_battle", [[5, 6], []]],
 		["唤醒：被唤醒的腐蚀也吃蟾蜍加成", [["test_awaken", ""], ["test_corrode_boost", ""]], [["pixie", ""]], "all",
 			{"winner": 1, "p1": [8, 6], "p2": []}],
+		["庇护先于坚固：坚固能挡掉的腐蚀3 也消耗庇护，之后虎人的 12 只被坚固减 4", [["sludge", ""], ["tiger_man", ""]], [["test_shelter_sturdy", ""]], "all",
+			{"winner": 1, "p1": [6], "p2": []}],
+		["庇护2：腐蚀和交战各消耗一层", [["sludge", ""]], [["test_shelter_2", ""]], "all", {"winner": 2, "p1": [], "p2": [8]}],
 		["队长：队友触发集结时 +2", [["soldier", ""], ["tiger_man", ""], ["test_rally_gain", ""]], [["pixie", ""]], "enter", [[7, 9, 10], [6]]],
 		["队长：自己触发集结也算", [["test_rally_gain", ""]], [["pixie", ""]], "enter", [[11], [6]]],
 		["队长：两个队长各自生效", [["soldier", ""], ["test_rally_gain", ""], ["test_rally_gain", ""]], [["pixie", ""]], "enter",
@@ -216,6 +222,7 @@ func _test_skill_text() -> void:
 		[load_card.special_skill_text({"rally_gain": 2}), "己方角色触发集结时，自身战斗力 +2"],
 		[load_card.special_skill_text({"corrode_boost": 2, "sturdy": 4}), "坚固4；己方角色触发腐蚀时，腐蚀值 +2"],
 		[load_card.base_skill_text({"wealth": 1, "support": 3, "rage": 2}), "狂暴2、支援3、财富1"],
+		[load_card.special_skill_text({"shelter": 1, "sturdy": 4}), "坚固4；庇护1"],
 	]
 	for c in cases:
 		if c[0] != c[1]:
@@ -251,7 +258,31 @@ func _run_replay_checks() -> void:
 			_failures.append("[replay-%s] 战斗在跳过之前就播完了，没测到中途跳过" % c[0])
 		_check_replay(battle_manager, "replay-" + c[0])
 		scene.free()
-	print("回放检查：%d 条" % cases.size())
+	await _check_skip_keeps_shelter()
+	print("回放检查：%d 条" % (cases.size() + 1))
+
+
+## 播放途中跳过：已经播放过的庇护消耗不能在最终局面里重复扣。
+## 淤泥怪的腐蚀和交战各消耗一层，庇护3 最后剩 1
+func _check_skip_keeps_shelter() -> void:
+	global_var.battle_card_list_1 = ["sludge"]
+	global_var.battle_equip_list_1 = [""]
+	global_var.battle_card_list_2 = ["test_shelter_3"]
+	global_var.battle_equip_list_2 = [""]
+	var scene: Node = load("res://scenes/battle/battle.tscn").instantiate()
+	root.add_child(scene)
+	var battle_manager: Node = scene.get_node("battle_manager")
+	for e in battle_manager._result.events:
+		var played: Array = e.get("effects", []).filter(func(f): return f.kind == "damage" and f.shelter)
+		if not played.is_empty():
+			battle_manager.apply_effect(played[0])  # 相当于播放到第一次庇护消耗
+			break
+	battle_manager.have_been_skipped = true
+	battle_manager.show_final_state()
+	var shown: String = battle_manager.player_battle_fields[2][0].get_node("skill_3").text
+	if shown != "庇护1":
+		_failures.append("[replay-skip-shelter] 跳过后应显示庇护1，实际 %s" % shown)
+	scene.free()
 
 
 ## 场景里显示的胜负和双方幸存单位的战力，应与 BattleSim 的结果一致

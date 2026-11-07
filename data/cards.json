@@ -12,7 +12,7 @@
 {"id": "dryad", "no": 1209, "type": "character", "star": 2, "races": ["elf", "nature"], "strength": 5, "timing_1": "pre_battle", "skills_1": {"corrode": 10}},
 {"id": "porcupine", "no": 1211, "type": "character", "star": 2, "races": ["beast"], "strength": 15, "timing_1": "on_engage", "special_skills": {"backlash": 4}},
 {"id": "shield_guard", "no": 1212, "type": "character", "star": 2, "races": ["human"], "strength": 6, "timing_1": "on_enter", "skills_1": {"rally": 2}, "special_skills": {"sturdy": 4}},
-{"id": "paladin", "no": 1214, "type": "character", "star": 2, "races": ["divine"], "strength": 8, "timing_1": "on_enter", "special_skills": {"shelter": null}},
+{"id": "paladin", "no": 1214, "type": "character", "star": 2, "races": ["divine"], "strength": 8, "timing_1": "on_enter", "special_skills": {"shelter": 1}},
 {"id": "maneater", "no": 1215, "type": "character", "star": 2, "races": ["nature"], "strength": 2, "timing_1": "on_enter", "special_skills": {"lethal": null}},
 {"id": "lionheart", "no": 2101, "type": "equipment", "star": 1, "skills_2": {"rage": 2}},
 {"id": "war_horn", "no": 2102, "type": "equipment", "star": 1, "skills_2": {"rally": 1}},
@@ -23,7 +23,7 @@
 {"id": "venom_sac", "no": 2202, "type": "equipment", "star": 2, "skills_2": {"corrode": 4}},
 {"id": "spiked_gauntlet", "no": 2203, "type": "equipment", "star": 2, "strength": 10, "special_skills": {"backlash": 4}},
 {"id": "riot_helmet", "no": 2204, "type": "equipment", "star": 2, "special_skills": {"sturdy": 3}},
-{"id": "holy_shield", "no": 2206, "type": "equipment", "star": 2, "special_skills": {"shelter": null}},
+{"id": "holy_shield", "no": 2206, "type": "equipment", "star": 2, "special_skills": {"shelter": 1}},
 {"id": "venom_fang", "no": 2207, "type": "equipment", "star": 2, "special_skills": {"lethal": null}},
 {"id": "iron_sword", "no": 2208, "type": "equipment", "star": 2, "strength": 8},
 {"id": "holy_water", "no": 2210, "type": "equipment", "star": 2, "strength": 3, "timing_2": "pre_battle"}

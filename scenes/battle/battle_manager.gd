@@ -289,8 +289,15 @@ func apply_effect(f: Dictionary) -> void:
 	card.strength = f.strength
 	card.get_node("strength_1").text = str(f.strength)
 	if f.kind == "damage" and f.shelter:
-		_specials[f.unit].erase("shelter")
+		_consume_shelter(f.unit)
 		load_card.update_attribute_display(card, "skill_3", load_card.special_skill_text(_specials[f.unit]))
+
+
+## 庇护消耗一层，用完就去掉（和 BattleSim.damage 一致）
+func _consume_shelter(uid: String) -> void:
+	_specials[uid].shelter -= 1
+	if _specials[uid].shelter <= 0:
+		_specials[uid].erase("shelter")
 
 
 ## 阵亡：淡出并移出（P1 向上、P2 向下），之后后排补位
@@ -322,10 +329,12 @@ func show_final_state() -> void:
 	_tweens.clear()
 	for text in $"../buff_text_container".get_children():
 		text.queue_free()
+	# 从初始状态重新推演：播放途中跳过时，前面已经消耗过的庇护不能重复扣
 	var alive := {1: [], 2: []}
 	for side in [1, 2]:
 		for u in _result.events[0]["p%d" % side]:
 			alive[side].append(u.uid)
+			_specials[u.uid] = u.special_skills.duplicate()
 	var sheltered := {}  # 庇护被消耗过的单位
 	for e in _result.events:
 		if e.type == "death":
@@ -333,7 +342,7 @@ func show_final_state() -> void:
 				alive[side] = alive[side].filter(func(uid): return uid not in e.units)
 		for f in e.get("effects", []):
 			if f.kind == "damage" and f.shelter:
-				_specials[f.unit].erase("shelter")
+				_consume_shelter(f.unit)
 				sheltered[f.unit] = true
 	for uid in _cards:
 		var card = _cards[uid]
