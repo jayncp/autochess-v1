@@ -17,7 +17,7 @@
 | `strength` | 战斗力。角色必填；装备的战斗力加到角色上 |
 | `timing_1`、`timing_2` | 时机-1、时机-2，见 `CardDB.TIMINGS` |
 | `skills_1`、`skills_2` | 基础技能-1、基础技能-2：`{技能 id: 数值}` |
-| `special_skills` | 特殊技能：`{技能 id: 数值或 null}`，没有数值的（如致命）写 `null` |
+| `special_skills` | 特殊技能：`{技能 id: 数值或 null}`，没有数值的（如致命）写 `null`；带时机的写 `{"timing": 时机}`，如 `{"awaken": {"timing": "pre_battle"}}`。描述型的（如队长的 `rally_gain`）卡面文字在翻译表 `effect.<id>` |
 
 **格子**：时机、基础技能各两格，特殊技能一格。角色和装备都可以填任意格，通常角色填 1、装备填 2。
 合并时装备那一格有内容就覆盖角色的，写 `"clear"` 表示清空，规则见 [battle-rules.md 第 6 节](../docs/design/battle-rules.md#6-装备叠加格子模型)。

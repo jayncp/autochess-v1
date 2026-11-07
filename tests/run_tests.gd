@@ -6,6 +6,20 @@ extends SceneTree
 const Harness := preload("res://tests/battle_harness.gd")
 const CASES_PATH := "res://tests/golden/battles.jsonl"
 const TIMEOUT_SEC := 300.0
+## 测试新机制用的卡（还没有正式卡时用），单元测试和回放检查之后移除，不影响数据检查和冒烟流程
+const TEST_CARDS := [
+	{"id": "test_support", "no": 0, "type": "character", "star": 1, "races": ["elf"], "strength": 3, "timing_1": "pre_battle", "skills_1": {"support": 3}},
+	{"id": "test_support_engage", "no": 0, "type": "character", "star": 1, "races": ["elf"], "strength": 4, "timing_1": "on_engage", "skills_1": {"support": 2}},
+	{"id": "test_wealth", "no": 0, "type": "character", "star": 1, "races": ["treasure"], "strength": 3, "timing_1": "on_enter", "skills_1": {"wealth": 1}},
+	{"id": "test_awaken", "no": 0, "type": "character", "star": 2, "races": ["elf"], "strength": 8, "timing_1": "pre_battle", "special_skills": {"awaken": {"timing": "pre_battle"}}},
+	{"id": "test_awaken_equip", "no": 0, "type": "equipment", "star": 2, "special_skills": {"awaken": {"timing": "pre_battle"}}},
+	{"id": "test_rally_gain", "no": 0, "type": "character", "star": 2, "races": ["human"], "strength": 8, "timing_1": "on_enter", "skills_1": {"rally": 1}, "special_skills": {"rally_gain": 2}},
+	{"id": "test_corrode_boost", "no": 0, "type": "character", "star": 2, "races": ["nature"], "strength": 6, "timing_1": "on_enter", "skills_1": {"corrode": 5}, "special_skills": {"corrode_boost": 2}},
+	{"id": "test_general", "no": 0, "type": "character", "star": 3, "races": ["human"], "strength": 15, "skills_1": {"rally": 5}},
+	{"id": "test_shelter_sturdy", "no": 0, "type": "character", "star": 3, "races": ["divine"], "strength": 6, "timing_1": "on_enter", "special_skills": {"shelter": 1, "sturdy": 4}},
+	{"id": "test_shelter_2", "no": 0, "type": "character", "star": 3, "races": ["divine"], "strength": 8, "timing_1": "on_enter", "special_skills": {"shelter": 2}},
+	{"id": "test_shelter_3", "no": 0, "type": "character", "star": 3, "races": ["divine"], "strength": 8, "timing_1": "on_enter", "special_skills": {"shelter": 3}},
+]
 
 
 class ErrorCatcher extends Logger:
@@ -28,6 +42,8 @@ func _initialize() -> void:
 	await _run_battle_cases()
 	await _run_unit_tests()
 	await _run_replay_checks()
+	for c in TEST_CARDS:
+		CardDB.all().erase(c.id)
 	await _run_smoke()
 	await _frames(3)  # 让 queue_free 的节点真正释放，避免退出时报泄漏
 	_finish()
@@ -48,8 +64,11 @@ func _check_data() -> void:
 	for timing in CardDB.TIMINGS:
 		keys.append("timing." + timing)
 	for skill in CardDB.BASE_SKILLS + CardDB.SPECIAL_SKILLS:
-		keys.append("keyword." + skill)
-		keys.append("keyword_desc." + skill)
+		if skill in CardDB.DESCRIPTIVE_SPECIALS:
+			keys.append("effect." + skill)
+		else:
+			keys.append("keyword." + skill)
+			keys.append("keyword_desc." + skill)
 	for level_id in LevelDB.all():
 		keys.append("level." + level_id)
 	var locale := TranslationServer.get_locale()
@@ -91,7 +110,10 @@ func _run_unit_tests() -> void:
 		_failures.append("[unit-death-adjacent] 相邻两个阵亡单位应一起移除，实际剩余 %s" % [sim.fields[1].map(func(u): return u.uid)])
 	_test_annihilate()
 	_test_overlay()
-	print("单元测试：3 条")
+	CardDB.add_cards(TEST_CARDS)
+	_test_mechanics()
+	_test_skill_text()
+	print("单元测试：5 组")
 
 
 ## 湮灭（目前没有卡带湮灭）：打对方全体、走伤害流程；同一时间节点先腐蚀后湮灭，所以庇护挡的是腐蚀
@@ -99,7 +121,7 @@ func _test_annihilate() -> void:
 	var sim := BattleSim.new([["soldier", ""]], [["paladin", ""], ["soldier", ""], ["shield_guard", ""], ["soldier", ""]])
 	var actor = sim.fields[1][0]
 	actor.base_skills = {"corrode": 2, "annihilate": 3}
-	sim.resolve_timing([actor])
+	sim.resolve_timing([actor], "on_enter")
 	sim.settle_death()
 	var got := {
 		"strengths": sim.fields[2].map(func(u): return u.strength),
@@ -116,7 +138,10 @@ func _test_annihilate() -> void:
 func _test_overlay() -> void:
 	var vulture := CardDB.card("vulture")  # 秃鹫：交战，狂暴3、腐蚀2
 	var paladin := CardDB.card("paladin")  # 圣骑士：入场，庇护
+	var guard := CardDB.card("shield_guard")  # 盾卫：坚固4
 	var cases := [
+		[guard, CardDB.card("holy_shield"), "special_source", "holy_shield", "特殊技能来自装备"],
+		[guard, CardDB.card("lionheart"), "special_source", "shield_guard", "装备没有特殊技能，来源是角色"],
 		[vulture, {"skills_1": {"corrode": 15}}, "base_skills", {"corrode": 15}, "基础技能-1 覆盖"],
 		[vulture, {"strength": 12, "skills_1": "clear"}, "base_skills", {}, "基础技能-1 清空（空心）"],
 		[vulture, {"strength": 12, "skills_1": "clear"}, "strength", 19, "战斗力相加"],
@@ -133,6 +158,84 @@ func _test_overlay() -> void:
 			_failures.append("[unit-overlay] %s：期望 %s，实际 %s" % [c[4], c[3], got])
 
 
+## 阶段 3 的新机制（docs/design/battle-rules.md）：支援、财富、唤醒、队长和蟾蜍的效果。
+## 每条：[说明, P1, P2, 跑到哪一步（pre_battle / enter / all）, 期望]。
+## pre_battle、enter 比较这一步之后双方的战斗力；all 比较整场结果，并做镜像和事件自洽检查
+func _test_mechanics() -> void:
+	var cases := [
+		["支援：战前给下一位 +3", [["test_support", ""], ["pixie", ""]], [["pixie", ""]], "pre_battle", [[3, 9], [6]]],
+		["支援：最后一位不生效", [["pixie", ""], ["test_support", ""]], [["pixie", ""]], "pre_battle", [[6, 3], [6]]],
+		["支援：交战时触发，交战位阵亡后加成留在下一位", [["test_support_engage", ""], ["pixie", ""]], [["paladin", ""]], "all",
+			{"winner": 3, "p1": [], "p2": []}],
+		["财富：只有特效，不改战斗力", [["test_wealth", ""]], [["pixie", ""]], "all", {"winner": 2, "p1": [], "p2": [3]}],
+		["唤醒：下一位多触发一次（战前两次狂暴9）", [["test_awaken", ""], ["fey_tiger", ""]], [["pixie", ""]], "pre_battle", [[8, 25], [6]]],
+		["唤醒：没有时机的也能被唤醒（集结5）", [["test_awaken", ""], ["test_general", ""]], [["pixie", ""]], "pre_battle", [[8, 20], [6]]],
+		["唤醒：不连锁，第二个光灵自己那一步才唤醒精灵虎", [["test_awaken", ""], ["test_awaken", ""], ["fey_tiger", ""]], [["pixie", ""]], "pre_battle",
+			[[8, 8, 25], [6]]],
+		["唤醒：时机属于特殊技能，装在交战角色身上也只在战前", [["tiger", "test_awaken_equip"], ["fey_tiger", ""]], [["pixie", ""]], "pre_battle",
+			[[4, 25], [6]]],
+		["唤醒：被唤醒的先出手，蟾蜍的 7 被庇护挡下，树精的 12 打中", [["dryad", "test_awaken_equip"], ["test_corrode_boost", ""]], [["paladin", ""]],
+			"pre_battle", [[5, 6], []]],
+		["唤醒：被唤醒的腐蚀也吃蟾蜍加成", [["test_awaken", ""], ["test_corrode_boost", ""]], [["pixie", ""]], "all",
+			{"winner": 1, "p1": [8, 6], "p2": []}],
+		["庇护先于坚固：坚固能挡掉的腐蚀3 也消耗庇护，之后虎人的 12 只被坚固减 4", [["sludge", ""], ["tiger_man", ""]], [["test_shelter_sturdy", ""]], "all",
+			{"winner": 1, "p1": [6], "p2": []}],
+		["庇护2：腐蚀和交战各消耗一层", [["sludge", ""]], [["test_shelter_2", ""]], "all", {"winner": 2, "p1": [], "p2": [8]}],
+		["队长：队友触发集结时 +2", [["soldier", ""], ["tiger_man", ""], ["test_rally_gain", ""]], [["pixie", ""]], "enter", [[7, 9, 10], [6]]],
+		["队长：自己触发集结也算", [["test_rally_gain", ""]], [["pixie", ""]], "enter", [[11], [6]]],
+		["队长：两个队长各自生效", [["soldier", ""], ["test_rally_gain", ""], ["test_rally_gain", ""]], [["pixie", ""]], "enter",
+			[[7, 10, 10], [6]]],
+		["蟾蜍：自己的腐蚀5 按 7 结算", [["test_corrode_boost", ""]], [["pixie", ""]], "all", {"winner": 1, "p1": [6], "p2": []}],
+		["蟾蜍：先加腐蚀值再减坚固（3+2−4=1）", [["sludge", ""], ["test_corrode_boost", ""]], [["shield_guard", ""]], "enter",
+			[[4, 6], [7]]],
+		["蟾蜍：两只叠加（3+2+2=7）", [["sludge", ""], ["test_corrode_boost", ""], ["test_corrode_boost", ""]], [["pixie", ""]], "all",
+			{"winner": 1, "p1": [4, 6, 6], "p2": []}],
+	]
+	for c in cases:
+		var got
+		if c[3] == "all":
+			var result := BattleSim.simulate(c[1], c[2])
+			got = {"winner": result.winner, "p1": result.p1, "p2": result.p2}
+			var inconsistency := Harness.check_events(result)
+			if inconsistency != "":
+				_failures.append("[unit-mechanics] %s：事件日志不自洽：%s" % [c[0], inconsistency])
+			if not Harness.same(Harness.run(c[2], c[1]), Harness.mirror(got)):
+				_failures.append("[unit-mechanics] %s：交换左右后结果不对称" % c[0])
+			if not Harness.same(got, c[4]):
+				_failures.append("[unit-mechanics] %s：期望 %s，实际 %s" % [c[0], c[4], got])
+			continue
+		var sim := BattleSim.new(c[1], c[2])
+		sim.pre_battle_phase()
+		if c[3] == "enter":
+			sim.entering_step()
+		got = [sim.fields[1].map(func(u): return u.strength), sim.fields[2].map(func(u): return u.strength)]
+		if got != c[4]:
+			_failures.append("[unit-mechanics] %s：期望 %s，实际 %s" % [c[0], c[4], got])
+	# 蟾蜍的加成记在腐蚀伤害上，回放据此在蟾蜍身上弹名字
+	var hits: Array = BattleSim.simulate([["test_corrode_boost", ""]], [["pixie", ""]]).events.filter(func(e): return e.type == "beat" and e.skill == "corrode")
+	if hits.is_empty() or hits[0].effects[0].get("boosts") != ["1-0"]:
+		_failures.append("[unit-mechanics] 蟾蜍的腐蚀应记下加成来源 1-0")
+	# 交战角色带闪光球：整场只唤醒一次（战前）
+	var events: Array = BattleSim.simulate([["tiger", "test_awaken_equip"], ["fey_tiger", ""]], [["porcupine", ""]]).events
+	var awakens := events.filter(func(e): return e.type == "special").size()
+	if awakens != 1:
+		_failures.append("[unit-mechanics] 闪光球应只在战前唤醒一次，实际 %d 次" % awakens)
+
+
+## 卡面文字：带时机的特殊技能、描述型特殊技能、按结算顺序排列
+func _test_skill_text() -> void:
+	var cases := [
+		[load_card.special_skill_text({"lethal": null, "awaken": {"timing": "pre_battle"}}), "战前：唤醒；致命"],
+		[load_card.special_skill_text({"rally_gain": 2}), "己方角色触发集结时，自身战斗力 +2"],
+		[load_card.special_skill_text({"corrode_boost": 2, "sturdy": 4}), "坚固4；己方角色触发腐蚀时，腐蚀值 +2"],
+		[load_card.base_skill_text({"wealth": 1, "support": 3, "rage": 2}), "狂暴2、支援3、财富1"],
+		[load_card.special_skill_text({"shelter": 1, "sturdy": 4}), "坚固4；庇护1"],
+	]
+	for c in cases:
+		if c[0] != c[1]:
+			_failures.append("[unit-skill-text] 期望 %s，实际 %s" % [c[1], c[0]])
+
+
 ## 回放检查：战斗场景最后显示的局面和 BattleSim 的结果一致。
 ## 覆盖动画播完、僵持压缩、动画中途跳过三种情况（高速播放）
 func _run_replay_checks() -> void:
@@ -140,6 +243,8 @@ func _run_replay_checks() -> void:
 		["animated", [["tiger_man", "lionheart"], ["fairy", ""]], [["porcupine", "holy_shield"], ["paladin", ""]], -1],
 		["stalemate", [["angel", "riot_helmet"]], [["angel", "riot_helmet"]], -1],
 		["skip-midway", [["soldier", ""], ["soldier", ""], ["tiger", "holy_water"]], [["sludge", "thorns"], ["shield_guard", ""]], 30],
+		["mechanics", [["test_awaken", ""], ["fey_tiger", ""], ["test_wealth", ""], ["test_support", ""], ["pixie", ""]],
+			[["test_rally_gain", ""], ["test_corrode_boost", ""], ["soldier", ""], ["tiger", "test_awaken_equip"], ["test_corrode_boost", ""]], -1],
 	]
 	for c in cases:
 		global_var.battle_card_list_1 = c[1].map(func(u): return u[0])
@@ -160,7 +265,31 @@ func _run_replay_checks() -> void:
 			_failures.append("[replay-%s] 战斗在跳过之前就播完了，没测到中途跳过" % c[0])
 		_check_replay(battle_manager, "replay-" + c[0])
 		scene.free()
-	print("回放检查：%d 条" % cases.size())
+	await _check_skip_keeps_shelter()
+	print("回放检查：%d 条" % (cases.size() + 1))
+
+
+## 播放途中跳过：已经播放过的庇护消耗不能在最终局面里重复扣。
+## 淤泥怪的腐蚀和交战各消耗一层，庇护3 最后剩 1
+func _check_skip_keeps_shelter() -> void:
+	global_var.battle_card_list_1 = ["sludge"]
+	global_var.battle_equip_list_1 = [""]
+	global_var.battle_card_list_2 = ["test_shelter_3"]
+	global_var.battle_equip_list_2 = [""]
+	var scene: Node = load("res://scenes/battle/battle.tscn").instantiate()
+	root.add_child(scene)
+	var battle_manager: Node = scene.get_node("battle_manager")
+	for e in battle_manager._result.events:
+		var played: Array = e.get("effects", []).filter(func(f): return f.kind == "damage" and f.shelter)
+		if not played.is_empty():
+			battle_manager.apply_effect(played[0])  # 相当于播放到第一次庇护消耗
+			break
+	battle_manager.have_been_skipped = true
+	battle_manager.show_final_state()
+	var shown: String = battle_manager.player_battle_fields[2][0].get_node("skill_3").text
+	if shown != "庇护1":
+		_failures.append("[replay-skip-shelter] 跳过后应显示庇护1，实际 %s" % shown)
+	scene.free()
 
 
 ## 场景里显示的胜负和双方幸存单位的战力，应与 BattleSim 的结果一致

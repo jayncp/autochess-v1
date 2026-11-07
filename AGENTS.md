@@ -15,7 +15,8 @@
 - 卡牌数值以 `data/cards.json` 为准，中文名以 `i18n/data.csv` 为准；旧表格只作参考。
 - 核心理念"大毒盾"：大克盾、盾克毒、毒克大。致命+庇护叠加是天花板级机制。
 - 战斗是确定性的：只有交战位互相攻击。
-- 每个时间节点按拍结算：先特殊技能，再按 狂暴 → 集结 → 振奋 → 腐蚀 → 湮灭（作用对象由近及远，先加后减）结算基础技能，双方同一拍同时生效。
+- 一个时间节点从上到下：特殊技能 → 被唤醒的一组 → 原本的一组；每组按 狂暴 → 集结 → 支援 → 振奋 → 腐蚀 → 湮灭 → 财富 分拍（作用对象由近及远，先加后减），双方同一拍同时生效。时点中途不判死。
+- 伤害流程：庇护（带层数，每次消耗一层）→ 坚固 → 扣战斗力。
 - 平局：连续 20 次交战无人阵亡。
 - 格子模型：装备像一张卡盖在角色卡上，时机、基础技能各两格，特殊技能一格；逐格覆盖（数据里用 `"clear"` 表示清空），再把两格合并。通常角色填 1、装备填 2，就是叠加。战斗力不分格，直接相加。
 - 术语、显示顺序、分隔符见 `docs/design/battle-rules.md` 第 1 节：用"基础技能"不用"普通技能"，卡面不说"在场"。
@@ -26,7 +27,7 @@
 ## 目录
 
 - `data/`：`cards.json`（一卡一行）、`levels.json`，字段见 `data/README.md`
-- `i18n/`：翻译表 `data.csv`（`card.<id>`、`race.<id>`、`timing.<id>`、`keyword.<id>`、`keyword_desc.<id>`（词条说明）、`level.<id>`）、`ui.csv`（`ui.<场景>.<名称>`）
+- `i18n/`：翻译表 `data.csv`（`card.<id>`、`race.<id>`、`timing.<id>`、`keyword.<id>`、`keyword_desc.<id>`（词条说明）、`effect.<id>`（描述型特殊技能的整句）、`level.<id>`）、`ui.csv`（`ui.<场景>.<名称>`）
 - `scenes/`：场景和脚本放在一起
   - `app/`：启动场景
   - `menu/`、`sandbox/`（科研模式）、`level/`（关卡选择和布阵）、`battle/`、`book/`（图鉴）
@@ -40,7 +41,7 @@
 ## 命令
 
 - 运行：`just run`；测试：`just test`（约 2 秒，说明和维护方法见 `tests/README.md`）
-- 批量模拟：`just sim <输入.jsonl> <输出.jsonl> [--log] [--cards <额外卡牌.json>]`，单线程约 7400 场/秒（带事件日志约 4700）
+- 批量模拟：`just sim <输入.jsonl> <输出.jsonl> [--log] [--cards <额外卡牌.json>]`，单线程约 6600 场/秒（带事件日志约 4300）
 - 关卡检查：`just level-check [关卡文件.json]`；平衡实验：`just experiment <名字>`；Python 检查：`just tools-check`
 - Godot：`/Applications/Godot.app/Contents/MacOS/Godot`（`justfile` 里可用环境变量 `GODOT` 覆盖）
 - 无头脚本：`... --headless --path . --script <file.gd>`

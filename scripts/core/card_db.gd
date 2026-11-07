@@ -5,12 +5,16 @@ class_name CardDB
 const PATH := "res://data/cards.json"
 const TYPES := ["character", "equipment"]
 ## 下面几个列表的顺序就是显示顺序（docs/design/battle-rules.md 第 1 节），卡面、实时状态、图鉴都按它排
-const RACES := ["beast", "human", "elf", "divine", "nature"]
+const RACES := ["beast", "human", "elf", "divine", "nature", "treasure"]
 const TIMINGS := ["pre_battle", "on_enter", "on_engage"]
-## 基础技能，也是结算顺序：作用对象由近及远，先加后减。BattleSim 按它分拍
-const BASE_SKILLS := ["rage", "rally", "inspire", "corrode", "annihilate"]
-## 特殊技能按所属种族排
-const SPECIAL_SKILLS := ["backlash", "sturdy", "shelter", "lethal"]
+## 基础技能，也是结算顺序：作用对象由近及远，先加后减，财富最后。BattleSim 按它分拍
+const BASE_SKILLS := ["rage", "rally", "support", "inspire", "corrode", "annihilate", "wealth"]
+## 特殊技能按所属种族排，同族里基础特殊技能在前
+const SPECIAL_SKILLS := ["backlash", "sturdy", "rally_gain", "awaken", "shelter", "lethal", "corrode_boost"]
+## 带时机的特殊技能，数据里写 {"timing": 时机}；时机属于特殊技能本身，和卡牌的时机无关
+const TIMED_SPECIALS := ["awaken"]
+## 描述型特殊技能：不起词条名，卡面写整句（翻译 key 是 effect.<id>，%d 是数值）
+const DESCRIPTIVE_SPECIALS := ["rally_gain", "corrode_boost"]
 ## 格子：时机、基础技能各两格（通常角色填 1、装备填 2），特殊技能一格
 const TIMING_SLOTS := ["timing_1", "timing_2"]
 const SKILL_SLOTS := ["skills_1", "skills_2"]
@@ -49,7 +53,7 @@ static func ids(type: String) -> Array:
 	return all().keys().filter(func(id): return _cards[id].type == type)
 
 
-## 角色带上装备（可为空）之后的战斗属性：战斗力、时机、基础技能、特殊技能。
+## 角色带上装备（可为空）之后的战斗属性：战斗力、时机、基础技能、特殊技能，以及特殊技能来自哪张卡。
 static func combine(card_id: String, equip_id: String) -> Dictionary:
 	return combine_data(card(card_id), card(equip_id) if equip_id else {})
 
@@ -71,6 +75,8 @@ static func combine_data(c: Dictionary, e: Dictionary) -> Dictionary:
 		"timings": TIMINGS.filter(func(t): return t in timings),
 		"base_skills": base_skills,
 		"special_skills": special.duplicate(),
+		# 描述型特殊技能触发时，飘字显示这张卡的名字
+		"special_source": e.get("id", "") if e.has("special_skills") else c.get("id", ""),
 	}
 
 
@@ -111,7 +117,7 @@ static func _normalize(raw: Dictionary) -> Dictionary:
 				c.erase(field)
 				continue
 			for skill in c[field]:
-				if c[field][skill] != null:
+				if c[field][skill] is float:
 					c[field][skill] = int(c[field][skill])
 	return c
 
@@ -144,5 +150,10 @@ static func _check(c: Dictionary) -> void:
 		for skill in value:
 			if skill not in known:
 				bad.append("技能 " + skill)
+			elif skill in TIMED_SPECIALS:
+				if not (value[skill] is Dictionary and value[skill].get("timing") in TIMINGS):
+					bad.append("%s 要写成 {\"timing\": 时机}" % skill)
+			elif value[skill] is Dictionary:
+				bad.append("%s 不带时机" % skill)
 	if not bad.is_empty():
 		push_error("cards.json：%s 有误：%s" % [c.get("id"), ", ".join(bad)])

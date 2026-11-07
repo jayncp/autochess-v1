@@ -77,10 +77,9 @@ func matches_filter_string(data: Dictionary) -> bool:
 	for slot in CardDB.TIMING_SLOTS:
 		if data.get(slot, CardDB.CLEAR) != CardDB.CLEAR:
 			names.append(tr("timing." + data[slot]))
-	for slot in CardDB.SKILL_SLOTS + ["special_skills"]:
-		if data.get(slot) is Dictionary:
-			for skill in data[slot]:
-				names.append(tr("keyword." + skill))
+	var texts := CardDB.SKILL_SLOTS.map(func(slot): return load_card.base_skill_text(data.get(slot)))
+	texts.append(load_card.special_skill_text(data.get("special_skills")))
+	names.append_array(texts.filter(func(t): return t != null))
 	return names.any(func(n): return filter_string in n)
 
 func _on_last_page_button_pressed() -> void:
