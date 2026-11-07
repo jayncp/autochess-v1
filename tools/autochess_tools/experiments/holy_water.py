@@ -1,6 +1,6 @@
 """圣水补偿校准：圣水改为"仅战前时机 + N 战力"后，N 取多少合适。
 
-在 2★ 环境（10 个 2★ 角色组成的三人队，对手不带装备）里测装备的有效战力：
+在 2★ 环境（非经济 2★ 角色组成的三人队，对手不带装备）里测装备的有效战力：
 给被测位置的角色装上装备，相当于装上多大战力的白板武器。木剑、铁剑本身就是白板武器，应正好测出 5 和 8（自检）。
 圣水的价值取决于宿主（战前时机让宿主的入场、交战技能多触发一次），所以再按宿主分别算。
 用法：just experiment holy_water
@@ -44,7 +44,7 @@ def label(equip_id: str) -> str:
 
 
 def main() -> None:
-    hosts = data.ids("character", 2)
+    hosts = data.balance_ids("character", 2)
     battles = samples(hosts, SAMPLES, SEED)
     equipment = data.ids("equipment") + [v["id"] for v in VARIANTS]
     values = equipment_values(equipment, battles, MAX_SWORD, VARIANTS)
@@ -55,7 +55,7 @@ def main() -> None:
     for e in sorted(equipment, key=lambda e: (stars[e], values[e].value)):
         print(f"| {label(e)} | {stars[e]} | {values[e]} |")
     for star in (1, 2):
-        real = [values[e].value for e in data.ids("equipment") if stars[e] == star]
+        real = [values[e].value for e in data.balance_ids("equipment", star)]
         print(f"\n{star}★ 装备平均：{sum(real) / len(real):.1f}")
 
     print("\n## 圣水各版本按宿主（2★ 环境）\n")

@@ -5,7 +5,7 @@
 
 ## 现状
 
-- 阶段：阶段 3（卡牌补全）第一轮进行中：1★/2★ 打底，顺序是 规范 → 机制 → 新卡，计划见 `docs/plans/stage-3-cards.md`（issue #10）。设计稿在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡用占位图），记录见 `docs/plans/stage-3-cards.md`。下一步是 UI 美化，整体风格可能大改，先写计划和用户讨论；之后再做 3★/4★、卡图和强度测试。设计稿在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
 - 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关）、图鉴、战斗演出（速度/跳过）。冒险、线下对战未实现。
 - 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并和各种显示顺序在 `CardDB`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。
 - 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
@@ -69,7 +69,7 @@
   - 内部一律用英文 id，显示文字一律走翻译表：场景里写 key，代码里用 `tr()`；
   - 给开发者看的报错信息可以直接写中文；
   - 改了 CSV 后要重新导入（`godot --import`），生成的 `*.translation` 一起提交。
-- 新增卡牌：在 `data/cards.json` 按序号加数据，`i18n/data.csv` 加中文名，`assets/cards/<id>.png` 放卡图（没有就先用占位图）；新词条还要加 `keyword.<id>` 和 `keyword_desc.<id>`。测试的数据检查会核对翻译是否齐全，并列出还在用占位图的卡。
+- 新增卡牌：在 `data/cards.json` 按序号加数据，`i18n/data.csv` 加中文名，`assets/cards/<id>.png` 放卡图（没有就先用占位图）；新词条还要加 `keyword.<id>` 和 `keyword_desc.<id>`，描述型特殊技能加 `effect.<id>`。测试的数据检查会核对翻译是否齐全，并列出还在用占位图的卡。
 - 协议暂定：代码 AGPL-3.0-or-later，美术/数据/文档 CC BY-SA 4.0。
 - 开发流程：阶段性任务先在 `docs/plans/` 写计划，用户确认后开 issue，在分支上开发，通过 PR 合并；小修改直接提交到 main。
 - 每次开 PR 之前检查文档：`AGENTS.md`、`PROCESS.md` 和 `docs/` 下的活文档，删掉过时内容，同步代码改动，更新进度。

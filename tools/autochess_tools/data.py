@@ -37,6 +37,17 @@ def ids(card_type: str, star: int | None = None) -> list[str]:
     return [c["id"] for c in cards().values() if c["type"] == card_type and (star is None or c["star"] == star)]
 
 
+def economy(card_id: str) -> bool:
+    """经济卡：带财富的卡。不计入平衡均值，也不放进抽样环境。"""
+    card = cards()[card_id]
+    return any(isinstance(slot, dict) and "wealth" in slot for slot in (card.get("skills_1"), card.get("skills_2")))
+
+
+def balance_ids(card_type: str, star: int | None = None) -> list[str]:
+    """参与平衡的卡：去掉经济卡。"""
+    return [i for i in ids(card_type, star) if not economy(i)]
+
+
 @cache
 def texts() -> dict[str, str]:
     """翻译表 i18n/data.csv：key -> 中文。"""
