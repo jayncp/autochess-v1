@@ -56,9 +56,9 @@ keyword_desc.corrode,对方交战位受到 N 点伤害
 keyword_desc.annihilate,对方全体各受到 N 点伤害
 keyword_desc.wealth,获得 N 金币（现在只有特效）
 keyword_desc.backlash,每次交战后，自身受到 N 点伤害
-keyword_desc.sturdy,每次受到的伤害 −N（最低为 0，优先于庇护）
+keyword_desc.sturdy,每次受到的伤害 −N（最低为 0）
 keyword_desc.awaken,触发下一位角色的基础技能
-keyword_desc.shelter,抵挡一次伤害
+keyword_desc.shelter,抵挡 N 次伤害，每次消耗一层（先于坚固）
 keyword_desc.lethal,交战时攻击视为无穷大，可被庇护抵挡
 effect.rally_gain,己方角色触发集结时，自身战斗力 +%d
 effect.corrode_boost,己方角色触发腐蚀时，腐蚀值 +%d
