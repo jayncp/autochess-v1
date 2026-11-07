@@ -31,6 +31,7 @@ var have_been_skipped = false
 var _result: Dictionary
 var _cards := {}  # uid -> 卡牌节点
 var _specials := {}  # uid -> 当前特殊技能（庇护会被消耗）
+var _special_sources := {}  # uid -> 特殊技能来自哪张卡（描述型效果的飘字用它的名字）
 var _tweens: Array[Tween] = []
 
 
@@ -72,6 +73,7 @@ func load_player_deck():
 			player_battle_fields[side].append(new_card)
 			_cards[u.uid] = new_card
 			_specials[u.uid] = u.special_skills.duplicate()
+			_special_sources[u.uid] = u.special_source
 
 
 #==============================================
@@ -254,18 +256,20 @@ func retract(cards: Array) -> void:
 
 
 ## 同时显示一组效果：增益绿字、财富黄字、伤害红字（交战伤害不显示数字），坚固、庇护随后显示绿字。
-## 描述型特殊技能带来的增益（如队长）用这一拍的技能名
+## 描述型特殊技能用来源卡的名字：改了战斗力的带数字（"队长 + 2"），没改的只弹名字（腐蚀被蟾蜍加成时）
 func play_effects(effects: Array, skill: String) -> void:
 	var defenses := []
 	for f in effects:
 		var card = _cards[f.unit]
 		if f.kind == "buff":
-			var shown: String = skill if f.skill in CardDB.DESCRIPTIVE_SPECIALS else f.skill
-			buff_text_effect(card, tr("keyword." + shown) + " + " + str(f.amount), "green")
+			var label := _source_name(f.source) if f.skill in CardDB.DESCRIPTIVE_SPECIALS else tr("keyword." + f.skill)
+			buff_text_effect(card, label + " + " + str(f.amount), "green")
 		elif f.kind == "wealth":
 			buff_text_effect(card, tr("keyword.wealth") + " + " + str(f.amount), "yellow")
 			continue
 		else:
+			for uid in f.get("boosts", []):
+				buff_text_effect(_cards[uid], _source_name(uid), "blue")
 			if f.source != "clash":
 				buff_text_effect(card, tr("keyword." + f.source) + " - " + str(f.amount), "red")
 			if f.sturdy > 0 or f.shelter:
@@ -291,6 +295,10 @@ func apply_effect(f: Dictionary) -> void:
 	if f.kind == "damage" and f.shelter:
 		_consume_shelter(f.unit)
 		load_card.update_attribute_display(card, "skill_3", load_card.special_skill_text(_specials[f.unit]))
+
+
+func _source_name(uid: String) -> String:
+	return tr("card." + _special_sources[uid])
 
 
 ## 庇护消耗一层，用完就去掉（和 BattleSim.damage 一致）

@@ -53,7 +53,7 @@ static func ids(type: String) -> Array:
 	return all().keys().filter(func(id): return _cards[id].type == type)
 
 
-## 角色带上装备（可为空）之后的战斗属性：战斗力、时机、基础技能、特殊技能。
+## 角色带上装备（可为空）之后的战斗属性：战斗力、时机、基础技能、特殊技能，以及特殊技能来自哪张卡。
 static func combine(card_id: String, equip_id: String) -> Dictionary:
 	return combine_data(card(card_id), card(equip_id) if equip_id else {})
 
@@ -75,6 +75,8 @@ static func combine_data(c: Dictionary, e: Dictionary) -> Dictionary:
 		"timings": TIMINGS.filter(func(t): return t in timings),
 		"base_skills": base_skills,
 		"special_skills": special.duplicate(),
+		# 描述型特殊技能触发时，飘字显示这张卡的名字
+		"special_source": e.get("id", "") if e.has("special_skills") else c.get("id", ""),
 	}
 
 

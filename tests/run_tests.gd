@@ -138,7 +138,10 @@ func _test_annihilate() -> void:
 func _test_overlay() -> void:
 	var vulture := CardDB.card("vulture")  # 秃鹫：交战，狂暴3、腐蚀2
 	var paladin := CardDB.card("paladin")  # 圣骑士：入场，庇护
+	var guard := CardDB.card("shield_guard")  # 盾卫：坚固4
 	var cases := [
+		[guard, CardDB.card("holy_shield"), "special_source", "holy_shield", "特殊技能来自装备"],
+		[guard, CardDB.card("lionheart"), "special_source", "shield_guard", "装备没有特殊技能，来源是角色"],
 		[vulture, {"skills_1": {"corrode": 15}}, "base_skills", {"corrode": 15}, "基础技能-1 覆盖"],
 		[vulture, {"strength": 12, "skills_1": "clear"}, "base_skills", {}, "基础技能-1 清空（空心）"],
 		[vulture, {"strength": 12, "skills_1": "clear"}, "strength", 19, "战斗力相加"],
@@ -208,6 +211,10 @@ func _test_mechanics() -> void:
 		got = [sim.fields[1].map(func(u): return u.strength), sim.fields[2].map(func(u): return u.strength)]
 		if got != c[4]:
 			_failures.append("[unit-mechanics] %s：期望 %s，实际 %s" % [c[0], c[4], got])
+	# 蟾蜍的加成记在腐蚀伤害上，回放据此在蟾蜍身上弹名字
+	var hits: Array = BattleSim.simulate([["test_corrode_boost", ""]], [["pixie", ""]]).events.filter(func(e): return e.type == "beat" and e.skill == "corrode")
+	if hits.is_empty() or hits[0].effects[0].get("boosts") != ["1-0"]:
+		_failures.append("[unit-mechanics] 蟾蜍的腐蚀应记下加成来源 1-0")
 	# 交战角色带闪光球：整场只唤醒一次（战前）
 	var events: Array = BattleSim.simulate([["tiger", "test_awaken_equip"], ["fey_tiger", ""]], [["porcupine", ""]]).events
 	var awakens := events.filter(func(e): return e.type == "special").size()

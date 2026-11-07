@@ -5,7 +5,8 @@ extends RefCounted
 ## 用法：BattleSim.simulate([[角色 id, 装备 id], ...], [...])
 ##
 ## 事件日志（单位用"座位-初始序号"标识，如 "1-0"）：
-## - start：version，p1/p2 为双方单位的初始属性（uid、card_id、equip_id、strength、timings、base_skills、special_skills）
+## - start：version，p1/p2 为双方单位的初始属性（uid、card_id、equip_id、strength、timings、base_skills、special_skills、
+##   special_source（特殊技能来自哪张卡））
 ## - pre_battle：units 为战前这一步的双方单位（没有则为 ""），actors 为其中在战前触发的单位
 ## - enter：units 为执行入场的交战位
 ## - engage：units 为双方交战位，actors 为其中在交战时触发的单位
@@ -17,7 +18,8 @@ extends RefCounted
 ## - death：units 为阵亡单位
 ## - end：winner（1/2 = 该方胜，3 = 平局），reason（wipe = 全灭，no_death = 连续无人阵亡）
 ## 效果：buff {source, unit, skill, amount, strength}；
-##       damage {unit, source（clash/corrode/annihilate/backlash）, amount, sturdy, shelter（是否被庇护挡下）, dealt, strength}；
+##       damage {unit, source（clash/corrode/annihilate/backlash）, amount, sturdy, shelter（是否被庇护挡下）, dealt, strength,
+##              腐蚀被加成时还有 boosts（加成来自哪些单位）}；
 ##       wealth {source, unit, amount}（只做特效，不改战力）；awaken {source, unit}（unit 是被唤醒的单位）。
 ##       strength 是结算后的战力。
 
@@ -38,6 +40,7 @@ class Unit:
 	var timings: Array
 	var base_skills: Dictionary
 	var special_skills: Dictionary
+	var special_source: String
 	## 在哪些时机触发：自己的时机，加上带时机的特殊技能的时机
 	var acting_timings: Array
 	var done_pre_battle := false
@@ -53,6 +56,7 @@ class Unit:
 		timings = stats.timings
 		base_skills = stats.base_skills
 		special_skills = stats.special_skills
+		special_source = stats.special_source
 		acting_timings = timings.duplicate()
 		for skill in special_skills:
 			if special_skills[skill] is Dictionary:
@@ -63,7 +67,7 @@ class Unit:
 
 	func describe() -> Dictionary:
 		return {"uid": uid, "card_id": card_id, "equip_id": equip_id, "strength": strength, "timings": timings,
-			"base_skills": base_skills.duplicate(), "special_skills": special_skills.duplicate()}
+			"base_skills": base_skills.duplicate(), "special_skills": special_skills.duplicate(), "special_source": special_source}
 
 
 ## 双方队列：side -> [Unit]，第 0 个是交战位
@@ -242,9 +246,15 @@ func apply_skill(u: Unit, skill: String, value: int) -> Array:
 				return []
 			# 蟾蜍：己方角色触发腐蚀时，腐蚀值 +N（加完再进伤害流程）
 			var boost := 0
+			var boosts := []
 			for partner in fields[u.side]:
-				boost += partner.special_skills.get("corrode_boost", 0)
-			return [damage(enemies[0], value + boost, skill)]
+				if partner.special_skills.has("corrode_boost"):
+					boost += partner.special_skills.corrode_boost
+					boosts.append(partner.uid)
+			var hit := damage(enemies[0], value + boost, skill)
+			if not boosts.is_empty():
+				hit.boosts = boosts
+			return [hit]
 		"annihilate":
 			return enemies.map(func(target): return damage(target, value, skill))
 		"wealth":
