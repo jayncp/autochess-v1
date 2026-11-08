@@ -1,6 +1,6 @@
 # UI 重做计划
 
-> **状态**：进行中（2026-11-08 开始）。
+> **状态**：进行中（2026-11-08 开始），issue #14。
 > 设计稿和样稿在仓库外的工作区 `design-workspace/`（`README.md` 是现行方案，`mockups/*.png` 是各界面样稿）。规范会随 PR 1 整理进 [design/art-direction.md](../design/art-direction.md)，之后以它为准。
 
 ## 目标
@@ -64,4 +64,11 @@
 
 ## 执行记录
 
-（随 PR 补充）
+### PR 1 基础（分支 `ui-1-foundation`）
+
+- 字体：Noto Sans SC 可变字重（子集 3.9MB）、Noto Serif SC 静态粗体（子集 3.2MB），替换原来 10.5MB 的 Noto Sans SC Regular；字体变体 `sans`、`sans_medium`、`sans_bold`、`serif`、`serif_heavy`。
+- 素材生成脚本在 `tools/autochess_tools/art/`（resvg 渲染，支持滤镜），`just fonts`、`just art`、`just theme`；截图 `just shots`。
+- 主题只设在重做过的界面的根节点；项目只把默认字体换成 `sans`。全局主题会改坏旧界面（竖排文字的按钮被内边距挤掉），等全部界面重做完再设。
+- 主菜单：新背景、金色渐变标题、菜单项；冒险、线下对战不可用并标"未开放"。
+- 对话框组件 `Dialog`（通知、确认），PR 3/4 开始用。
+- 测试：数据检查加了字体覆盖（翻译表的每个字都要在两种字体里）。
