@@ -1,7 +1,37 @@
-[gd_scene load_steps=3 format=3 uid="uid://d4f8jau7mhyyj"]
+[gd_scene load_steps=14 format=3 uid="uid://d4f8jau7mhyyj"]
 
-[ext_resource type="Script" path="res://scenes/menu/menu.gd" id="1_tjhht"]
-[ext_resource type="Texture2D" uid="uid://dbf1c1s0xxoxb" path="res://assets/backgrounds/solid_blue.png" id="1_udgh3"]
+[ext_resource type="Script" path="res://scenes/menu/menu.gd" id="1_menu"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/menu.png" id="2_bg"]
+[ext_resource type="Script" path="res://scenes/components/ui/menu_item.gd" id="3_item"]
+[ext_resource type="Shader" path="res://scenes/components/ui/gold_text.gdshader" id="4_gold"]
+[ext_resource type="FontVariation" path="res://assets/fonts/serif_heavy.tres" id="5_serif"]
+[ext_resource type="Texture2D" path="res://assets/ui/theme/diamond.png" id="6_diamond"]
+[ext_resource type="Theme" path="res://assets/ui/theme.tres" id="7_theme"]
+
+[sub_resource type="Gradient" id="Gradient_shade"]
+offsets = PackedFloat32Array(0, 0.3, 0.55)
+colors = PackedColorArray(0.03, 0.04, 0.094, 0.78, 0.03, 0.04, 0.094, 0.55, 0.03, 0.04, 0.094, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shade"]
+gradient = SubResource("Gradient_shade")
+fill_to = Vector2(1, 0)
+
+[sub_resource type="FontVariation" id="FontVariation_title"]
+base_font = ExtResource("5_serif")
+spacing_glyph = 10
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gold"]
+shader = ExtResource("4_gold")
+shader_parameter/height = 150.0
+
+[sub_resource type="Gradient" id="Gradient_rule"]
+colors = PackedColorArray(1, 0.851, 0.541, 1, 1, 0.851, 0.541, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_rule"]
+gradient = SubResource("Gradient_rule")
+width = 520
+height = 2
+fill_to = Vector2(1, 0)
 
 [node name="MenuScene" type="Control"]
 layout_mode = 3
@@ -10,70 +40,111 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_tjhht")
+theme = ExtResource("7_theme")
+script = ExtResource("1_menu")
 
 [node name="Background" type="TextureRect" parent="."]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
-texture = ExtResource("1_udgh3")
-
-[node name="title" type="Label" parent="."]
-modulate = Color(0.0359302, 0, 1, 1)
 layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -300.0
-offset_top = 200.0
-offset_right = 300.0
-offset_bottom = 369.0
-grow_horizontal = 2
-theme_override_font_sizes/font_size = 120
-text = "ui.menu.title"
-
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
+anchors_preset = 15
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -124.0
-offset_top = -630.0
-offset_right = 124.0
-offset_bottom = -149.0
 grow_horizontal = 2
-grow_vertical = 0
-alignment = 1
+grow_vertical = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="test_mode" type="Button" parent="VBoxContainer"]
+[node name="Shade" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("GradientTexture2D_shade")
+expand_mode = 1
+
+[node name="Title" type="Label" parent="."]
+material = SubResource("ShaderMaterial_gold")
+layout_mode = 0
+offset_left = 150.0
+offset_top = 140.0
+offset_right = 1150.0
+offset_bottom = 290.0
+theme_type_variation = &"TitleLabel"
+theme_override_colors/font_shadow_color = Color(1, 0.84, 0.55, 0.28)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 0
+theme_override_constants/shadow_outline_size = 14
+theme_override_fonts/font = SubResource("FontVariation_title")
+theme_override_font_sizes/font_size = 118
+text = "ui.menu.title"
+vertical_alignment = 1
+
+[node name="Rule" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 152.0
+offset_top = 306.0
+offset_right = 672.0
+offset_bottom = 308.0
+texture = SubResource("GradientTexture2D_rule")
+
+[node name="RuleDiamond" type="TextureRect" parent="."]
+modulate = Color(1, 0.851, 0.541, 1)
+layout_mode = 0
+offset_left = 144.0
+offset_top = 299.0
+offset_right = 160.0
+offset_bottom = 315.0
+texture = ExtResource("6_diamond")
+
+[node name="Menu" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 420.0
+offset_right = 850.0
+offset_bottom = 900.0
+theme_override_constants/separation = 0
+
+[node name="test_mode" type="Button" parent="Menu"]
+custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
-theme_override_font_sizes/font_size = 60
 text = "ui.menu.sandbox"
+alignment = 0
+script = ExtResource("3_item")
 
-[node name="single_mode" type="Button" parent="VBoxContainer"]
+[node name="single_mode" type="Button" parent="Menu"]
+custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
-theme_override_font_sizes/font_size = 60
 text = "ui.menu.levels"
+alignment = 0
+script = ExtResource("3_item")
 
-[node name="adventure_mode" type="Button" parent="VBoxContainer"]
+[node name="adventure_mode" type="Button" parent="Menu"]
+custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
-theme_override_font_sizes/font_size = 60
+disabled = true
 text = "ui.menu.adventure"
+alignment = 0
+script = ExtResource("3_item")
+note = "ui.menu.locked"
 
-[node name="offline_battle_mode" type="Button" parent="VBoxContainer"]
+[node name="offline_battle_mode" type="Button" parent="Menu"]
+custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
-theme_override_font_sizes/font_size = 60
+disabled = true
 text = "ui.menu.lan"
+alignment = 0
+script = ExtResource("3_item")
+note = "ui.menu.locked"
 
-[node name="book_mode" type="Button" parent="VBoxContainer"]
+[node name="book_mode" type="Button" parent="Menu"]
+custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
-theme_override_font_sizes/font_size = 60
 text = "ui.menu.book"
+alignment = 0
+script = ExtResource("3_item")
 
-[connection signal="pressed" from="VBoxContainer/test_mode" to="." method="_on_test_mode_pressed"]
-[connection signal="pressed" from="VBoxContainer/single_mode" to="." method="_on_single_mode_pressed"]
-[connection signal="pressed" from="VBoxContainer/adventure_mode" to="." method="_on_adventure_mode_pressed"]
-[connection signal="pressed" from="VBoxContainer/offline_battle_mode" to="." method="_on_offline_battle_mode_pressed"]
-[connection signal="pressed" from="VBoxContainer/book_mode" to="." method="_on_book_mode_pressed"]
+[connection signal="pressed" from="Menu/test_mode" to="." method="_on_test_mode_pressed"]
+[connection signal="pressed" from="Menu/single_mode" to="." method="_on_single_mode_pressed"]
+[connection signal="pressed" from="Menu/book_mode" to="." method="_on_book_mode_pressed"]
