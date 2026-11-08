@@ -16,6 +16,7 @@
 | `data.py` | 读 `data/cards.json` 和 `i18n/data.csv` |
 | `sim.py` | `simulate(对局列表, extra_cards)`：调用 `cli/sim.gd`，大批量时拆给多个 Godot 进程并行。`extra_cards` 是只在本次模拟有效的额外卡牌，比如白板单位、某张卡的不同数值版本 |
 | `effective.py` | 有效战力：与被测卡（或装备）表现相同的白板战力 |
+| `art/` | 美术素材生成（依赖组 `art`：fonttools、resvg-py）：`fonts.py` 字体子集，`icons.py` 图标，`ornaments.py` 卡牌边框和法阵，`ui.py` 控件和卡面面板贴图。用 `just fonts`、`just art` 运行，规范见 `docs/design/art-direction.md` |
 
 ## 实验
 
