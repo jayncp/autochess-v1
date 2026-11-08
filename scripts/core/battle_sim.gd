@@ -244,7 +244,7 @@ func apply_skill(u: Unit, skill: String, value: int) -> Array:
 		"corrode":
 			if enemies.is_empty():
 				return []
-			# 蟾蜍：己方角色触发腐蚀时，腐蚀值 +N（加完再进伤害流程）
+			# 蟾蜍：己方角色结算腐蚀时，伤害 +N（加在腐蚀值上，再进伤害流程；卡面数值不变）
 			var boost := 0
 			var boosts := []
 			for partner in fields[u.side]:

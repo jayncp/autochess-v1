@@ -79,6 +79,6 @@ keyword_desc.awaken,触发下一位角色的基础技能
 keyword_desc.shelter,抵挡 N 次伤害，每次消耗一层（先于坚固）
 keyword_desc.lethal,交战时攻击视为无穷大，可被庇护抵挡
 effect.rally_gain,己方角色触发集结时，自身战斗力 +%d
-effect.corrode_boost,己方角色触发腐蚀时，腐蚀值 +%d
+effect.corrode_boost,己方角色结算腐蚀时，伤害 +%d
 level.boar_rush,猪突猛进
 level.tiger_gale,虎虎生风

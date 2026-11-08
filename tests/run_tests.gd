@@ -189,7 +189,7 @@ func _test_skill_text() -> void:
 	var cases := [
 		[load_card.special_skill_text({"lethal": null, "awaken": {"timing": "pre_battle"}}), "战前：唤醒；致命"],
 		[load_card.special_skill_text({"rally_gain": 2}), "己方角色触发集结时，自身战斗力 +2"],
-		[load_card.special_skill_text({"corrode_boost": 2, "sturdy": 4}), "坚固4；己方角色触发腐蚀时，腐蚀值 +2"],
+		[load_card.special_skill_text({"corrode_boost": 2, "sturdy": 4}), "坚固4；己方角色结算腐蚀时，伤害 +2"],
 		[load_card.base_skill_text({"wealth": 1, "support": 3, "rage": 2}), "狂暴2、支援3、财富1"],
 		[load_card.special_skill_text({"shelter": 1, "sturdy": 4}), "坚固4；庇护1"],
 	]
