@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://diok1i813ewb7"
-path="res://.godot/imported/NotoSansSC-Regular.ttf-4b8abad24b3b7f136d93d4ff5bc17cfc.fontdata"
+uid="uid://sp1grtwtx0n2"
+path="res://.godot/imported/NotoSansSC.ttf-53e7d2951cb723449d16fcecb813db38.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/NotoSansSC-Regular.ttf"
-dest_files=["res://.godot/imported/NotoSansSC-Regular.ttf-4b8abad24b3b7f136d93d4ff5bc17cfc.fontdata"]
+source_file="res://assets/fonts/NotoSansSC.ttf"
+dest_files=["res://.godot/imported/NotoSansSC.ttf-53e7d2951cb723449d16fcecb813db38.fontdata"]
 
 [params]
 
@@ -21,8 +21,10 @@ msdf_pixel_range=8
 msdf_size=48
 allow_system_fallback=true
 force_autohinter=false
-hinting=1
-subpixel_positioning=1
+modulate_color_glyphs=false
+hinting=3
+subpixel_positioning=4
+keep_rounding_remainders=true
 oversampling=0.0
 Fallbacks=null
 fallbacks=[]

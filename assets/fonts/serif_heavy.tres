@@ -1,0 +1,7 @@
+[gd_resource type="FontVariation" format=3]
+
+[ext_resource type="FontFile" path="res://assets/fonts/NotoSerifSC-Bold.ttf" id="1_8e1ta"]
+
+[resource]
+base_font = ExtResource("1_8e1ta")
+variation_embolden = 0.6
