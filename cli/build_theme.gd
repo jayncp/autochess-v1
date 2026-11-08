@@ -32,8 +32,19 @@ func _initialize() -> void:
 		font.variation_embolden = spec[2]
 		_save(font, "res://assets/fonts/%s.tres" % name)
 		fonts[name] = load("res://assets/fonts/%s.tres" % name)
-	_save(build(), "res://assets/ui/theme.tres")
+	var theme := build()
+	_stable_ids(theme)
+	_save(theme, "res://assets/ui/theme.tres")
 	quit()
+
+
+## 子资源按"类型/条目"命名，重新生成时 ID 不变，diff 只反映真正的改动
+func _stable_ids(theme: Theme) -> void:
+	for type in theme.get_type_list():
+		for name in theme.get_stylebox_list(type):
+			theme.get_stylebox(name, type).resource_scene_unique_id = ("%s_%s" % [type, name]).validate_node_name()
+		for name in theme.get_icon_list(type):
+			theme.get_icon(name, type).resource_scene_unique_id = ("icon_%s_%s" % [type, name]).validate_node_name()
 
 
 func _save(resource: Resource, path: String) -> void:
