@@ -230,7 +230,8 @@ func _card_cell(spec: Dictionary) -> Control:
 	return cell
 
 
-## 各界面：图鉴（默认、筛选中、点卡放大）、关卡选择（展开详情、关卡多阵容长）、闯关布阵、科研模式、战斗开始前、战斗中、战斗结束
+## 各界面：图鉴（默认、筛选中、点卡放大）、关卡选择（展开详情、关卡多阵容长）、闯关布阵（默认、拖动中、紧凑模式、手牌多）、
+## 科研模式（默认、紧凑模式加装备页）、战斗开始前、战斗中、战斗结束
 func _screens() -> void:
 	var manager: Node = load("res://scenes/app/scene_manager.tscn").instantiate()
 	root.add_child(manager)
@@ -260,9 +261,13 @@ func _screens() -> void:
 	await _frames(5)
 	await _shot("levels")
 	await _demo_levels(levels)
-	levels.enter_level(LevelDB.all().keys()[0])
+	# 布阵：第一关临时限制 5 个卡位，看"未解锁"的样子
+	var first: Dictionary = LevelDB.level(LevelDB.all().keys()[0])
+	first.slots = 5
+	levels.enter_level(first.id)
 	await create_timer(0.6).timeout
-	await _shot("level")
+	await _build_stage(manager.current_scene)
+	first.erase("slots")
 	manager.current_scene._on_back_button_pressed()
 	await _frames(3)
 	manager.current_scene._on_back_button_pressed()
@@ -270,16 +275,22 @@ func _screens() -> void:
 
 	manager.get_node("MenuScene")._on_test_mode_pressed()
 	await _frames(3)
-	var select: Node = manager.current_scene.get_node("select_manager")
-	var lineup := [[1, 0, "tiger_man", "lionheart"], [1, 1, "toad", ""], [1, 2, "fairy", "holy_water"], [1, 3, "paladin", ""],
-		[2, 0, "porcupine", "holy_shield"], [2, 1, "wisp", ""], [2, 2, "half_elf", ""], [2, 3, "sludge", "thorns"], [2, 4, "captain", ""]]
+	var sandbox: Node = manager.current_scene
+	var lineup := [[1, 0, "porcupine", "holy_shield"], [1, 1, "toad", ""], [1, 2, "maneater", "hollow"], [1, 3, "paladin", ""],
+		[2, 0, "tiger_man", "war_banner"], [2, 1, "fairy", "holy_water"], [2, 2, "wisp", ""]]
 	for slot in lineup:
-		select.init_card_list[slot[0]][slot[1]] = slot[2]
-		select.init_equip_list[slot[0]][slot[1]] = slot[3]
-		select.update_display(slot[0], slot[1], slot[2], slot[3])
-	await _frames(3)
+		sandbox.set_unit(slot[0], slot[1], slot[2], slot[3])
+	sandbox.select_slot(2, 2)
+	await _frames(5)
 	await _shot("sandbox")
-	select._on_start_battle_pressed()
+	sandbox.get_node("%Compact").button_pressed = true
+	sandbox.get_node("Picker").set_tab("equipment")
+	await _frames(5)
+	await _shot("sandbox_compact")
+	sandbox.get_node("%Compact").button_pressed = false
+	sandbox.get_node("Picker").set_tab("character")
+	await _frames(3)
+	sandbox._on_start_battle_pressed()
 	await _frames(5)
 	await _shot("battle_start")
 	var battle_manager: Node = manager.get_node("main/battle_manager")
@@ -290,6 +301,37 @@ func _screens() -> void:
 	await _frames(5)
 	await _shot("battle_end")
 	manager.free()
+
+
+## 闯关布阵：摆上几张卡；拖动中（停在第 4 个卡位上方）；紧凑模式；手牌很多时叠压
+func _build_stage(setup: Node) -> void:
+	var cards: Node = setup.get_node("advanced_card_manager")
+	var slots: Array = setup.get_node("player_card_slots").get_children()
+	var hand: Array = setup.get_node("player_hand").player_hand
+	var find := func(id: String): return hand.filter(func(c): return (c.card_id if c.card_id else c.equip_id) == id)[0]
+	for step in [["tiger_man", 0], ["war_banner", 0], ["half_elf", 1], ["vulture", 2]]:
+		cards.start_drag(find.call(step[0]))
+		cards.drop_card(slots[step[1]])
+	await _frames(5)
+	await _shot("level")
+	var dragged = find.call("maneater")
+	cards.start_drag(dragged)
+	dragged.set_look(cards.lineup_look[0], cards.lineup_look[1])
+	dragged.position = slots[3].position + Vector2(26, 20)
+	slots[3].hover = true
+	await _frames(5)
+	await _shot("level_drag")
+	cards.drop_card(null)
+	slots[3].hover = false
+	await create_timer(0.3).timeout
+	setup.get_node("%Compact").button_pressed = true
+	await create_timer(0.3).timeout
+	await _shot("level_compact")
+	setup.get_node("%Compact").button_pressed = false
+	for id in ["fairy", "holy_water", "soldier", "necklace", "wisp", "toad", "iron_sword", "paladin", "porcupine", "holy_shield"]:
+		cards.add_card_to_hand_by_id(id)
+	await create_timer(0.4).timeout
+	await _shot("level_many")
 
 
 ## 关卡多、阵容长时的样子：临时加几个示例关卡（第 5 关是 7 人阵容），第 1、4 关标成已通关
