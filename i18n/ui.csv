@@ -5,6 +5,7 @@ ui.common.none,无
 ui.dialog.ok,知道了
 ui.dialog.cancel,取消
 ui.dialog.confirm,确定
+ui.dialog.hint,提示
 ui.card.clear,空
 ui.card.separator,、
 ui.card.special_separator,；
@@ -16,6 +17,12 @@ ui.menu.adventure,冒险模式
 ui.menu.lan,线下对战
 ui.menu.book,图鉴模式
 ui.menu.locked,未开放
+ui.board.enemy,对方
+ui.board.ally,我方
+ui.board.front,交战位
+ui.board.locked,未解锁
+ui.board.deployed,上场
+ui.board.compact,紧凑模式
 ui.level_select.title,闯关模式
 ui.level_select.tutorial,教学关
 ui.level_select.puzzle,解谜关
@@ -23,9 +30,21 @@ ui.level_select.coming,即将开放
 ui.level_select.enemy,敌方阵容
 ui.level_select.enemy_count,共 %s 人
 ui.level_select.enter,进入关卡
-ui.level_setup.our_team,我方队伍
-ui.level_setup.need_character,请至少上场一个角色！
-ui.sandbox.invalid,阵容有误，请重新输入！
+ui.level_setup.subtitle,闯关 · 第 %d 关
+ui.level_setup.need_character,请至少上场一个角色
+ui.sandbox.title,科研模式
+ui.sandbox.swap,交换双方
+ui.sandbox.clear,清空全部
+ui.sandbox.clear_confirm,确定要清空双方的阵容吗？
+ui.sandbox.need_both,双方都至少要上场一个角色
+ui.sandbox.slot,%s 第 %d 位
+ui.sandbox.for_character,为 %s 选择角色
+ui.sandbox.for_equipment,为 %s 选择装备
+ui.sandbox.no_character,%s 还没有角色
+ui.sandbox.remove,移除
+ui.sandbox.unequip,卸下装备
+ui.sandbox.all_stars,全部星级
+ui.sandbox.search_hint,卡名、词条
 ui.battle.start,开始战斗
 ui.battle.speed,速度: %sx
 ui.battle.skip,跳过战斗

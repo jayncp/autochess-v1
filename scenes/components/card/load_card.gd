@@ -33,6 +33,22 @@ static func show_cards(card, card_id: String, equip_id: String):
 	card.face.show_cards(card_id, equip_id)
 
 
+## 搜索（图鉴、科研模式的选卡区）：卡名、种族、时机、技能和效果文字里有没有 text；text 为空时都算匹配
+static func matches_search(data: Dictionary, text: String) -> bool:
+	if text == "":
+		return true
+	var names := [_t("card." + data.id)]
+	for race in data.get("races", []):
+		names.append(_t("race." + race))
+	for slot in CardDB.TIMING_SLOTS:
+		if data.get(slot, CardDB.CLEAR) != CardDB.CLEAR:
+			names.append(_t("timing." + data[slot]))
+	var texts := CardDB.SKILL_SLOTS.map(func(slot): return base_skill_text(data.get(slot)))
+	texts.append(special_skill_text(data.get("special_skills")))
+	names.append_array(texts.filter(func(t): return t != null))
+	return names.any(func(n): return text in n)
+
+
 ## 时机的显示文字，如"战前、交战"；单个时机也可以直接传字符串，null 表示没有，"clear" 显示"空"
 static func timing_name(timings):
 	if timings == null:

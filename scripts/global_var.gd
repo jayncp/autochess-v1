@@ -8,6 +8,9 @@ static var battle_equip_list_1 = []
 static var battle_card_list_2 = []
 static var battle_equip_list_2 = []
 
+## 紧凑模式（构筑阶段、科研模式的开关），这次运行里一直保持
+static var compact_mode := false
+
 # Called when the node enters the scene tree for the first time.
 # func _ready() -> void:
 # 	pass # Replace with function body.
