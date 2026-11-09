@@ -33,6 +33,12 @@ window/stretch/mode="canvas_items"
 
 theme/custom_font="res://assets/fonts/sans.tres"
 
+[importer_defaults]
+
+texture={
+"mipmaps/generate": true
+}
+
 [input_devices]
 
 pointing/android/enable_pan_and_scale_gestures=true

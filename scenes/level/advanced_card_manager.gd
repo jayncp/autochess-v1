@@ -199,7 +199,6 @@ func drop_on_card(card, slot, origin_slot):
 	elif card.card_id == "" and target.card_id != "" and target.equip_id != "":
 		var old_equip_id = target.equip_id
 		load_card.show_cards(target, target.card_id, card.equip_id)
-		target.get_node("equip_image").adjust_size()
 		player_hand_reference.remove_card_from_hand(card)
 		card.queue_free()
 		var old_equip = load_card.generate("", old_equip_id)

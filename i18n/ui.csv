@@ -20,7 +20,6 @@ ui.level_select.title,闯关模式   关卡选择
 ui.level_setup.our_team,我方队伍
 ui.level_setup.need_character,请至少上场一个角色！
 ui.sandbox.invalid,阵容有误，请重新输入！
-ui.battle.realtime,实时状态
 ui.battle.start,开始战斗
 ui.battle.speed,速度: %sx
 ui.battle.skip,跳过战斗

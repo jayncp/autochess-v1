@@ -1,4 +1,5 @@
 extends Node2D
+## 卡牌：拖放、悬停、动画用这个根节点；卡面由子节点 face（CardFace）画。用 load_card.generate 生成。
 
 # 鼠标悬停信号
 signal hovered
@@ -16,12 +17,17 @@ var is_enemy_card = false
 var card_id := ""
 var equip_id := ""
 
-# 战斗中当前显示的战力（结算在 BattleSim 里，这里只做显示）
-var strength
 var is_playing_animation = false
 
-# Called when the node enters the scene tree for the first time.
+## 卡面
+var face: CardFace:
+	get:
+		return $face
+
+
 func _ready() -> void:
+	# 点击区域和卡面一样大
+	$Area2D/CollisionShape2D.shape.size = face.get_size()
 	# 连结发送信号
 	get_parent().connect_card_signals(self)
 
@@ -31,8 +37,3 @@ func _on_area_2d_mouse_entered() -> void:
 
 func _on_area_2d_mouse_exited() -> void:
 	emit_signal("hovered_off",self)
-
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass

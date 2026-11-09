@@ -83,22 +83,6 @@ position = Vector2(1440, 850)
 z_index = -2
 position = Vector2(1680, 850)
 
-[node name="skill_union" type="CheckButton" parent="."]
-offset_left = 1615.0
-offset_top = 415.0
-offset_right = 1659.0
-offset_bottom = 439.0
-scale = Vector2(3, 3)
-icon_alignment = 1
-
-[node name="skill_union_label" type="Label" parent="."]
-offset_left = 1745.0
-offset_top = 425.0
-offset_right = 1809.0
-offset_bottom = 448.0
-scale = Vector2(2, 2)
-text = "ui.battle.realtime"
-
 [node name="start_battle" type="Button" parent="."]
 offset_left = 1570.0
 offset_top = 494.0
@@ -158,7 +142,6 @@ vertical_alignment = 1
 
 [node name="buff_text_container" type="Node2D" parent="."]
 
-[connection signal="pressed" from="skill_union" to="card_manager" method="_on_check_button_pressed"]
 [connection signal="pressed" from="start_battle" to="battle_manager" method="_on_start_battle_pressed_battle"]
 [connection signal="pressed" from="speed_button" to="battle_manager" method="_on_speed_button_pressed"]
 [connection signal="pressed" from="skip_button" to="battle_manager" method="_on_skip_button_pressed"]

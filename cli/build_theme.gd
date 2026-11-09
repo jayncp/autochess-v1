@@ -250,6 +250,7 @@ func _tex(name: String) -> Texture2D:
 ## 图标贴图缩到指定大小并上色（主题图标不能单独设颜色）
 func _icon(name: String, size: int, color: Color) -> Texture2D:
 	var image: Image = load("res://assets/ui/icons/%s.png" % name).get_image()
+	image.clear_mipmaps()  # 图标导入时带 mipmap（卡面上要缩小显示），控件里按原大小用，不需要
 	image.resize(size, size, Image.INTERPOLATE_LANCZOS)
 	for y in size:
 		for x in size:
