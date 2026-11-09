@@ -4,3 +4,6 @@ __pycache__/
 .ruff_cache/
 # 实验输出
 out/
+
+# 美术素材生成脚本下载的源文件
+.cache/

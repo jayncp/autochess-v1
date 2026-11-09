@@ -8,6 +8,7 @@
 | [design/battle-rules.md](design/battle-rules.md) | 战斗规则规范：术语、显示顺序、结算、格子模型（含待实现标记） | 活文档 |
 | [design/card-design.md](design/card-design.md) | 卡牌数值：有效战力、建模方法、基准矩阵、装备衍生 | 活文档 |
 | [design/levels.md](design/levels.md) | 现有关卡的数据与全部解 | 活文档 |
+| [design/art-direction.md](design/art-direction.md) | 美术与界面规范：画风、卡面、各界面布局、控件、素材生成 | 活文档 |
 | [design/card-workbook.xlsx](design/card-workbook.xlsx) | 卡牌设计表：1★/2★ 第一轮（已实现和设计中）、旧三星和旧设计（参考）、新设计填写区 | 设计草稿，正式数据以 `data/cards.json` 为准 |
 | [design/balance-report-*.md](design/) | 模拟实验报告 | 快照，带时效 |
 | [takeover/](takeover/README.md) | 接手调查：Godot 现状、旧 Python 脚本、桌游资料、素材库 | 快照，不再更新 |

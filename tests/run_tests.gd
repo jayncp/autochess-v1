@@ -70,9 +70,26 @@ func _check_data() -> void:
 		if tr(key) == key:
 			_failures.append("[data] 缺少中文名：%s" % key)
 	TranslationServer.set_locale(locale)
+	_check_font_coverage()
 	print("数据检查：%d 张卡，%d 个关卡" % [CardDB.all().size(), LevelDB.all().size()])
 	if not placeholders.is_empty():
 		print("  用占位图的卡：%s" % ", ".join(placeholders))
+
+
+## 字体是子集化的（just fonts）：翻译表里的每个字都要在两种字体里，缺了就重新子集化
+func _check_font_coverage() -> void:
+	var fonts := ["res://assets/fonts/NotoSansSC.ttf", "res://assets/fonts/NotoSerifSC-Bold.ttf"].map(func(path): return load(path))
+	var missing := {}
+	for table in DirAccess.get_files_at("res://i18n"):
+		if not table.ends_with(".csv"):
+			continue
+		for line in FileAccess.get_file_as_string("res://i18n/" + table).split("\n"):
+			for i in line.length():
+				var code := line.unicode_at(i)
+				if code >= 0x20 and fonts.any(func(font): return not font.has_char(code)):
+					missing[line[i]] = true
+	if not missing.is_empty():
+		_failures.append("[data] 字体缺字（运行 just fonts 重新子集化）：%s" % "".join(missing.keys()))
 
 
 ## 每条用例：结果符合期望、交换左右后对称、事件日志自洽

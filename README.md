@@ -34,9 +34,9 @@ godot --path .
 |---|---|
 | 代码：GDScript、场景与工程配置、工具脚本 | [AGPL-3.0-or-later](LICENSE) |
 | 美术资源（`assets/` 下的图片）、卡牌与关卡数据、文档（`docs/`） | [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt) |
-| 字体 Noto Sans SC（`assets/fonts/NotoSansSC-Regular.ttf`） | [SIL OFL 1.1](assets/fonts/OFL.txt)，© Adobe |
+| 字体 Noto Sans SC、Noto Serif SC（`assets/fonts/`，按常用字子集化） | [SIL OFL 1.1](assets/fonts/OFL.txt)，© Adobe |
 
 - 卡牌与关卡数据在 `data/`，翻译表在 `i18n/`，都按数据适用 CC BY-SA 4.0。
-- 卡图和背景由 AI 辅助生成，并经过人工处理；还没有卡图的卡暂用占位图。
+- 卡图和背景由 AI 辅助生成，并经过人工处理；还没有卡图的卡暂用占位图。卡框、法阵、图标、界面贴图由 `tools/autochess_tools/art/` 的脚本生成。
 
 Copyright © 2025–2026 jayncp

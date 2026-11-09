@@ -37,3 +37,23 @@ tools-check:
 # 运行平衡实验（tools/autochess_tools/experiments/<名字>.py），结果打印到终端
 experiment name:
     cd tools && uv run python -m autochess_tools.experiments.{{name}}
+
+# 字体子集化：从 Google Fonts 下载源字体，裁到常用字加翻译表用到的字，写到 assets/fonts/
+fonts:
+    cd tools && uv run --group art python -m autochess_tools.art.fonts
+
+# 美术素材：图标、卡牌边框和法阵、界面贴图（SVG 渲染成 PNG），之后重建主题
+art:
+    cd tools && uv run --group art python -m autochess_tools.art.icons
+    cd tools && uv run --group art python -m autochess_tools.art.ornaments
+    cd tools && uv run --group art python -m autochess_tools.art.ui
+    {{godot}} --headless --path . --import > /dev/null 2>&1
+    just theme
+
+# 用 cli/build_theme.gd 重建全局主题 assets/ui/theme.tres 和字体变体 assets/fonts/*.tres
+theme:
+    {{limit}} {{godot}} --headless --path . --script res://cli/build_theme.gd
+
+# 界面截图：各界面截到指定目录（默认 /tmp/autochess_shots），宽度默认 1920，手机用 2376。需要窗口
+shots out="/tmp/autochess_shots" width="1920":
+    {{limit}} {{godot}} --path . --script res://tests/tools/capture.gd -- {{out}} {{width}}
