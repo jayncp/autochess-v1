@@ -43,7 +43,7 @@
 - 运行：`just run`；测试：`just test`（约 2 秒，说明和维护方法见 `tests/README.md`）
 - 批量模拟：`just sim <输入.jsonl> <输出.jsonl> [--log] [--cards <额外卡牌.json>]`，单线程约 6600 场/秒（带事件日志约 4300）
 - 关卡检查：`just level-check [关卡文件.json]`；平衡实验：`just experiment <名字>`；Python 检查：`just tools-check`
-- 美术素材：`just fonts`（字体子集）、`just art`（图标、卡框、法阵、控件贴图，之后重建主题）、`just theme`（只重建主题）；截图：`just shots <目录> [宽度]`（需要窗口；画在固定大小的视口里，手机宽度 2376 也是原尺寸）。规范见 `docs/design/art-direction.md`
+- 美术素材：`just fonts`（字体子集）、`just art`（图标、卡框、法阵、控件贴图，之后重建主题）、`just theme`（只重建主题）；截图：`just shots <目录> [宽度] [高度]`（需要窗口；画在固定大小的视口里，手机宽度 2376 也是原尺寸）。规范见 `docs/design/art-direction.md`
 - Godot：`/Applications/Godot.app/Contents/MacOS/Godot`（`justfile` 里可用环境变量 `GODOT` 覆盖）
 - 无头脚本：`... --headless --path . --script <file.gd>`
   - 脚本 `extends SceneTree`；
