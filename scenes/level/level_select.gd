@@ -1,5 +1,5 @@
 extends Control
-## 关卡选择：标签页分教学关、解谜关（教学关还没有）；一行三个关卡，点一个展开详情（同时只展开一个），
+## 关卡选择：标签页分教学关、解谜关（教学关还没有）；一行三个关卡，点关卡直接进入，点右边的箭头展开详情（同时只展开一个），
 ## 详情横跨整行、插在这一行下面，内容是敌方阵容（放不下时左右拖动）和"进入关卡"。
 ## 布局按画布大小算（列表放在背景图的告示板上），画布宽度随屏幕变化时也适用。
 
@@ -89,7 +89,8 @@ func _rebuild() -> void:
 			tile.title = tr("level." + ids[i])
 			tile.open = ids[i] == _open
 			tile.cleared = cleared.has(ids[i])
-			tile.pressed.connect(toggle_level.bind(ids[i]))
+			tile.enter_requested.connect(enter_level.bind(ids[i]))
+			tile.detail_requested.connect(toggle_level.bind(ids[i]))
 			row.add_child(tile)
 			if tile.open:
 				open_tile = tile

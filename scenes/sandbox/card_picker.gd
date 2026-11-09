@@ -56,7 +56,7 @@ func _ready() -> void:
 		head.add_child(button)
 		_tabs[type] = button
 	var all := FilterOption.new({"text": tr("ui.sandbox.all_stars")}, 44)
-	all.pressed.connect(_set_stars.bind([]))
+	all.pressed.connect(_clear_stars)
 	head.add_child(all)
 	_stars[0] = all
 	var star_values := {}
@@ -197,8 +197,9 @@ func _toggle_star(star: int) -> void:
 	_sync_filters()
 
 
-func _set_stars(values: Array) -> void:
-	stars = values
+## "全部星级"：去掉所有星级勾选
+func _clear_stars() -> void:
+	stars = []
 	_sync_filters()
 
 

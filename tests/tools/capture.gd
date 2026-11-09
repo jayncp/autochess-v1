@@ -1,10 +1,10 @@
 extends SceneTree
 ## 界面截图：把各界面截到指定目录，用来对照样稿、给用户看。需要窗口（不能 --headless）。
-## 用法：just shots <输出目录> [宽度]，宽度默认 1920，手机用 2376
+## 用法：just shots <输出目录> [宽度] [高度]，默认 1920 × 1080，手机用 2376；更高的屏幕比如 1920 × 1200（16:10）、1920 × 1440（4:3）
 ## 截图：主菜单、主题控件、对话框；卡牌一览（cards_*，缩放 1，和样稿 cards.html 的几页对应）；用到卡牌的各界面
 
 var out: String
-## 截图画在这个固定大小的视口里（宽 × 1080），和窗口、屏幕大小无关
+## 截图画在这个固定大小的视口里（宽 × 高），和窗口、屏幕大小无关
 var _view := SubViewport.new()
 
 
@@ -12,8 +12,9 @@ func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	out = args[0] if args.size() > 0 else "/tmp/autochess_shots"
 	var width := int(args[1]) if args.size() > 1 else 1920
+	var height := int(args[2]) if args.size() > 2 else 1080
 	DirAccess.make_dir_recursive_absolute(out)
-	_view.size = Vector2i(width, 1080)
+	_view.size = Vector2i(width, height)
 	_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	root.add_child(_view)
 	await _frames(3)
@@ -318,7 +319,7 @@ func _build_stage(setup: Node) -> void:
 	for step in [["tiger_man", 0], ["war_banner", 0], ["half_elf", 1], ["vulture", 2]]:
 		cards.start_drag(find.call(step[0]))
 		cards.drop_card(slots[step[1]])
-	await _frames(5)
+	await create_timer(0.3).timeout  # 等手牌归位的动画
 	await _shot("level")
 	var dragged = find.call("maneater")
 	cards.start_drag(dragged)

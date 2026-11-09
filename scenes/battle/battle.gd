@@ -7,6 +7,8 @@ extends Control
 const MAX_SCALE := 0.93
 const EDGE := 22.0
 const RIGHT_MARGIN := 30.0
+## 两排卡之间的空隙最多这么大：更高的屏幕上两排向中间靠拢，整体上下居中
+const MAX_GAP := 420.0
 const TIMING_COLORS := {"pre_battle": Color("33d0e2"), "on_enter": Color("66cc4c"), "on_engage": Color("f0503f")}
 
 var card_scale := 0.6
@@ -40,16 +42,17 @@ func _layout() -> void:
 	_columns = BoardLayout.columns(BoardLayout.TAG_COLUMN, size.x - RIGHT_MARGIN, MAX_SCALE)
 	card_scale = _columns.scale
 	var height := BoardLayout.card_height(card_scale, false)
-	_rows = {1: EDGE + height / 2, 2: size.y - EDGE - height / 2}
-	row_gap = size.y - 2 * EDGE - 2 * height
+	row_gap = minf(MAX_GAP, size.y - 2 * EDGE - 2 * height)
+	var top := (size.y - 2 * height - row_gap) / 2
+	_rows = {1: top + height / 2, 2: size.y - top - height / 2}
 	var middle := size.y / 2
 	var tag_x := (BoardLayout.TAG_COLUMN - SideTag.WIDTH) / 2 + 8
 	_enemy_tag.position = Vector2(tag_x, _rows[1] - _enemy_tag.size.y / 2)
 	_ally_tag.position = Vector2(tag_x, _rows[2] - _ally_tag.size.y / 2)
 	_center($ClashMark, Vector2(_columns.center.call(0), middle))
-	# 状态区：一块居中容器，内容显隐变化时自己保持居中
+	# 状态区：页面正中的一块居中容器，内容显隐变化时自己保持居中
 	var status_width := 1000.0
-	$Status.position = Vector2((_columns.center.call(0) + _columns.right) / 2 - status_width / 2, middle - row_gap / 2)
+	$Status.position = Vector2(size.x / 2 - status_width / 2, middle - row_gap / 2)
 	$Status.size = Vector2(status_width, row_gap)
 	var controls: Control = $Controls
 	controls.size = controls.get_combined_minimum_size()

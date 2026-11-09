@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://chrmft17cb2o3"]
+[gd_scene load_steps=18 format=3 uid="uid://chrmft17cb2o3"]
 
 [ext_resource type="Script" path="res://scenes/battle/battle.gd" id="1_cpj55"]
 [ext_resource type="Texture2D" uid="uid://cyncfc7fi8ndm" path="res://assets/backgrounds/battle.png" id="2_c26nl"]
@@ -23,6 +23,12 @@ fill_to = Vector2(1.5, 0.55)
 [sub_resource type="FontVariation" id="FontVariation_result"]
 base_font = ExtResource("10_title")
 spacing_glyph = 24
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_result"]
+content_margin_left = 24.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_phase"]
+content_margin_left = 6.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_gold"]
 shader = ExtResource("8_gold")
@@ -120,6 +126,7 @@ theme_override_constants/shadow_offset_y = 0
 theme_override_constants/shadow_outline_size = 14
 theme_override_fonts/font = ExtResource("10_title")
 theme_override_font_sizes/font_size = 42
+theme_override_styles/normal = SubResource("StyleBoxEmpty_phase")
 
 [node name="Result" type="Label" parent="Status/StatusBox"]
 unique_name_in_owner = true
@@ -132,6 +139,7 @@ theme_override_constants/shadow_offset_y = 0
 theme_override_constants/shadow_outline_size = 18
 theme_override_fonts/font = SubResource("FontVariation_result")
 theme_override_font_sizes/font_size = 92
+theme_override_styles/normal = SubResource("StyleBoxEmpty_result")
 horizontal_alignment = 1
 
 [node name="ResultRule" type="TextureRect" parent="Status/StatusBox"]
