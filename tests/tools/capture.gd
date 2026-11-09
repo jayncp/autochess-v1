@@ -4,6 +4,8 @@ extends SceneTree
 ## 截图：主菜单、主题控件、对话框；卡牌一览（cards_*，缩放 1，和样稿 cards.html 的几页对应）；用到卡牌的各界面
 
 var out: String
+## 截图画在这个固定大小的视口里（宽 × 1080），和窗口、屏幕大小无关
+var _view := SubViewport.new()
 
 
 func _initialize() -> void:
@@ -11,18 +13,19 @@ func _initialize() -> void:
 	out = args[0] if args.size() > 0 else "/tmp/autochess_shots"
 	var width := int(args[1]) if args.size() > 1 else 1920
 	DirAccess.make_dir_recursive_absolute(out)
-	root.size = Vector2i(width, 1080)
-	root.content_scale_size = Vector2i(width, 1080)
+	_view.size = Vector2i(width, 1080)
+	_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	root.add_child(_view)
 	await _frames(3)
 
 	var manager: Node = load("res://scenes/app/scene_manager.tscn").instantiate()
-	root.add_child(manager)
+	_view.add_child(manager)
 	await _frames(5)
 	await _shot("menu")
 	manager.free()
 
 	var kit := _ui_kit()
-	root.add_child(kit)
+	_view.add_child(kit)
 	await _frames(5)
 	await _shot("ui_kit")
 	Dialog.confirm(kit, "清空全部", "确定要清空双方的阵容吗？")
@@ -38,7 +41,6 @@ func _initialize() -> void:
 ## 主题控件一览
 func _ui_kit() -> Control:
 	var page := Control.new()
-	page.theme = load("res://assets/ui/theme.tres")
 	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := TextureRect.new()
 	bg.texture = load("res://assets/backgrounds/menu.png")
@@ -168,7 +170,6 @@ func _card_pages() -> void:
 ## 一页：每行一个标题和一排卡
 func _card_page(name: String, rows: Array) -> void:
 	var page := Control.new()
-	page.theme = load("res://assets/ui/theme.tres")
 	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := ColorRect.new()
 	bg.color = Color("161c38")
@@ -188,7 +189,7 @@ func _card_page(name: String, rows: Array) -> void:
 		column.add_child(cards)
 		for spec in row[1]:
 			cards.add_child(_card_cell(spec))
-	root.add_child(page)
+	_view.add_child(page)
 	await _frames(5)
 	await _shot(name)
 	page.free()
@@ -231,10 +232,10 @@ func _card_cell(spec: Dictionary) -> Control:
 
 
 ## 各界面：图鉴（默认、筛选中、点卡放大）、关卡选择（展开详情、关卡多阵容长）、闯关布阵（默认、拖动中、紧凑模式、手牌多）、
-## 科研模式（默认、紧凑模式加装备页）、战斗开始前、战斗中、战斗结束
+## 科研模式（默认、紧凑模式加装备页）、战斗开始前、战斗中、点卡查看、战斗结束
 func _screens() -> void:
 	var manager: Node = load("res://scenes/app/scene_manager.tscn").instantiate()
-	root.add_child(manager)
+	_view.add_child(manager)
 	await _frames(3)
 	manager.get_node("MenuScene")._on_book_mode_pressed()
 	await _frames(5)
@@ -297,6 +298,11 @@ func _screens() -> void:
 	battle_manager._on_start_battle_pressed_battle()
 	await create_timer(2.2).timeout
 	await _shot("battle_mid")
+	var front = battle_manager.player_battle_fields[2][0]
+	var detail: CardDetail = manager.get_node("main/cards").open_detail(front)
+	await _frames(5)
+	await _shot("battle_detail")
+	detail.free()
 	battle_manager._on_skip_button_pressed()
 	await _frames(5)
 	await _shot("battle_end")
@@ -364,5 +370,5 @@ func _frames(n: int) -> void:
 
 func _shot(name: String) -> void:
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("%s/%s.png" % [out, name])
+	_view.get_texture().get_image().save_png("%s/%s.png" % [out, name])
 	print("截图 ", name)
