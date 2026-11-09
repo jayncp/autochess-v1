@@ -89,12 +89,23 @@ var display_scale := 0.6:
 		_refresh()
 ## 战斗实时状态：strength、timings、base_skills、special_skills、firing（正在发动的时机）；空表示构筑阶段
 var live := {}
+## 拖动中：金色外框加光晕、投影
+var glow := false:
+	set(value):
+		glow = value
+		_halo.queue_redraw()
+## 叠压的手牌：一圈柔和的投影，把前后两张分开
+var shadow := false:
+	set(value):
+		shadow = value
+		_halo.queue_redraw()
 
 var _character := {}
 var _equipment := {}
 var _origin := {}  # 开战时的实时状态，用来标出战斗中改变的数值
 var _offset := Vector2.ZERO  # 左上角（像素）
 var _background := ColorRect.new()
+var _halo := Node2D.new()  # 光晕和投影：画在卡面背后
 
 
 static func _static_init() -> void:
@@ -131,6 +142,9 @@ static func cached_texture(path: String) -> Texture2D:
 
 func _init() -> void:
 	texture_filter = TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_halo.show_behind_parent = true
+	_halo.draw.connect(_draw_halo)
+	add_child(_halo)
 	_background.show_behind_parent = true
 	_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_background.material = ShaderMaterial.new()
@@ -189,6 +203,7 @@ func _refresh() -> void:
 	_background.position = _offset
 	_background.size = size
 	_update_background()
+	_halo.queue_redraw()
 	queue_redraw()
 
 
@@ -250,6 +265,32 @@ func _draw() -> void:
 	if _character and _equipment:
 		_draw_equip_box(layout)
 	_draw_panels(layout, tier)
+
+
+## 光晕和投影（StyleBoxFlat 的阴影画成柔和的边）
+func _draw_halo() -> void:
+	if not (glow or shadow) or (_character.is_empty() and _equipment.is_empty()):
+		return
+	var rect := Rect2(_offset, get_size())
+	var box := StyleBoxFlat.new()
+	box.draw_center = false
+	box.set_corner_radius_all(roundi(RADIUS * display_scale))
+	if glow:
+		box.shadow_color = Color(0, 0, 0, 0.6)
+		box.shadow_size = roundi(28 * display_scale)
+		box.shadow_offset = Vector2(0, 24) * display_scale
+		_halo.draw_style_box(box, rect)
+		box.shadow_color = Color(1, 0.84, 0.47, 0.5)
+		box.shadow_size = roundi(26 * display_scale)
+		box.shadow_offset = Vector2.ZERO
+		box.border_color = Color(1, 0.925, 0.667, 0.9)
+		box.set_border_width_all(3)
+		box.set_expand_margin_all(3)
+	else:
+		box.shadow_color = Color(0, 0, 0, 0.5)
+		box.shadow_size = roundi(16 * display_scale)
+		box.shadow_offset = Vector2(-4, 8) * display_scale
+	_halo.draw_style_box(box, rect)
 
 
 # ---------- 卡图区 ----------

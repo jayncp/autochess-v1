@@ -26,6 +26,7 @@ script = ExtResource("1_cxuwj")
 script = ExtResource("4_3egiu")
 
 [node name="card_slots" type="Node2D" parent="."]
+visible = false
 
 [node name="card_slot1" parent="card_slots" instance=ExtResource("2_wpbw6")]
 z_index = -2

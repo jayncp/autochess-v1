@@ -1,6 +1,7 @@
 class_name LevelDB
 ## 关卡数据：读取 data/levels.json。
-## enemy 是敌方阵容 [[角色, 装备], ...]（装备为空字符串表示不带），hand 是玩家手牌（按发牌顺序）。
+## enemy 是敌方阵容 [[角色, 装备], ...]（装备为空字符串表示不带），hand 是玩家手牌（按发牌顺序），
+## slots（可选）是我方能用的卡位数，默认 7。
 
 const PATH := "res://data/levels.json"
 
@@ -30,3 +31,7 @@ static func _check(level: Dictionary) -> void:
 	for id in refs:
 		if not cards.has(id):
 			push_error("levels.json：%s 引用了不存在的卡 %s" % [level.id, id])
+	if level.has("slots"):
+		level.slots = int(level.slots)
+		if level.slots < 1 or level.slots > 7:
+			push_error("levels.json：%s 的卡位数 %d 应在 1 到 7 之间" % [level.id, level.slots])
