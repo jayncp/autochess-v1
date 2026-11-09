@@ -1,148 +1,198 @@
-[gd_scene load_steps=6 format=3 uid="uid://chrmft17cb2o3"]
+[gd_scene load_steps=16 format=3 uid="uid://chrmft17cb2o3"]
 
 [ext_resource type="Script" path="res://scenes/battle/battle.gd" id="1_cpj55"]
-[ext_resource type="Script" path="res://scenes/components/card_manager.gd" id="1_cxuwj"]
 [ext_resource type="Texture2D" uid="uid://cyncfc7fi8ndm" path="res://assets/backgrounds/battle.png" id="2_c26nl"]
-[ext_resource type="PackedScene" uid="uid://c1qbgbypq8ghe" path="res://scenes/components/card_slot.tscn" id="2_wpbw6"]
+[ext_resource type="Script" path="res://scenes/battle/battle_cards.gd" id="3_cards"]
 [ext_resource type="Script" path="res://scenes/battle/battle_manager.gd" id="4_3egiu"]
+[ext_resource type="Script" path="res://scenes/battle/clash_mark.gd" id="6_clash"]
+[ext_resource type="Script" path="res://scenes/components/ui/ui_button.gd" id="7_button"]
+[ext_resource type="Shader" path="res://scenes/components/ui/gold_text.gdshader" id="8_gold"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/skip.png" id="9_skip"]
+[ext_resource type="FontVariation" path="res://assets/fonts/serif_title.tres" id="10_title"]
+[ext_resource type="FontVariation" path="res://assets/fonts/sans_medium.tres" id="11_medium"]
 
-[node name="main" type="Node2D"]
+[sub_resource type="Gradient" id="Gradient_shade"]
+colors = PackedColorArray(0.024, 0.031, 0.078, 0.15, 0.024, 0.031, 0.078, 0.55)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shade"]
+gradient = SubResource("Gradient_shade")
+fill = 1
+fill_from = Vector2(0.5, 0.55)
+fill_to = Vector2(1.5, 0.55)
+
+[sub_resource type="FontVariation" id="FontVariation_result"]
+base_font = ExtResource("10_title")
+spacing_glyph = 24
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gold"]
+shader = ExtResource("8_gold")
+shader_parameter/height = 110.0
+
+[sub_resource type="Gradient" id="Gradient_rule"]
+offsets = PackedFloat32Array(0, 0.5, 1)
+colors = PackedColorArray(1, 0.851, 0.541, 0, 1, 0.851, 0.541, 1, 1, 0.851, 0.541, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_rule"]
+gradient = SubResource("Gradient_rule")
+width = 520
+height = 2
+fill_to = Vector2(1, 0)
+
+[node name="main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_cpj55")
-metadata/_edit_vertical_guides_ = [960.0, 1680.0, 1680.0, 1746.0, 1746.0, 1440.0, 16.0]
-metadata/_edit_horizontal_guides_ = [0.0, 540.0, 900.0, 180.0, 450.0, 0.0, 450.0, 0.0, 0.0, 230.0, 630.0, 630.0, 540.0, 365.0]
 
 [node name="Background" type="TextureRect" parent="."]
-z_index = -10
-offset_right = 1920.0
-offset_bottom = 1080.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 texture = ExtResource("2_c26nl")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="card_manager" type="Node2D" parent="."]
-script = ExtResource("1_cxuwj")
+[node name="Shade" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_shade")
+expand_mode = 1
 
-[node name="input_manager" type="Node2D" parent="."]
+[node name="ClashMark" type="VBoxContainer" parent="."]
+layout_mode = 0
+script = ExtResource("6_clash")
+
+[node name="Status" type="CenterContainer" parent="."]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="StatusBox" type="VBoxContainer" parent="Status"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="StartButton" type="Button" parent="Status/StatusBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 84)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 34
+text = "ui.battle.start"
+script = ExtResource("7_button")
+
+[node name="Phase" type="HBoxContainer" parent="Status/StatusBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="PhaseIcon" type="TextureRect" parent="Status/StatusBox/Phase"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(46, 46)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+
+[node name="PhaseLabel" type="Label" parent="Status/StatusBox/Phase"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 0
+theme_override_constants/shadow_outline_size = 14
+theme_override_fonts/font = ExtResource("10_title")
+theme_override_font_sizes/font_size = 42
+
+[node name="Result" type="Label" parent="Status/StatusBox"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_gold")
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_colors/font_shadow_color = Color(1, 0.84, 0.55, 0.35)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 0
+theme_override_constants/shadow_outline_size = 18
+theme_override_fonts/font = SubResource("FontVariation_result")
+theme_override_font_sizes/font_size = 92
+horizontal_alignment = 1
+
+[node name="ResultRule" type="TextureRect" parent="Status/StatusBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_rule")
+
+[node name="Sub" type="Label" parent="Status/StatusBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.94, 0.84, 0.9)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_fonts/font = ExtResource("11_medium")
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+
+[node name="BackButton" type="Button" parent="Status/StatusBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 66)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 28
+text = "ui.common.back"
+script = ExtResource("7_button")
+
+[node name="Controls" type="HBoxContainer" parent="."]
+layout_mode = 0
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="SpeedButton" type="Button" parent="Controls"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(66, 66)
+layout_mode = 2
+theme_type_variation = &"IconButton"
+theme_override_fonts/font = ExtResource("11_medium")
+theme_override_font_sizes/font_size = 26
+text = "1×"
+
+[node name="SkipButton" type="Button" parent="Controls"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(66, 66)
+layout_mode = 2
+theme_type_variation = &"IconButton"
+icon = ExtResource("9_skip")
+icon_alignment = 1
+expand_icon = true
+
+[node name="cards" type="Node2D" parent="."]
+script = ExtResource("3_cards")
+
+[node name="buff_text_container" type="Node2D" parent="."]
+z_index = 10
 
 [node name="battle_manager" type="Node2D" parent="."]
 script = ExtResource("4_3egiu")
 
-[node name="card_slots" type="Node2D" parent="."]
-visible = false
-
-[node name="card_slot1" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(240, 230)
-
-[node name="card_slot2" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(480, 230)
-
-[node name="card_slot3" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(720, 230)
-
-[node name="card_slot4" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(960, 230)
-
-[node name="card_slot5" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(1200, 230)
-
-[node name="card_slot6" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(1440, 230)
-
-[node name="card_slot7" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(1680, 230)
-
-[node name="card_slot8" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(240, 850)
-
-[node name="card_slot9" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(480, 850)
-
-[node name="card_slot10" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(720, 850)
-
-[node name="card_slot11" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(960, 850)
-
-[node name="card_slot12" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(1200, 850)
-
-[node name="card_slot13" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(1440, 850)
-
-[node name="card_slot14" parent="card_slots" instance=ExtResource("2_wpbw6")]
-z_index = -2
-position = Vector2(1680, 850)
-
-[node name="start_battle" type="Button" parent="."]
-offset_left = 1570.0
-offset_top = 494.0
-offset_right = 1642.0
-offset_bottom = 525.0
-scale = Vector2(3, 3)
-text = "ui.battle.start"
-
-[node name="speed_button" type="Button" parent="."]
-offset_left = 16.0
-offset_top = 230.0
-offset_right = 53.0
-offset_bottom = 275.0
-scale = Vector2(3, 3)
-theme_override_font_sizes/font_size = 12
-autowrap_mode = 1
-
-[node name="skip_button" type="Button" parent="."]
-offset_left = 16.0
-offset_top = 714.0
-offset_right = 53.0
-offset_bottom = 759.0
-scale = Vector2(3, 3)
-theme_override_font_sizes/font_size = 12
-text = "ui.battle.skip"
-autowrap_mode = 1
-
-[node name="output_text" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 480.0
-offset_top = 505.0
-offset_right = 1440.0
-offset_bottom = 576.0
-theme_override_font_sizes/font_size = 50
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="attribute_text_1" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 480.0
-offset_top = 415.0
-offset_right = 1440.0
-offset_bottom = 484.0
-theme_override_font_sizes/font_size = 50
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="attribute_text_2" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 480.0
-offset_top = 595.0
-offset_right = 1440.0
-offset_bottom = 664.0
-theme_override_font_sizes/font_size = 50
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="buff_text_container" type="Node2D" parent="."]
-
-[connection signal="pressed" from="start_battle" to="battle_manager" method="_on_start_battle_pressed_battle"]
-[connection signal="pressed" from="speed_button" to="battle_manager" method="_on_speed_button_pressed"]
-[connection signal="pressed" from="skip_button" to="battle_manager" method="_on_skip_button_pressed"]
+[connection signal="pressed" from="Status/StatusBox/StartButton" to="battle_manager" method="_on_start_battle_pressed_battle"]
+[connection signal="pressed" from="Status/StatusBox/BackButton" to="battle_manager" method="_on_start_battle_pressed_battle"]
+[connection signal="pressed" from="Controls/SpeedButton" to="battle_manager" method="_on_speed_button_pressed"]
+[connection signal="pressed" from="Controls/SkipButton" to="battle_manager" method="_on_skip_button_pressed"]

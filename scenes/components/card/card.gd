@@ -28,8 +28,9 @@ var face: CardFace:
 func _ready() -> void:
 	# 点击区域和卡面一样大
 	$Area2D/CollisionShape2D.shape.size = face.get_size()
-	# 连结发送信号
-	get_parent().connect_card_signals(self)
+	# 布阵界面接收悬停信号（战斗界面不用）
+	if get_parent().has_method("connect_card_signals"):
+		get_parent().connect_card_signals(self)
 
 
 ## 移动到 target（动画）；新的移动会取代还没走完的
