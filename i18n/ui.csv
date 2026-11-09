@@ -16,7 +16,13 @@ ui.menu.adventure,冒险模式
 ui.menu.lan,线下对战
 ui.menu.book,图鉴模式
 ui.menu.locked,未开放
-ui.level_select.title,闯关模式   关卡选择
+ui.level_select.title,闯关模式
+ui.level_select.tutorial,教学关
+ui.level_select.puzzle,解谜关
+ui.level_select.coming,即将开放
+ui.level_select.enemy,敌方阵容
+ui.level_select.enemy_count,共 %s 人
+ui.level_select.enter,进入关卡
 ui.level_setup.our_team,我方队伍
 ui.level_setup.need_character,请至少上场一个角色！
 ui.sandbox.invalid,阵容有误，请重新输入！
@@ -30,17 +36,24 @@ ui.battle.p2_win,"战斗结束,玩家2获胜!"
 ui.battle.draw,"战斗结束,双方平局!"
 ui.battle.no_death,无人阵亡 %d/%d
 ui.battle.stalemate,双方僵持
-ui.book.title,图  鉴
-ui.book.prev,上一页
-ui.book.next,下一页
+ui.book.title,图鉴
+ui.book.search_hint,卡名、种族、词条、效果
+ui.book.type,类型
 ui.book.character,角色
 ui.book.equipment,装备
 ui.book.star,星级
-ui.book.star_any,不限
-ui.book.star_1,1星
-ui.book.star_2,2星
-ui.book.star_3,3星
-ui.book.search,搜索筛选
-ui.book.search_hint,请输入关键词
-ui.book.confirm,确认
-ui.book.page,第%d页/共%d页
+ui.book.race,种族
+ui.book.timing,时机
+ui.book.base_skill,基础技能
+ui.book.special_skill,特殊技能
+ui.book.multi,可多选
+ui.book.all,全部
+ui.book.count,共 %s 张
+ui.book.sort_no,排序：序号
+ui.book.sort_star,排序：星级
+ui.book.sort_strength,排序：战斗力
+ui.book.reset,重置筛选
+ui.book.glossary,词条说明
+ui.book.close_hint,点击任意处关闭
+ui.book.meta_character,%s · %d★ 角色 · No.%d
+ui.book.meta_equipment,%d★ 装备 · No.%d

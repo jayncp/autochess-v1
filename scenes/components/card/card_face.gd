@@ -119,10 +119,11 @@ static func _static_init() -> void:
 ## 卡图的纹理；还没有卡图时返回 null（卡面上画淡显的种族图标或虚线六边形）
 static func art(id: String) -> Texture2D:
 	var path := "res://assets/cards/%s.png" % id
-	return _texture(path) if ResourceLoader.exists(path) else null
+	return cached_texture(path) if ResourceLoader.exists(path) else null
 
 
-static func _texture(path: String) -> Texture2D:
+## 带缓存地加载纹理：在 _draw 里画的纹理都要用它取（见 _textures）
+static func cached_texture(path: String) -> Texture2D:
 	if not _textures.has(path):
 		_textures[path] = load(path)
 	return _textures[path]
@@ -133,7 +134,6 @@ func _init() -> void:
 	_background.show_behind_parent = true
 	_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_background.material = ShaderMaterial.new()
-	_background.material.shader = BACKGROUND_SHADER
 	add_child(_background)
 
 
@@ -195,15 +195,19 @@ func _refresh() -> void:
 ## 背景：角色按种族色（多种族按扇区融合），装备按星级色；外圈压暗、圆角在着色器里
 func _update_background() -> void:
 	_background.visible = not (_character.is_empty() and _equipment.is_empty())
-	if not _background.visible:
-		return
-	var shader := _background.material as ShaderMaterial
-	shader.set_shader_parameter("size", _background.size)
-	shader.set_shader_parameter("radius", RADIUS * display_scale)
+	if _background.visible:
+		apply_background(_background.material, _character, _equipment, _background.size, RADIUS * display_scale)
+
+
+## 设置背景着色器（card_background.gdshader）的参数；装备框、关卡里的头像也用。radius 等于边长一半时是圆
+static func apply_background(shader: ShaderMaterial, character: Dictionary, equipment: Dictionary, size: Vector2, radius: float) -> void:
+	shader.shader = BACKGROUND_SHADER
+	shader.set_shader_parameter("size", size)
+	shader.set_shader_parameter("radius", radius)
 	var colors: Array[Color] = []
 	var mode := 0
-	if _character:
-		colors.assign(CardDB.sorted_races(_character.races).map(func(r): return RACE_COLORS[r].lerp(Color.WHITE, 0.12)))
+	if character:
+		colors.assign(CardDB.sorted_races(character.races).map(func(r): return RACE_COLORS[r].lerp(Color.WHITE, 0.12)))
 		if colors.size() == 1:
 			colors = _radial(colors[0], 0.4, 0.1)
 			shader.set_shader_parameter("mid_stop", 0.4)
@@ -211,13 +215,13 @@ func _update_background() -> void:
 			mode = 1
 			shader.set_shader_parameter("solid", 1 - 1 / 2.2)
 			shader.set_shader_parameter("start_angle", -180.0 / colors.size())
-	elif _equipment.star == 5:
+	elif equipment.star == 5:
 		mode = 1
 		colors = PRISM_BACKGROUND.duplicate()
 		shader.set_shader_parameter("solid", 0.0)
 		shader.set_shader_parameter("start_angle", 0.0)
 	else:
-		colors = _radial(EQUIP_BG[_equipment.star], 0.45, 0.15)
+		colors = _radial(EQUIP_BG[equipment.star], 0.45, 0.15)
 		shader.set_shader_parameter("mid_stop", 0.45)
 	shader.set_shader_parameter("mode", mode)
 	shader.set_shader_parameter("count", colors.size())
@@ -226,7 +230,7 @@ func _update_background() -> void:
 
 
 ## 径向渐变的三个颜色：中心、中段（各混一些白）、边缘（混一些暗色）
-func _radial(base: Color, center_white: float, mid_white: float) -> Array[Color]:
+static func _radial(base: Color, center_white: float, mid_white: float) -> Array[Color]:
 	return [base.lerp(Color.WHITE, center_white), base.lerp(Color.WHITE, mid_white), base.lerp(DARK, 0.25)]
 
 
@@ -240,7 +244,7 @@ func _draw() -> void:
 	_draw_pattern(layout, tier)
 	_draw_art(layout, main)
 	draw_texture_rect(_fade, Rect2(6, layout.height - layout.fade, WIDTH - 12, layout.fade - 6), false)
-	var frame := _texture("res://assets/ui/card/%s_%d.png" % ["frame_compact" if compact else "frame", tier])
+	var frame := cached_texture("res://assets/ui/card/%s_%d.png" % ["frame_compact" if compact else "frame", tier])
 	draw_texture_rect(frame, Rect2(-32, -32, WIDTH + 64, layout.height + 64), false)
 	_draw_header(main, tier)
 	if _character and _equipment:
@@ -252,33 +256,31 @@ func _draw() -> void:
 
 ## 法阵：角色是圆形法阵，装备是六边形附魔阵，颜色和复杂度随星级
 func _draw_pattern(layout: Dictionary, tier: int) -> void:
-	var texture := _texture("res://assets/ui/card/%s_%d.png" % ["circle" if _character else "array", tier])
+	var texture := cached_texture("res://assets/ui/card/%s_%d.png" % ["circle" if _character else "array", tier])
 	var center: Vector2 = layout.pattern if _character else layout.equip_pattern
 	var size: Vector2 = Vector2.ONE * layout.pattern_size
 	draw_texture_rect(texture, Rect2(center - size / 2, size), false, Color(1, 1, 1, 0.85))
 
 
-## 卡图；还没有卡图时，角色画第一种族的大图标，装备画虚线六边形，都淡显
+## 卡图；还没有卡图时画占位
 func _draw_art(layout: Dictionary, main: Dictionary) -> void:
 	var texture := art(main.id)
 	if texture:
 		_draw_contained(texture, layout.art if _character else layout.equip_art)
-		return
-	var center: Vector2 = layout.placeholder
-	var size: float = layout.placeholder_size
-	if _character:
-		var icon := _texture("res://assets/ui/icons/%s.png" % CardDB.sorted_races(main.races)[0])
-		draw_texture_rect(icon, Rect2(center - Vector2.ONE * size / 2, Vector2.ONE * size), false, PLACEHOLDER)
 	else:
-		_draw_hexagon(center, size)
+		draw_placeholder(self, main, layout.placeholder, layout.placeholder_size)
 
 
-## 还没有卡图的装备：淡显的虚线六边形（按 48 格的图标画，size 是边长）
-func _draw_hexagon(center: Vector2, size: float) -> void:
+## 还没有卡图：角色画第一种族的大图标，装备画虚线六边形（按 48 格的图标画），都淡显；size 是边长
+static func draw_placeholder(canvas: CanvasItem, data: Dictionary, center: Vector2, size: float) -> void:
+	if data.type == "character":
+		var icon := cached_texture("res://assets/ui/icons/%s.png" % CardDB.sorted_races(data.races)[0])
+		canvas.draw_texture_rect(icon, Rect2(center - Vector2.ONE * size / 2, Vector2.ONE * size), false, PLACEHOLDER)
+		return
 	var points := [Vector2(24, 3), Vector2(42, 13.5), Vector2(42, 34.5), Vector2(24, 45), Vector2(6, 34.5), Vector2(6, 13.5)]
 	points = points.map(func(p): return center + (p - Vector2(24, 24)) * size / 48)
 	for i in points.size():
-		draw_dashed_line(points[i], points[(i + 1) % points.size()], PLACEHOLDER, 2.5 * size / 48, 5 * size / 48)
+		canvas.draw_dashed_line(points[i], points[(i + 1) % points.size()], PLACEHOLDER, 2.5 * size / 48, 5 * size / 48)
 
 
 ## 按比例放进 box，靠底居中
@@ -302,7 +304,7 @@ func _draw_header(main: Dictionary, tier: int) -> void:
 func _draw_equip_box(layout: Dictionary) -> void:
 	var box: Rect2 = layout.equip_box
 	var tier: int = _equipment.star
-	draw_texture_rect(_texture("res://assets/ui/card/equip_box_%d.png" % tier), box, false)
+	draw_texture_rect(cached_texture("res://assets/ui/card/equip_box_%d.png" % tier), box, false)
 	var x := box.get_center().x
 	var y := box.position.y + 2
 	var stars_height: float = layout.equip_stars * 1.2
@@ -313,7 +315,7 @@ func _draw_equip_box(layout: Dictionary) -> void:
 	if texture:
 		_draw_contained(texture, Rect2(x - image.x / 2, y, image.x, image.y))
 	else:
-		_draw_hexagon(Vector2(x, y + image.y / 2), image.y)
+		draw_placeholder(self, _equipment, Vector2(x, y + image.y / 2), image.y)
 	y += image.y
 	_text(tr("card." + _equipment.id), SANS_BOLD, Vector2(x, y + layout.equip_name * 0.6), layout.equip_name, Color.WHITE, 3, box.size.x - 6)
 
@@ -349,8 +351,8 @@ func _draw_panels(layout: Dictionary, tier: int) -> void:
 
 ## 面板：深蓝底、细线（颜色随星级），边上的菱形点缀
 func _panel(rect: Rect2, tier: int, diamonds: Array, alpha := 1.0) -> void:
-	var texture := _texture("res://assets/ui/card/panel_%d.png" % tier)
-	_nine_patch(texture, rect, 7, Color(1, 1, 1, alpha))
+	var texture := cached_texture("res://assets/ui/card/panel_%d.png" % tier)
+	nine_patch(self, texture, rect, 7, Color(1, 1, 1, alpha))
 	for point in diamonds:
 		draw_texture_rect(DIAMOND, Rect2(point - Vector2(5, 5), Vector2(10, 10)), false, Color(TIER_LINE[tier], alpha))
 
@@ -441,7 +443,7 @@ func _draw_chips(chips: Array, area: Rect2, wrap: bool) -> void:
 		px -= 1
 		rows = _chip_rows(chips, px, area.size.x * k, gap, wrap)
 	if rows.is_empty():
-		rows = [chips.map(func(chip): return [chip, _chip_width(chip, px)])]
+		rows = [chips.map(func(chip): return [chip, chip_width(chip, px)])]
 	var height := roundf(px * 1.5)
 	var y := area.get_center().y * k - (rows.size() * height + (rows.size() - 1) * gap) / 2
 	_pixel_space()
@@ -449,7 +451,7 @@ func _draw_chips(chips: Array, area: Rect2, wrap: bool) -> void:
 		var width: float = row.reduce(func(sum, item): return sum + item[1], 0.0) + (row.size() - 1) * gap
 		var x := area.get_center().x * k - width / 2
 		for item in row:
-			_draw_chip(item[0], Rect2(x, y, item[1], height), px)
+			draw_chip(self, item[0], Rect2(x, y, item[1], height), px)
 			x += item[1] + gap
 		y += height + gap
 	_unit_space()
@@ -460,7 +462,7 @@ func _chip_rows(chips: Array, px: int, width: float, gap: float, wrap: bool) -> 
 	var rows := [[]]
 	var used := 0.0
 	for chip in chips:
-		var w := _chip_width(chip, px)
+		var w := chip_width(chip, px)
 		if w > width:
 			return []
 		if rows[-1] and used + gap + w > width:
@@ -473,22 +475,23 @@ func _chip_rows(chips: Array, px: int, width: float, gap: float, wrap: bool) -> 
 	return rows
 
 
-func _chip_width(chip: Array, px: int) -> float:
+## 方块的宽度（像素）：左右留 0.32 个字，名称和数值之间 0.1 个字
+static func chip_width(chip: Array, px: int) -> float:
 	return SANS_MEDIUM.get_string_size(chip[0] + chip[1], HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + px * 0.74
 
 
-## 一个方块（像素坐标）：种族色底、黑字；战斗中改变的是紫字加紫框
-func _draw_chip(chip: Array, rect: Rect2, px: int) -> void:
+## 一个基础技能方块（像素坐标）：种族色底、黑字；战斗中改变的是紫字加紫框。图鉴的筛选和词条说明也用
+static func draw_chip(canvas: CanvasItem, chip: Array, rect: Rect2, px: int) -> void:
 	if chip[3]:
-		draw_rect(rect.grow(3), Color(CHANGED_RING, 0.35), false, 2)
-		draw_rect(rect.grow(1.5), CHANGED_RING, false, 2)
-	_nine_patch(CHIP, rect, 4, chip[2])
+		canvas.draw_rect(rect.grow(3), Color(CHANGED_RING, 0.35), false, 2)
+		canvas.draw_rect(rect.grow(1.5), CHANGED_RING, false, 2)
+	nine_patch(canvas, CHIP, rect, 4, chip[2])
 	var color := CHANGED_TEXT if chip[3] else CHIP_TEXT
 	var baseline := rect.get_center().y + (SANS_MEDIUM.get_ascent(px) - SANS_MEDIUM.get_descent(px)) / 2
 	var x := rect.position.x + px * 0.32
-	draw_string(SANS_MEDIUM, Vector2(x, baseline), chip[0], HORIZONTAL_ALIGNMENT_LEFT, -1, px, color)
+	canvas.draw_string(SANS_MEDIUM, Vector2(x, baseline), chip[0], HORIZONTAL_ALIGNMENT_LEFT, -1, px, color)
 	x += SANS_MEDIUM.get_string_size(chip[0], HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + px * 0.1
-	draw_string(SANS_MEDIUM, Vector2(x, baseline), chip[1], HORIZONTAL_ALIGNMENT_LEFT, -1, px, color)
+	canvas.draw_string(SANS_MEDIUM, Vector2(x, baseline), chip[1], HORIZONTAL_ALIGNMENT_LEFT, -1, px, color)
 
 
 # ---------- 特殊技能 ----------
@@ -593,10 +596,10 @@ func _text(text: String, font: Font, center: Vector2, size: float, color: Color,
 ## 带黑色描边的图标，以 center 为中心，size 是图标本身的边长
 func _outline_icon(id: String, center: Vector2, size: float, color: Color) -> void:
 	var box := Vector2.ONE * size * OUTLINE_ICON_SCALE
-	draw_texture_rect(_texture("res://assets/ui/icons/%s_outline.png" % id), Rect2(center - box / 2, box), false, color)
+	draw_texture_rect(cached_texture("res://assets/ui/icons/%s_outline.png" % id), Rect2(center - box / 2, box), false, color)
 
 
 ## 九宫格贴图（四边按 margin 不拉伸），modulate 上色
-func _nine_patch(texture: Texture2D, rect: Rect2, margin: float, modulate_color: Color) -> void:
-	RenderingServer.canvas_item_add_nine_patch(get_canvas_item(), rect, Rect2(Vector2.ZERO, texture.get_size()), texture.get_rid(),
+static func nine_patch(canvas: CanvasItem, texture: Texture2D, rect: Rect2, margin: float, modulate_color: Color) -> void:
+	RenderingServer.canvas_item_add_nine_patch(canvas.get_canvas_item(), rect, Rect2(Vector2.ZERO, texture.get_size()), texture.get_rid(),
 		Vector2(margin, margin), Vector2(margin, margin), RenderingServer.NINE_PATCH_STRETCH, RenderingServer.NINE_PATCH_STRETCH, true, modulate_color)

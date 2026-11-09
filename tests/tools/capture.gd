@@ -230,7 +230,7 @@ func _card_cell(spec: Dictionary) -> Control:
 	return cell
 
 
-## 用到卡牌的界面（还是旧布局，卡牌缩放 0.6）：图鉴、科研模式、闯关布阵、战斗开始前、战斗中、战斗结束
+## 各界面：图鉴（默认、筛选中、点卡放大）、关卡选择（展开详情、关卡多阵容长）、闯关布阵、科研模式、战斗开始前、战斗中、战斗结束
 func _screens() -> void:
 	var manager: Node = load("res://scenes/app/scene_manager.tscn").instantiate()
 	root.add_child(manager)
@@ -238,12 +238,29 @@ func _screens() -> void:
 	manager.get_node("MenuScene")._on_book_mode_pressed()
 	await _frames(5)
 	await _shot("book")
-	manager.current_scene._on_back_button_pressed()
+	var book: Node = manager.current_scene
+	book.toggle_filter("stars", 2)
+	book.toggle_filter("special", "shelter")
+	book.toggle_filter("special", "lethal")
+	book._open_special_menu()
+	await _frames(5)
+	await _shot("book_filter")
+	book._special_menu.hide()
+	book.reset_filters()
+	book.open_zoom("porcupine")
+	await _frames(5)
+	await _shot("book_zoom")
+	book._on_back_button_pressed()
 	await _frames(3)
 
 	manager.get_node("MenuScene")._on_single_mode_pressed()
 	await _frames(3)
-	manager.current_scene._on_level_select_button_pressed(LevelDB.all().keys()[0])
+	var levels: Node = manager.current_scene
+	levels.toggle_level(LevelDB.all().keys()[0])
+	await _frames(5)
+	await _shot("levels")
+	await _demo_levels(levels)
+	levels.enter_level(LevelDB.all().keys()[0])
 	await create_timer(0.6).timeout
 	await _shot("level")
 	manager.current_scene._on_back_button_pressed()
@@ -273,6 +290,29 @@ func _screens() -> void:
 	await _frames(5)
 	await _shot("battle_end")
 	manager.free()
+
+
+## 关卡多、阵容长时的样子：临时加几个示例关卡（第 5 关是 7 人阵容），第 1、4 关标成已通关
+func _demo_levels(levels: Node) -> void:
+	var names := Translation.new()
+	names.locale = "zh_CN"
+	var lineup := [["tiger_man", "war_banner"], ["porcupine", "holy_shield"], ["toad", ""], ["paladin", "iron_sword"], ["maneater", "hollow"], ["fairy", "holy_water"], ["wisp", "necklace"]]
+	var ids := []
+	for i in range(3, 10):
+		var id := "demo_%d" % i
+		ids.append(id)
+		names.add_message("level." + id, "名字比较长的示例关卡，放不下时截断" if i == 3 else "示例关卡")
+		LevelDB.all()[id] = {"id": id, "enemy": lineup if i == 5 else [["tiger", ""]], "hand": []}
+	TranslationServer.add_translation(names)
+	levels.cleared = {LevelDB.all().keys()[0]: true, "demo_4": true}
+	levels.toggle_level("demo_5")
+	await _frames(5)
+	await _shot("levels_long")
+	for id in ids:
+		LevelDB.all().erase(id)
+	TranslationServer.remove_translation(names)
+	levels.cleared = {}
+	levels.toggle_level("demo_5")
 
 
 func _frames(n: int) -> void:

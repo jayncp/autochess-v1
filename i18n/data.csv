@@ -54,6 +54,9 @@ race.treasure,财宝
 timing.pre_battle,战前
 timing.on_enter,入场
 timing.on_engage,交战
+timing_desc.pre_battle,战前阶段按位置轮到时触发
+timing_desc.on_enter,第一次成为交战位时触发
+timing_desc.on_engage,每次交战前都触发
 keyword.rage,狂暴
 keyword.rally,集结
 keyword.support,支援
