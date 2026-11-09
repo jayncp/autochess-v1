@@ -1,63 +1,61 @@
 extends Node2D
+## 手牌：占满底部一整行，居中排开；放不下时依次叠压，右边的压住左边的。张数不设上限。
+## 位置和卡牌缩放由布阵界面按布局给出（layout）。
 
-const HAND_COUNT = 5
-const CARD_WIDTH = 200
-const HAND_Y_POSITION = 850
+const GAP := 18.0
 const DEFAULT_CARD_MOVE_SPEED = 0.1
 
 var player_hand = []
-var center_screen_x
-
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	center_screen_x = get_viewport().size.x / 2
-	# 强制适应1920*1080 比例
-	center_screen_x = 960
+## 手牌的缩放（完整卡）
+var card_scale := 0.6
+var _top := 800.0
+var _left := 40.0
+var _right := 1880.0
 
 
-func add_card_to_hand(card,speed):
-	# 向玩家手牌添加卡牌
+## 手牌一行的位置：顶边 top，左右范围 [left, right]，卡牌缩放 hand_scale
+func layout(top: float, left: float, right: float, hand_scale: float) -> void:
+	_top = top
+	_left = left
+	_right = right
+	card_scale = hand_scale
+	for card in player_hand:
+		card.set_look(card_scale, false)
+	update_hand_positions(0)
+
+
+func add_card_to_hand(card, speed):
+	card.set_look(card_scale, false)
+	card.face.shadow = true
 	if card not in player_hand:
-		card.z_index = 0
-		player_hand.insert(0,card)
+		player_hand.append(card)
 		update_hand_positions(speed)
-	else :
-		animate_card_to_position(card, card.starting_position,DEFAULT_CARD_MOVE_SPEED)
-		
-func update_hand_positions(speed):
-	# 整理玩家手牌位置
-	for i in range(player_hand.size()):
-		var new_position = Vector2(calculate_card_position(i),HAND_Y_POSITION)
-		var card = player_hand[i]
-		card.z_index = player_hand.size()-i-1
-		card.old_z_index = player_hand.size()-i-1
-		card.starting_position = new_position
-		animate_card_to_position(card, new_position,speed)
-		
-
-func calculate_card_position(index):
-	# 计算给定序号的卡牌的位置，从居中位置向两侧延伸
-	var x_offset
-	var total_width = (player_hand.size() - 1) * CARD_WIDTH
-	if total_width < 1600:
-		x_offset = center_screen_x - index * CARD_WIDTH + total_width / 2.0
 	else:
-		var card_width_adjust = CARD_WIDTH * 1600.0 / total_width
-		total_width = (player_hand.size() - 1) * card_width_adjust
-		x_offset = center_screen_x - index * card_width_adjust + total_width / 2.0
-	return x_offset
-	
-func animate_card_to_position(card, new_position,speed):
-	# 实现卡牌移动到指定位置的动画效果
-	var tween = get_tree().create_tween()
-	tween.tween_property(card, "position", new_position, speed)
+		card.move_to(card.starting_position, DEFAULT_CARD_MOVE_SPEED)
+
 
 func remove_card_from_hand(card):
-	# 删除手牌中指定卡牌
 	if card in player_hand:
 		player_hand.erase(card)
+		card.face.shadow = false
 		update_hand_positions(DEFAULT_CARD_MOVE_SPEED)
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
+
+## 依次排开：间距是卡宽加 GAP，放不下时缩小间距（叠压），整体居中
+func update_hand_positions(speed):
+	var count := player_hand.size()
+	if count == 0:
+		return
+	var size: Vector2 = player_hand[0].face.get_size()
+	var step := size.x + GAP
+	if count > 1:
+		step = minf(step, (_right - _left - size.x) / (count - 1))
+	var total := step * (count - 1) + size.x
+	var x0 := _left + (_right - _left - total) / 2 + size.x / 2
+	for i in count:
+		var card = player_hand[i]
+		var target := Vector2(x0 + i * step, _top + size.y / 2)
+		card.z_index = i
+		card.old_z_index = i
+		card.starting_position = target
+		card.move_to(target, speed)

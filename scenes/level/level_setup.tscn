@@ -1,151 +1,196 @@
-[gd_scene load_steps=7 format=3 uid="uid://bylnhf6tvckt"]
+[gd_scene load_steps=16 format=3 uid="uid://bylnhf6tvckt"]
 
 [ext_resource type="Script" path="res://scenes/level/level_setup.gd" id="1_8laa7"]
-[ext_resource type="Script" path="res://scenes/level/input_manager.gd" id="2_5b2ex"]
-[ext_resource type="Texture2D" uid="uid://dbf1c1s0xxoxb" path="res://assets/backgrounds/solid_blue.png" id="2_motdb"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/setup.png" id="2_bg"]
 [ext_resource type="Script" path="res://scenes/level/advanced_card_manager.gd" id="2_yjbnq"]
 [ext_resource type="Script" path="res://scenes/level/player_hand.gd" id="5_eamkl"]
-[ext_resource type="PackedScene" uid="uid://c1qbgbypq8ghe" path="res://scenes/components/card_slot.tscn" id="5_oi6c1"]
+[ext_resource type="Theme" path="res://assets/ui/theme.tres" id="6_theme"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/back.png" id="7_back"]
+[ext_resource type="Shader" path="res://scenes/components/ui/gold_text.gdshader" id="8_gold"]
+[ext_resource type="Script" path="res://scenes/components/ui/ui_button.gd" id="9_button"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/on_engage.png" id="10_engage"]
+[ext_resource type="Texture2D" path="res://assets/ui/theme/diamond.png" id="11_diamond"]
+[ext_resource type="FontVariation" path="res://assets/fonts/sans_bold.tres" id="12_bold"]
 
-[node name="PreBattleScene" type="Node2D"]
+[sub_resource type="Gradient" id="Gradient_shade"]
+colors = PackedColorArray(0.024, 0.031, 0.078, 0.1, 0.024, 0.031, 0.078, 0.5)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shade"]
+gradient = SubResource("Gradient_shade")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gold"]
+shader = ExtResource("8_gold")
+shader_parameter/height = 60.0
+
+[sub_resource type="Gradient" id="Gradient_rule"]
+offsets = PackedFloat32Array(0, 0.5, 1)
+colors = PackedColorArray(1, 0.851, 0.541, 0, 1, 0.851, 0.541, 1, 1, 0.851, 0.541, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_rule"]
+gradient = SubResource("Gradient_rule")
+width = 240
+height = 2
+fill_to = Vector2(1, 0)
+
+[node name="PreBattleScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("6_theme")
 script = ExtResource("1_8laa7")
-metadata/_edit_vertical_guides_ = [960.0, 1680.0, 1680.0, 1746.0, 1783.0, 240.0, 74.0]
-metadata/_edit_horizontal_guides_ = [0.0, 540.0, 900.0, 180.0, 450.0, 0.0, 450.0, 0.0, 0.0, 0.0, 405.0, 850.0, 0.0, 380.0, 50.0]
 
 [node name="Background" type="TextureRect" parent="."]
-z_index = -10
-offset_right = 1920.0
-offset_bottom = 1080.0
-texture = ExtResource("2_motdb")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Shade" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_shade")
+expand_mode = 1
+
+[node name="player_card_slots" type="Node2D" parent="."]
+
+[node name="FrontMark" type="HBoxContainer" parent="."]
+layout_mode = 0
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Icon" type="TextureRect" parent="FrontMark"]
+self_modulate = Color(1, 0.478, 0.384, 1)
+custom_minimum_size = Vector2(26, 26)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("10_engage")
+expand_mode = 1
+
+[node name="Label" type="Label" parent="FrontMark"]
+layout_mode = 2
+theme_type_variation = &"GroupLabel"
+theme_override_colors/font_color = Color(1, 0.702, 0.651, 1)
+theme_override_font_sizes/font_size = 20
+text = "ui.board.front"
 
 [node name="player_hand" type="Node2D" parent="."]
 script = ExtResource("5_eamkl")
 
-[node name="input_manager" type="Node2D" parent="."]
-script = ExtResource("2_5b2ex")
-
 [node name="advanced_card_manager" type="Node2D" parent="."]
 script = ExtResource("2_yjbnq")
 
-[node name="enemy_card_slots" type="Node2D" parent="."]
+[node name="BackButton" type="Button" parent="."]
+custom_minimum_size = Vector2(66, 66)
+layout_mode = 0
+offset_left = 25.0
+offset_top = 16.0
+offset_right = 91.0
+offset_bottom = 82.0
+theme_type_variation = &"IconButton"
+icon = ExtResource("7_back")
+icon_alignment = 1
+expand_icon = true
 
-[node name="card_slot1" parent="enemy_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(240, 230)
-interactable = false
+[node name="Title" type="VBoxContainer" parent="."]
+layout_mode = 0
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
 
-[node name="card_slot2" parent="enemy_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(480, 230)
-interactable = false
-
-[node name="card_slot3" parent="enemy_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(720, 230)
-interactable = false
-
-[node name="card_slot4" parent="enemy_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(960, 230)
-interactable = false
-
-[node name="card_slot5" parent="enemy_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(1200, 230)
-interactable = false
-
-[node name="card_slot6" parent="enemy_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(1440, 230)
-interactable = false
-
-[node name="card_slot7" parent="enemy_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(1680, 230)
-interactable = false
-
-[node name="player_card_slots" type="Node2D" parent="."]
-
-[node name="card_slot8" parent="player_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(240, 540)
-
-[node name="card_slot9" parent="player_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(480, 540)
-
-[node name="card_slot10" parent="player_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(720, 540)
-
-[node name="card_slot11" parent="player_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(960, 540)
-
-[node name="card_slot12" parent="player_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(1200, 540)
-
-[node name="card_slot13" parent="player_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(1440, 540)
-
-[node name="card_slot14" parent="player_card_slots" instance=ExtResource("5_oi6c1")]
-z_index = -9
-position = Vector2(1680, 540)
-
-[node name="our_team" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 56.0
-offset_top = 396.0
-offset_right = 96.0
-offset_bottom = 685.0
-theme_override_font_sizes/font_size = 50
-text = "ui.level_setup.our_team"
+[node name="Name" type="Label" parent="Title"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_gold")
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 42
 horizontal_alignment = 1
-vertical_alignment = 1
-autowrap_mode = 3
 
-[node name="start_battle" type="Button" parent="."]
-z_index = -8
-offset_left = 1805.0
-offset_top = 450.0
-offset_right = 1887.0
-offset_bottom = 629.0
-theme_override_font_sizes/font_size = 50
-text = "ui.common.start"
-autowrap_mode = 1
+[node name="Rule" type="TextureRect" parent="Title"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_rule")
 
-[node name="buff_text_container" type="Node2D" parent="."]
-
-[node name="level_name" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 240.0
-offset_top = 20.0
-offset_right = 1680.0
-offset_bottom = 77.0
-theme_override_font_sizes/font_size = 40
+[node name="Subtitle" type="Label" parent="Title"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HintLabel"
 horizontal_alignment = 1
-vertical_alignment = 1
 
-[node name="output_text" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 240.0
-offset_top = 1000.0
-offset_right = 1680.0
-offset_bottom = 1057.0
-theme_override_font_sizes/font_size = 40
-horizontal_alignment = 1
-vertical_alignment = 1
+[node name="RightColumn" type="VBoxContainer" parent="."]
+layout_mode = 0
+mouse_filter = 2
+theme_override_constants/separation = 22
+alignment = 1
 
-[node name="back_button" type="Button" parent="."]
-z_index = -8
-offset_left = 27.0
-offset_top = 20.0
-offset_right = 121.0
-offset_bottom = 78.0
-theme_override_font_sizes/font_size = 35
-text = "ui.common.back"
+[node name="Count" type="HBoxContainer" parent="RightColumn"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_constants/separation = 12
 
-[connection signal="pressed" from="start_battle" to="." method="_on_start_battle_pressed"]
-[connection signal="pressed" from="back_button" to="." method="_on_back_button_pressed"]
+[node name="Diamond" type="TextureRect" parent="RightColumn/Count"]
+self_modulate = Color(1, 0.851, 0.541, 1)
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("11_diamond")
+expand_mode = 1
+
+[node name="Label" type="Label" parent="RightColumn/Count"]
+layout_mode = 2
+theme_type_variation = &"GroupLabel"
+theme_override_font_sizes/font_size = 26
+text = "ui.board.deployed"
+
+[node name="Deployed" type="Label" parent="RightColumn/Count"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 36
+text = "0"
+
+[node name="Limit" type="Label" parent="RightColumn/Count"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.6)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 26
+text = "/ 7"
+
+[node name="StartBattle" type="Button" parent="RightColumn"]
+custom_minimum_size = Vector2(250, 84)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"PrimaryButton"
+text = "ui.battle.start"
+script = ExtResource("9_button")
+
+[node name="Compact" type="CheckButton" parent="RightColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+text = "ui.board.compact"
+
+[connection signal="pressed" from="BackButton" to="." method="_on_back_button_pressed"]
+[connection signal="pressed" from="RightColumn/StartBattle" to="." method="_on_start_battle_pressed"]
