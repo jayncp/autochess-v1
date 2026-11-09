@@ -1,116 +1,129 @@
-[gd_scene load_steps=6 format=3 uid="uid://cpr2agdiwp66v"]
+[gd_scene load_steps=12 format=3 uid="uid://cpr2agdiwp66v"]
 
 [ext_resource type="Script" path="res://scenes/sandbox/sandbox.gd" id="1_2pdes"]
-[ext_resource type="Texture2D" uid="uid://dbf1c1s0xxoxb" path="res://assets/backgrounds/solid_blue.png" id="1_2w82n"]
-[ext_resource type="Script" path="res://scenes/components/card_manager.gd" id="2_lymuw"]
-[ext_resource type="PackedScene" uid="uid://c1qbgbypq8ghe" path="res://scenes/components/card_slot.tscn" id="4_sli5a"]
-[ext_resource type="Script" path="res://scenes/sandbox/select_manager.gd" id="4_uqtow"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/setup.png" id="2_bg"]
+[ext_resource type="Script" path="res://scenes/sandbox/sandbox_board.gd" id="3_board"]
+[ext_resource type="Script" path="res://scenes/sandbox/card_picker.gd" id="4_picker"]
+[ext_resource type="Theme" path="res://assets/ui/theme.tres" id="5_theme"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/back.png" id="6_back"]
+[ext_resource type="Shader" path="res://scenes/components/ui/gold_text.gdshader" id="7_gold"]
+[ext_resource type="Script" path="res://scenes/components/ui/ui_button.gd" id="8_button"]
 
-[node name="TestScene" type="Node2D"]
+[sub_resource type="Gradient" id="Gradient_shade"]
+colors = PackedColorArray(0.024, 0.031, 0.078, 0.1, 0.024, 0.031, 0.078, 0.5)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shade"]
+gradient = SubResource("Gradient_shade")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gold"]
+shader = ExtResource("7_gold")
+shader_parameter/height = 58.0
+
+[node name="TestScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("5_theme")
 script = ExtResource("1_2pdes")
-metadata/_edit_vertical_guides_ = [960.0, 1680.0, 1680.0, 1746.0, 1783.0, 240.0, 74.0]
-metadata/_edit_horizontal_guides_ = [0.0, 540.0, 900.0, 180.0, 450.0, 0.0, 450.0, 0.0, 0.0, 0.0, 405.0, 850.0, 0.0, 380.0, 50.0]
 
 [node name="Background" type="TextureRect" parent="."]
-z_index = -10
-offset_right = 1920.0
-offset_bottom = 1080.0
-texture = ExtResource("1_2w82n")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="card_manager" type="Node2D" parent="."]
-script = ExtResource("2_lymuw")
+[node name="Shade" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_shade")
+expand_mode = 1
 
-[node name="input_manager" type="Node2D" parent="."]
+[node name="slots_1" type="Node2D" parent="."]
 
-[node name="select_manager" type="Node2D" parent="."]
-script = ExtResource("4_uqtow")
+[node name="slots_2" type="Node2D" parent="."]
 
-[node name="card_slots" type="Node2D" parent="."]
+[node name="board" type="Node2D" parent="."]
+script = ExtResource("3_board")
 
-[node name="card_slot1" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(240, 230)
+[node name="Picker" type="PanelContainer" parent="."]
+layout_mode = 0
+script = ExtResource("4_picker")
 
-[node name="card_slot2" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(480, 230)
+[node name="BackButton" type="Button" parent="."]
+custom_minimum_size = Vector2(66, 66)
+layout_mode = 0
+offset_left = 25.0
+offset_top = 16.0
+offset_right = 91.0
+offset_bottom = 82.0
+theme_type_variation = &"IconButton"
+icon = ExtResource("6_back")
+icon_alignment = 1
+expand_icon = true
 
-[node name="card_slot3" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(720, 230)
+[node name="RightColumn" type="VBoxContainer" parent="."]
+layout_mode = 0
+mouse_filter = 2
+theme_override_constants/separation = 20
+alignment = 1
 
-[node name="card_slot4" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(960, 230)
-
-[node name="card_slot5" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(1200, 230)
-
-[node name="card_slot6" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(1440, 230)
-
-[node name="card_slot7" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(1680, 230)
-
-[node name="card_slot8" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(240, 850)
-
-[node name="card_slot9" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(480, 850)
-
-[node name="card_slot10" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(720, 850)
-
-[node name="card_slot11" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(960, 850)
-
-[node name="card_slot12" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(1200, 850)
-
-[node name="card_slot13" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(1440, 850)
-
-[node name="card_slot14" parent="card_slots" instance=ExtResource("4_sli5a")]
-z_index = -2
-position = Vector2(1680, 850)
-
-[node name="start_battle" type="Button" parent="."]
-offset_left = 1805.0
-offset_top = 450.0
-offset_right = 1887.0
-offset_bottom = 629.0
-theme_override_font_sizes/font_size = 50
-text = "ui.common.start"
-autowrap_mode = 1
-
-[node name="buff_text_container" type="Node2D" parent="."]
-
-[node name="output_text" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 240.0
-offset_top = 514.0
-offset_right = 1680.0
-offset_bottom = 571.0
+[node name="Title" type="Label" parent="RightColumn"]
+material = SubResource("ShaderMaterial_gold")
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 40
+text = "ui.sandbox.title"
 horizontal_alignment = 1
-vertical_alignment = 1
 
-[node name="back_button" type="Button" parent="."]
-offset_left = 27.0
-offset_top = 20.0
-offset_right = 121.0
-offset_bottom = 78.0
-theme_override_font_sizes/font_size = 35
-text = "ui.common.back"
+[node name="StartBattle" type="Button" parent="RightColumn"]
+custom_minimum_size = Vector2(250, 84)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"PrimaryButton"
+text = "ui.battle.start"
+script = ExtResource("8_button")
 
-[connection signal="pressed" from="start_battle" to="select_manager" method="_on_start_battle_pressed"]
-[connection signal="pressed" from="back_button" to="." method="_on_back_button_pressed"]
+[node name="Swap" type="Button" parent="RightColumn"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"SmallButton"
+text = "ui.sandbox.swap"
+script = ExtResource("8_button")
+
+[node name="Clear" type="Button" parent="RightColumn"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"SmallButton"
+text = "ui.sandbox.clear"
+script = ExtResource("8_button")
+
+[node name="Compact" type="CheckButton" parent="RightColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+text = "ui.board.compact"
+
+[connection signal="pressed" from="BackButton" to="." method="_on_back_button_pressed"]
+[connection signal="pressed" from="RightColumn/StartBattle" to="." method="_on_start_battle_pressed"]
+[connection signal="pressed" from="RightColumn/Swap" to="." method="swap_sides"]
+[connection signal="pressed" from="RightColumn/Clear" to="." method="_on_clear_pressed"]

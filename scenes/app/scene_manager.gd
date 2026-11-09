@@ -36,7 +36,7 @@ func _on_to_test_mode():
 	get_node("MenuScene").queue_free()
 
 	current_scene = preload("res://scenes/sandbox/sandbox.tscn").instantiate()
-	current_scene.get_node("select_manager").connect("start_battle",Callable(self, "_on_start_battle"))
+	current_scene.connect("start_battle",Callable(self, "_on_start_battle"))
 	current_scene.connect("back_to_menu",Callable(self, "_on_selection_back_to_menu"))
 
 	add_child(current_scene)

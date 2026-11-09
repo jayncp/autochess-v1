@@ -293,16 +293,14 @@ func _run_smoke() -> void:
 	root.add_child(manager)
 	await _frames(2)
 
-	# 科研模式：设置阵容 → 开始战斗 → 跳过 → 返回 → 主菜单
+	# 科研模式：选卡、拖放规则；设置阵容 → 开始战斗 → 跳过 → 返回 → 主菜单
 	manager.get_node("MenuScene")._on_test_mode_pressed()
 	await _frames(2)
 	var sandbox: Node = manager.current_scene
-	var select: Node = sandbox.get_node("select_manager")
+	await _check_sandbox(sandbox)
 	for slot in [[1, 0, "tiger_man", "lionheart"], [2, 0, "porcupine", "holy_shield"], [2, 1, "fairy", ""]]:
-		select.init_card_list[slot[0]][slot[1]] = slot[2]
-		select.init_equip_list[slot[0]][slot[1]] = slot[3]
-		select.update_display(slot[0], slot[1], slot[2], slot[3])
-	select._on_start_battle_pressed()
+		sandbox.set_unit(slot[0], slot[1], slot[2], slot[3])
+	sandbox._on_start_battle_pressed()
 	await _play_battle_and_return(manager)
 	sandbox._on_back_button_pressed()
 	await _frames(2)
@@ -342,6 +340,48 @@ func _run_smoke() -> void:
 
 	manager.free()
 	print("冒烟流程：完成")
+
+
+## 科研模式：为选中的卡位选卡（角色替换角色、装备装到角色身上），拖动互换、拖出移除，交换双方、清空
+func _check_sandbox(sandbox: Node) -> void:
+	var expect := func(label: String, side: int, index: int, unit: Array) -> void:
+		if sandbox.lineups[side][index] != unit:
+			_failures.append("[smoke-sandbox] %s：%s 第 %d 位应是 %s，实际 %s" % [label, side, index + 1, unit, sandbox.lineups[side][index]])
+	sandbox.select_slot(2, 0)
+	sandbox.pick("tiger")
+	expect.call("选角色", 2, 0, ["tiger", ""])
+	sandbox.pick("iron_sword")
+	expect.call("选装备", 2, 0, ["tiger", "iron_sword"])
+	sandbox.pick("soldier")
+	expect.call("换角色，装备保留", 2, 0, ["soldier", "iron_sword"])
+	sandbox.select_slot(2, 1)
+	sandbox.pick("holy_shield")
+	expect.call("空卡位不能选装备", 2, 1, [])
+	var board: Node = sandbox.get_node("board")
+	var slots: Dictionary = sandbox._slots
+	board.start_drag(slots[2][0].card_in_slot)
+	board.drop_card(slots[1][3])
+	expect.call("拖到对方空卡位", 1, 3, ["soldier", "iron_sword"])
+	expect.call("原来的卡位空了", 2, 0, [])
+	sandbox.set_unit(2, 0, "paladin")
+	board.start_drag(slots[2][0].card_in_slot)
+	board.drop_card(slots[1][3])
+	expect.call("互换", 2, 0, ["soldier", "iron_sword"])
+	expect.call("互换", 1, 3, ["paladin", ""])
+	board.start_drag(slots[1][3].card_in_slot)
+	board.drop_card(null)
+	expect.call("拖出去移除", 1, 3, [])
+	sandbox.swap_sides()
+	expect.call("交换双方", 1, 0, ["soldier", "iron_sword"])
+	sandbox._on_start_battle_pressed()
+	await _frames(2)
+	if not sandbox.find_children("*", "Dialog", true, false).is_empty():
+		for dialog in sandbox.find_children("*", "Dialog", true, false):
+			dialog.queue_free()
+	else:
+		_failures.append("[smoke-sandbox] 我方没有角色时应该提示")
+	sandbox.clear_all()
+	expect.call("清空全部", 1, 0, [])
 
 
 ## 关卡选择：同时只展开一个关卡，详情里是它的敌方阵容

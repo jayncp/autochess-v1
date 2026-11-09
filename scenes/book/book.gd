@@ -120,7 +120,7 @@ func _build_filters() -> void:
 	_special_menu.add_child(list)
 	_options["special"] = {}
 	for skill in CardDB.SPECIAL_SKILLS.filter(func(s): return s in used and s not in CardDB.DESCRIPTIVE_SPECIALS):
-		var check := Option.new({"text": tr("keyword." + skill)})
+		var check := FilterOption.new({"text": tr("keyword." + skill)})
 		check.pressed.connect(toggle_filter.bind("special", skill))
 		list.add_child(check)
 		_options["special"][skill] = check
@@ -133,7 +133,7 @@ func _open_special_menu() -> void:
 	_special_menu.popup(Rect2i(Vector2i(select.global_position - Vector2(0, height + 8)), Vector2i(int(select.size.x), int(height))))
 
 
-## 一组勾选块：标题加网格；options 是 [值, 外观]，外观见 Option
+## 一组勾选块：标题加网格；options 是 [值, 外观]，外观见 FilterOption
 func _add_group(title_key: String, columns: int, group: String, options: Array) -> void:
 	%Filters.add_child(_group_title(title_key))
 	var grid := GridContainer.new()
@@ -142,7 +142,7 @@ func _add_group(title_key: String, columns: int, group: String, options: Array) 
 	grid.add_theme_constant_override("v_separation", 8)
 	_options[group] = {}
 	for option in options:
-		var check := Option.new(option[1])
+		var check := FilterOption.new(option[1])
 		check.size_flags_horizontal = SIZE_EXPAND_FILL
 		check.pressed.connect(toggle_filter.bind(group, option[0]))
 		grid.add_child(check)
@@ -193,26 +193,12 @@ func _matches(id: String) -> bool:
 		and _any(filters.timings, of_kind.call("timing")) \
 		and _any(filters.base, of_kind.call("base")) \
 		and _any(filters.special, of_kind.call("special")) \
-		and (search == "" or _matches_search(data))
+		and load_card.matches_search(data, search)
 
 
 ## 组内满足任一；没勾的组不限制
 func _any(selected: Array, values: Array) -> bool:
 	return selected.is_empty() or selected.any(func(v): return v in values)
-
-
-## 搜索：卡名、种族、时机、技能和效果文字（显示出来的文字）
-func _matches_search(data: Dictionary) -> bool:
-	var names := [tr("card." + data.id)]
-	for race in data.get("races", []):
-		names.append(tr("race." + race))
-	for slot in CardDB.TIMING_SLOTS:
-		if data.get(slot, CardDB.CLEAR) != CardDB.CLEAR:
-			names.append(tr("timing." + data[slot]))
-	var texts := CardDB.SKILL_SLOTS.map(func(slot): return load_card.base_skill_text(data.get(slot)))
-	texts.append(load_card.special_skill_text(data.get("special_skills")))
-	names.append_array(texts.filter(func(t): return t != null))
-	return names.any(func(n): return search in n)
 
 
 ## 排序：序号；星级从低到高；战斗力从高到低。相同时按序号
@@ -318,36 +304,3 @@ func _layout() -> void:
 		cell.custom_minimum_size = face.get_size()
 		face.position = face.get_size() / 2
 
-
-## 筛选的一个勾选块：勾选框后面画图标加文字、技能方块或星星（外观由 spec 给出：text、icon、tint、chip、stars）
-class Option extends CheckBox:
-	const FONT := preload("res://assets/fonts/sans_medium.tres")
-	const STAR_COLOR := Color("ffd866")
-
-	var spec: Dictionary
-
-	func _init(spec_: Dictionary) -> void:
-		spec = spec_
-		theme_type_variation = &"FilterCheck"
-		custom_minimum_size.y = 48
-		focus_mode = FOCUS_NONE
-
-	func _draw() -> void:
-		var x := get_theme_stylebox("normal").get_margin(SIDE_LEFT) + get_theme_icon("unchecked").get_width() + get_theme_constant("h_separation")
-		var middle := size.y / 2
-		if spec.has("icon"):
-			var icon := CardFace.cached_texture("res://assets/ui/icons/%s.png" % spec.icon)
-			draw_texture_rect(icon, Rect2(x, middle - 13, 26, 26), false, spec.tint)
-			x += 32
-		if spec.has("stars"):
-			for i in spec.stars:
-				_string("★", Vector2(x + i * 12, middle), 18, STAR_COLOR)
-		if spec.has("chip"):
-			var height := roundf(19 * 1.5)
-			CardFace.draw_chip(self, spec.chip, Rect2(x, middle - height / 2, CardFace.chip_width(spec.chip, 19), height), 19)
-		if spec.has("text"):
-			_string(spec.text, Vector2(x, middle), 22, Color.WHITE if button_pressed else Color(1, 1, 1, 0.8))
-
-	func _string(text: String, left_middle: Vector2, font_size: int, color: Color) -> void:
-		var baseline := left_middle.y + (FONT.get_ascent(font_size) - FONT.get_descent(font_size)) / 2
-		draw_string(FONT, Vector2(left_middle.x, baseline), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
