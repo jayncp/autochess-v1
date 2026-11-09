@@ -64,7 +64,7 @@
 
 ## 执行记录
 
-### PR 1 基础（分支 `ui-1-foundation`）
+### PR 1 基础（PR #15，已合并）
 
 - 字体：Noto Sans SC 可变字重（子集 3.9MB）、Noto Serif SC 静态粗体（子集 3.2MB），替换原来 10.5MB 的 Noto Sans SC Regular；字体变体 `sans`、`sans_medium`、`sans_bold`、`serif`、`serif_heavy`。
 - 素材生成脚本在 `tools/autochess_tools/art/`（resvg 渲染，支持滤镜），`just fonts`、`just art`、`just theme`；截图 `just shots`。
