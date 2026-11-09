@@ -1,253 +1,190 @@
-[gd_scene load_steps=7 format=3 uid="uid://pcdmfoppb1ms"]
+[gd_scene load_steps=15 format=3 uid="uid://pcdmfoppb1ms"]
 
 [ext_resource type="Script" path="res://scenes/book/book.gd" id="1_vcj1x"]
 [ext_resource type="Texture2D" uid="uid://cpsnj5a6hkr6o" path="res://assets/backgrounds/book.png" id="2_i70xx"]
-[ext_resource type="Script" path="res://scenes/components/card_manager.gd" id="3_5mo1v"]
-[ext_resource type="Script" path="res://scenes/book/filter_star_button.gd" id="3_ot48t"]
-[ext_resource type="Script" path="res://scenes/book/book_manager.gd" id="5_8m7n8"]
-[ext_resource type="PackedScene" uid="uid://c1qbgbypq8ghe" path="res://scenes/components/card_slot.tscn" id="5_78a1y"]
+[ext_resource type="Theme" path="res://assets/ui/theme.tres" id="3_theme"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/back.png" id="4_back"]
+[ext_resource type="Shader" path="res://scenes/components/ui/gold_text.gdshader" id="5_gold"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/search.png" id="6_search"]
+[ext_resource type="Script" path="res://scenes/components/ui/ui_button.gd" id="7_button"]
+[ext_resource type="FontVariation" path="res://assets/fonts/sans_bold.tres" id="8_bold"]
 
-[node name="BookScene" type="Node2D"]
+[sub_resource type="Gradient" id="Gradient_shade"]
+offsets = PackedFloat32Array(0, 0.4, 1)
+colors = PackedColorArray(0.024, 0.031, 0.078, 0.55, 0.024, 0.031, 0.078, 0.25, 0.024, 0.031, 0.078, 0.35)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shade"]
+gradient = SubResource("Gradient_shade")
+fill_to = Vector2(1, 0)
+
+[sub_resource type="Gradient" id="Gradient_fade"]
+colors = PackedColorArray(0.024, 0.031, 0.078, 0, 0.024, 0.031, 0.078, 0.9)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_fade"]
+gradient = SubResource("Gradient_fade")
+fill_from = Vector2(0, 0)
+fill_to = Vector2(0, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gold"]
+shader = ExtResource("5_gold")
+shader_parameter/height = 60.0
+
+[node name="BookScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("3_theme")
 script = ExtResource("1_vcj1x")
-metadata/_edit_vertical_guides_ = [960.0, 1680.0, 1680.0, 0.0, 1783.0, 240.0, 74.0, 240.0, 1080.0, 857.0, 1303.0, 121.0, 377.0, 187.0]
-metadata/_edit_horizontal_guides_ = [0.0, 540.0, 0.0, 230.0, 450.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 850.0, 0.0, 0.0, 50.0, 89.0, 991.0, 1035.0, 150.0, 305.0]
 
 [node name="Background" type="TextureRect" parent="."]
-z_index = -10
-offset_left = 4.0
-offset_right = 1924.0
-offset_bottom = 1080.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 texture = ExtResource("2_i70xx")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="book_title" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 857.0
-offset_top = 14.0
-offset_right = 1303.0
-offset_bottom = 85.0
-theme_override_font_sizes/font_size = 50
+[node name="Shade" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_shade")
+expand_mode = 1
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+layout_mode = 0
+horizontal_scroll_mode = 0
+
+[node name="Margin" type="MarginContainer" parent="Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 100
+
+[node name="Grid" type="GridContainer" parent="Scroll/Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 26
+theme_override_constants/v_separation = 26
+
+[node name="Fade" type="TextureRect" parent="."]
+layout_mode = 0
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_fade")
+expand_mode = 1
+
+[node name="Head" type="HBoxContainer" parent="."]
+layout_mode = 0
+theme_override_constants/separation = 18
+
+[node name="CountPrefix" type="Label" parent="Head"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"GroupLabel"
+theme_override_font_sizes/font_size = 26
+
+[node name="Count" type="Label" parent="Head"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("8_bold")
+theme_override_font_sizes/font_size = 32
+
+[node name="CountSuffix" type="Label" parent="Head"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"GroupLabel"
+theme_override_font_sizes/font_size = 26
+
+[node name="Tags" type="HBoxContainer" parent="Head"]
+unique_name_in_owner = true
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+alignment = 0
+
+[node name="Sort" type="OptionButton" parent="Head"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 54)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="Reset" type="Button" parent="Head"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"SmallButton"
+text = "ui.book.reset"
+script = ExtResource("7_button")
+
+[node name="Rail" type="PanelContainer" parent="."]
+layout_mode = 0
+theme_type_variation = &"RailPanel"
+
+[node name="Margin" type="MarginContainer" parent="Rail"]
+layout_mode = 2
+theme_override_constants/margin_left = 26
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 26
+
+[node name="Filters" type="VBoxContainer" parent="Rail/Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Top" type="HBoxContainer" parent="Rail/Margin/Filters"]
+layout_mode = 2
+theme_override_constants/separation = 22
+
+[node name="BackButton" type="Button" parent="Rail/Margin/Filters/Top"]
+custom_minimum_size = Vector2(66, 66)
+layout_mode = 2
+theme_type_variation = &"IconButton"
+icon = ExtResource("4_back")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Title" type="Label" parent="Rail/Margin/Filters/Top"]
+material = SubResource("ShaderMaterial_gold")
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 42
 text = "ui.book.title"
-horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="pages" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 960.0
-offset_top = 1001.0
-offset_right = 1200.0
-offset_bottom = 1070.0
-theme_override_font_sizes/font_size = 40
-text = "1/1"
-horizontal_alignment = 1
-vertical_alignment = 1
+[node name="Gap" type="Control" parent="Rail/Margin/Filters"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
 
-[node name="last_page_button" type="Button" parent="."]
-offset_left = 268.0
-offset_top = 810.0
-offset_right = 349.0
-offset_bottom = 989.0
-theme_override_font_sizes/font_size = 40
-text = "ui.book.prev"
-autowrap_mode = 3
-icon_alignment = 1
-
-[node name="next_page_button" type="Button" parent="."]
-offset_left = 1810.0
-offset_top = 791.0
-offset_right = 1891.0
-offset_bottom = 988.0
-theme_override_font_sizes/font_size = 40
-text = "ui.book.next"
-autowrap_mode = 3
-icon_alignment = 1
-
-[node name="filter_character" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 48.0
-offset_top = 102.0
-offset_right = 128.0
-offset_bottom = 159.0
-rotation = -0.000805978
-theme_override_font_sizes/font_size = 40
-text = "ui.book.character"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="filter_character_button" type="CheckButton" parent="."]
-offset_left = 152.0
-offset_top = 94.0
-offset_right = 196.0
-offset_bottom = 118.0
-scale = Vector2(3, 3)
-
-[node name="filter_equipment" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 48.0
-offset_top = 181.0
-offset_right = 128.0
-offset_bottom = 238.0
-theme_override_font_sizes/font_size = 40
-text = "ui.book.equipment"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="filter_equipment_button" type="CheckButton" parent="."]
-offset_left = 152.0
-offset_top = 174.0
-offset_right = 196.0
-offset_bottom = 198.0
-scale = Vector2(3, 3)
-
-[node name="filter_star" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 48.0
-offset_top = 261.0
-offset_right = 128.0
-offset_bottom = 318.0
-theme_override_font_sizes/font_size = 40
-text = "ui.book.star"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="filter_star_button" type="OptionButton" parent="."]
-offset_left = 143.0
-offset_top = 261.0
-offset_right = 273.0
-offset_bottom = 319.0
-theme_override_font_sizes/font_size = 35
-alignment = 1
-selected = 0
-item_count = 4
-popup/item_0/text = "ui.book.star_any"
-popup/item_1/text = "ui.book.star_1"
-popup/item_1/id = 1
-popup/item_2/text = "ui.book.star_2"
-popup/item_2/id = 2
-popup/item_3/text = "ui.book.star_3"
-popup/item_3/id = 3
-script = ExtResource("3_ot48t")
-
-[node name="filter_string" type="Label" parent="."]
-modulate = Color(0, 0, 0, 1)
-offset_left = 74.0
-offset_top = 512.0
-offset_right = 234.0
-offset_bottom = 569.0
-theme_override_font_sizes/font_size = 40
-text = "ui.book.search"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="filter_string_input" type="TextEdit" parent="."]
-offset_left = 28.0
-offset_top = 569.0
-offset_right = 274.0
-offset_bottom = 635.0
-theme_override_font_sizes/font_size = 35
+[node name="Search" type="LineEdit" parent="Rail/Margin/Filters"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 62)
+layout_mode = 2
+theme_type_variation = &"SearchEdit"
 placeholder_text = "ui.book.search_hint"
+clear_button_enabled = true
 
-[node name="filter_string_button" type="Button" parent="."]
-offset_left = 110.0
-offset_top = 648.0
-offset_right = 198.0
-offset_bottom = 713.0
-theme_override_font_sizes/font_size = 40
-text = "ui.book.confirm"
+[node name="Icon" type="TextureRect" parent="Rail/Margin/Filters/Search"]
+modulate = Color(1, 0.851, 0.541, 0.7)
+layout_mode = 0
+offset_left = 18.0
+offset_top = 17.0
+offset_right = 46.0
+offset_bottom = 45.0
+mouse_filter = 2
+texture = ExtResource("6_search")
+expand_mode = 1
 
-[node name="card_slots" type="Node2D" parent="."]
-
-[node name="card_slot1" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(480, 230)
-
-[node name="card_slot2" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(720, 230)
-
-[node name="card_slot3" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(960, 230)
-
-[node name="card_slot4" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(1200, 230)
-
-[node name="card_slot5" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(1440, 230)
-
-[node name="card_slot6" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(1680, 230)
-
-[node name="card_slot7" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(480, 540)
-
-[node name="card_slot8" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(720, 540)
-
-[node name="card_slot9" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(960, 540)
-
-[node name="card_slot10" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(1200, 540)
-
-[node name="card_slot11" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(1440, 540)
-
-[node name="card_slot12" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(1680, 540)
-
-[node name="card_slot13" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(480, 850)
-
-[node name="card_slot14" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(720, 850)
-
-[node name="card_slot15" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(960, 850)
-
-[node name="card_slot16" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(1200, 850)
-
-[node name="card_slot17" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(1440, 850)
-
-[node name="card_slot18" parent="card_slots" instance=ExtResource("5_78a1y")]
-z_index = -2
-position = Vector2(1680, 850)
-
-[node name="card_manager" type="Node2D" parent="."]
-script = ExtResource("3_5mo1v")
-
-[node name="input_manager" type="Node2D" parent="."]
-
-[node name="book_manager" type="Node2D" parent="."]
-script = ExtResource("5_8m7n8")
-
-[node name="back_button" type="Button" parent="."]
-offset_left = 27.0
-offset_top = 20.0
-offset_right = 121.0
-offset_bottom = 78.0
-theme_override_font_sizes/font_size = 35
-text = "ui.common.back"
-
-[connection signal="pressed" from="last_page_button" to="book_manager" method="_on_last_page_button_pressed"]
-[connection signal="pressed" from="next_page_button" to="book_manager" method="_on_next_page_button_pressed"]
-[connection signal="pressed" from="filter_character_button" to="book_manager" method="_on_filter_character_button_pressed"]
-[connection signal="pressed" from="filter_equipment_button" to="book_manager" method="_on_filter_equipment_button_pressed"]
-[connection signal="item_selected" from="filter_star_button" to="book_manager" method="_on_filter_star_button_item_selected"]
-[connection signal="pressed" from="filter_string_button" to="book_manager" method="_on_filter_string_button_pressed"]
-[connection signal="pressed" from="back_button" to="." method="_on_back_button_pressed"]
+[connection signal="pressed" from="Rail/Margin/Filters/Top/BackButton" to="." method="_on_back_button_pressed"]

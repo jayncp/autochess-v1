@@ -56,6 +56,7 @@ func _check_data() -> void:
 		keys.append("race." + race)
 	for timing in CardDB.TIMINGS:
 		keys.append("timing." + timing)
+		keys.append("timing_desc." + timing)
 	for skill in CardDB.BASE_SKILLS + CardDB.SPECIAL_SKILLS:
 		if skill in CardDB.DESCRIPTIVE_SPECIALS:
 			keys.append("effect." + skill)
@@ -306,16 +307,17 @@ func _run_smoke() -> void:
 	sandbox._on_back_button_pressed()
 	await _frames(2)
 
-	# 闯关：第一关检查布阵交互规则；两关各布阵一次 → 开始战斗 → 返回
+	# 闯关：展开关卡详情；第一关检查布阵交互规则；两关各布阵一次 → 开始战斗 → 返回
 	manager.get_node("MenuScene")._on_single_mode_pressed()
 	await _frames(2)
-	manager.current_scene._on_level_select_button_pressed(LevelDB.all().keys()[0])
+	_check_level_select(manager.current_scene)
+	manager.current_scene.enter_level(LevelDB.all().keys()[0])
 	await create_timer(0.3).timeout  # 等手牌入场动画
 	await _check_lineup_rules(manager)
 	manager.current_scene._on_back_button_pressed()
 	await _frames(2)
 	for level_id in LevelDB.all():
-		manager.current_scene._on_level_select_button_pressed(level_id)
+		manager.current_scene.enter_level(level_id)
 		await create_timer(0.3).timeout
 		var setup: Node = manager.current_scene
 		var slots: Array = setup.get_node("player_card_slots").get_children()
@@ -330,35 +332,62 @@ func _run_smoke() -> void:
 	manager.current_scene._on_back_button_pressed()
 	await _frames(2)
 
-	# 图鉴：翻页、筛选
+	# 图鉴：筛选、排序、点卡放大
 	manager.get_node("MenuScene")._on_book_mode_pressed()
 	await _frames(2)
-	var book: Node = manager.current_scene.get_node("book_manager")
-	book._on_next_page_button_pressed()
-	book._on_last_page_button_pressed()
-	var equipment_count := CardDB.ids("equipment").size()
-	book._on_filter_character_button_pressed()  # 关掉角色，只剩装备
-	if book.display_list.size() != equipment_count:
-		_failures.append("[smoke-book] 只看装备应有 %d 张，实际 %d 张" % [equipment_count, book.display_list.size()])
-	book._on_filter_character_button_pressed()  # 恢复
-	book._on_filter_star_button_item_selected(2)
-	var two_stars := CardDB.all().values().filter(func(c): return c.star == 2).size()
-	if book.display_list.size() != two_stars:
-		_failures.append("[smoke-book] 2★ 应有 %d 张，实际 %d 张" % [two_stars, book.display_list.size()])
-	# 分页（B4）：每页 18 张，正好 18 张是 1 页，19 张是 2 页
-	for n in [18, 19]:
-		book.display_list = range(n)
-		if book.total_pages() != ceili(n / 18.0):
-			_failures.append("[smoke-book] %d 张应为 %d 页，实际 %d 页" % [n, ceili(n / 18.0), book.total_pages()])
-	book._on_filter_star_button_item_selected(2)
-	book.get_node("../filter_string_input").text = "集结"
-	book._on_filter_string_button_pressed()
+	_check_book(manager.current_scene)
 	await _frames(2)
 	manager.current_scene._on_back_button_pressed()
 	await _frames(2)
 
 	manager.free()
 	print("冒烟流程：完成")
+
+
+## 关卡选择：同时只展开一个关卡，详情里是它的敌方阵容
+func _check_level_select(select: Node) -> void:
+	var ids: Array = LevelDB.all().keys()
+	for id in [ids[0], ids[-1]]:
+		select.toggle_level(id)
+		var portraits := select.find_children("*", "UnitPortrait", true, false)
+		if portraits.size() != LevelDB.level(id).enemy.size():
+			_failures.append("[smoke-levels] 展开 %s 应显示 %d 个敌方单位，实际 %d 个" % [id, LevelDB.level(id).enemy.size(), portraits.size()])
+	select.toggle_level(ids[-1])
+	if not select.find_children("*", "UnitPortrait", true, false).is_empty():
+		_failures.append("[smoke-levels] 再点一次应该收起详情")
+
+
+## 图鉴的筛选：组内满足任一，组间同时满足；排序；点卡放大
+func _check_book(book: Node) -> void:
+	var cards: Array = CardDB.all().values()
+	var expect := func(label: String, filter: Callable) -> void:
+		var count := cards.filter(filter).size()
+		if book.shown.size() != count:
+			_failures.append("[smoke-book] %s 应有 %d 张，实际 %d 张" % [label, count, book.shown.size()])
+	book.toggle_filter("types", "character")
+	expect.call("只看装备", func(c): return c.type == "equipment")
+	book.toggle_filter("types", "character")
+	book.toggle_filter("stars", 2)
+	expect.call("2★", func(c): return c.star == 2)
+	book.toggle_filter("stars", 1)
+	expect.call("1★ 或 2★", func(c): return c.star in [1, 2])
+	book.toggle_filter("races", "elf")
+	expect.call("1★ 或 2★，且是精灵", func(c): return c.star in [1, 2] and "elf" in c.get("races", []))
+	book.reset_filters()
+	book.toggle_filter("special", "shelter")
+	expect.call("庇护", func(c): return c.get("special_skills") is Dictionary and c.special_skills.has("shelter"))
+	book.reset_filters()
+	book.set_search("集结")
+	if book.shown.is_empty():
+		_failures.append("[smoke-book] 搜索“集结”应有结果")
+	book.reset_filters()
+	book.set_sort("strength")
+	var strengths: Array = book.shown.map(func(id): return CardDB.card(id).get("strength", 0))
+	if strengths[0] != strengths.max():
+		_failures.append("[smoke-book] 按战斗力排序，第一张应是最高的")
+	book.open_zoom("porcupine")
+	if book.find_children("*", "CardZoom", true, false).size() != 1:
+		_failures.append("[smoke-book] 点卡应该打开放大")
 
 
 ## 布阵交互规则（docs/design/game-design.md 第 7 节），用第一关的手牌：
