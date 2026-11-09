@@ -95,7 +95,7 @@
   - 基础技能方块：种族色的浅色版，配黑字（常规字重）；
   - 按内容多少自动缩小字号：实时状态和紧凑卡可以换行，表格每格一行。
 - **战斗力**：白字黑描边，始终显示当前值。
-- **还没有卡图的卡**：卡图区显示第一种族的大图标（装备是虚线六边形），淡显。
+- **还没有卡图的卡**：卡图区显示第一种族的大图标（装备是虚线六边形，角色身上的装备框里也是），淡显。
 - **卡内字号**（缩放 1 时）：卡名 30px，特殊技能 21px，基础技能方块 20px，时机文字 19px，战斗力 46px，装备名 18px。
 
 ### 3.2 两种形态
@@ -113,7 +113,14 @@
 - 蟾蜍这类只在结算时生效的加成不改卡面数值，触发时弹出卡名。
 - 点卡查看：左边是合成后的大卡（实时状态、当前战斗力），右边是拆开的角色卡、装备卡（原始状态）；点任意处关闭。
 
-### 3.4 卡图
+### 3.4 实现
+
+- 卡牌根节点 `card.tscn`（`Node2D`）管拖放、悬停和动画；卡面是子节点 `face`（`CardFace`，`scenes/components/card/card_face.gd`），原点在卡牌中心。
+- 卡面全部在 `_draw` 里画，一张卡只有两个节点（卡面和背景）。布局按缩放 1 写，乘以 `display_scale`；文字按显示字号栅格化，缩小显示时也清楚。背景渐变是着色器 `card_background.gdshader`。
+- 接口：`show_cards(角色 id, 装备 id)`；`compact`、`display_scale`；战斗中 `start_live(开战时的单位属性)`，之后 `set_strength`、`set_specials`、`set_firing(时机)`。
+- 卡面贴图和卡图导入时生成 mipmap（项目的导入默认值），缩小显示时不起锯齿。
+
+### 3.5 卡图
 
 - 透明底，只画角色本体，统一朝右。
 - 装备和来源角色对应（[card-design.md 第 4 节](card-design.md)）：先画角色，再画它的武器、身体部位或战利品。
@@ -185,6 +192,6 @@
 | 字体子集 | `just fonts`（`tools/autochess_tools/art/fonts.py`） | `assets/fonts/NotoSansSC.ttf`、`NotoSerifSC-Bold.ttf` |
 | 图标、卡牌边框和法阵、界面贴图 | `just art`（`tools/autochess_tools/art/`，SVG 用 resvg 渲染成 PNG） | `assets/ui/icons/`、`assets/ui/card/`、`assets/ui/theme/` |
 | 主题、字体变体 | `just theme`（`cli/build_theme.gd`） | `assets/ui/theme.tres`、`assets/fonts/*.tres` |
-| 截图 | `just shots <目录> [宽度]`（`tests/tools/capture.gd`，需要窗口） | 各界面的 PNG |
+| 截图 | `just shots <目录> [宽度]`（`tests/tools/capture.gd`，需要窗口） | 各界面和卡牌一览（`cards_*`，和样稿对应）的 PNG |
 
 改设计时改生成脚本，再重跑；不要直接改产物。
