@@ -42,16 +42,16 @@ func _initialize() -> void:
 	_finish()
 
 
-## 数据检查：卡牌、种族、时机、词条、关卡都有中文名，词条都有说明；列出还在用占位图的卡。
+## 数据检查：卡牌、种族、时机、词条、关卡都有中文名，词条都有说明；列出还没有卡图的卡。
 ## 字段和 id 的合法性由 CardDB、LevelDB 加载时校验，出错会被 ErrorCatcher 捕获。
 ## 临时切到英文环境，确认系统语言不是中文时也能回退到中文。
 func _check_data() -> void:
 	var keys := []
-	var placeholders := []
+	var no_art := []
 	for id in CardDB.all():
 		keys.append("card." + id)
 		if not ResourceLoader.exists("res://assets/cards/%s.png" % id):
-			placeholders.append(id)
+			no_art.append(id)
 	for race in CardDB.RACES:
 		keys.append("race." + race)
 	for timing in CardDB.TIMINGS:
@@ -72,8 +72,8 @@ func _check_data() -> void:
 	TranslationServer.set_locale(locale)
 	_check_font_coverage()
 	print("数据检查：%d 张卡，%d 个关卡" % [CardDB.all().size(), LevelDB.all().size()])
-	if not placeholders.is_empty():
-		print("  用占位图的卡：%s" % ", ".join(placeholders))
+	if not no_art.is_empty():
+		print("  还没有卡图的卡：%s" % ", ".join(no_art))
 
 
 ## 字体是子集化的（just fonts）：翻译表里的每个字都要在两种字体里，缺了就重新子集化
@@ -265,7 +265,7 @@ func _check_skip_keeps_shelter() -> void:
 			break
 	battle_manager.have_been_skipped = true
 	battle_manager.show_final_state()
-	var shown: String = battle_manager.player_battle_fields[2][0].get_node("skill_3").text
+	var shown: String = load_card.special_skill_text(battle_manager.player_battle_fields[2][0].face.live.special_skills)
 	if shown != "庇护1":
 		_failures.append("[replay-skip-shelter] 跳过后应显示庇护1，实际 %s" % shown)
 	scene.free()
@@ -282,7 +282,7 @@ func _check_replay(battle_manager: Node, label: String) -> void:
 	var expected := Harness.run(lineups[1], lineups[2])
 	var shown := {"winner": battle_manager.winner}
 	for side in [1, 2]:
-		shown["p%d" % side] = battle_manager.player_battle_fields[side].map(func(card): return int(card.get_node("strength_1").text))
+		shown["p%d" % side] = battle_manager.player_battle_fields[side].map(func(card): return card.face.live.strength)
 	if not Harness.same(shown, expected):
 		_failures.append("[%s] 场景显示 %s，BattleSim 结果 %s" % [label, shown, expected])
 

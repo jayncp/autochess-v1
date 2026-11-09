@@ -18,7 +18,7 @@ const STALEMATE_REPEATS := 3
 const NO_DEATH_HINT_FROM := 10
 
 var player_slots = {1: [], 2: []}
-## 双方当前在场的卡牌节点（实时状态开关会遍历它们）
+## 双方当前在场的卡牌节点
 var player_battle_fields = {1: [], 2: []}
 ## 0 = 未结束；1/2 = 该方胜；3 = 平局。播放结束或跳过后才设置
 var winner = 0
@@ -39,7 +39,6 @@ var _tweens: Array[Tween] = []
 ##### 初始化 #####
 #==============================================
 func _ready() -> void:
-	$"../skill_union".button_pressed = true
 	show_battle_speed()
 	for i in range(1, 8):
 		player_slots[1].append(get_node("../card_slots/card_slot%d" % i))
@@ -61,14 +60,8 @@ func load_player_deck():
 			var u: Dictionary = units[n]
 			var new_card = load_card.generate(u.card_id, u.equip_id)
 			new_card.position = player_slots[side][n].position
-			# 整合技能UI：合并后的时机和基础技能
-			load_card.update_attribute_display(new_card, "all_time", load_card.timing_name(u.timings))
-			load_card.update_attribute_display(new_card, "all_base_skill", load_card.base_skill_text(u.base_skills))
-			new_card.get_node("card_skill_UI").modulate.a = 255
-			new_card.get_node("all_time").visible = true
-			new_card.get_node("all_base_skill").visible = true
-			# 实时状态只显示红色的当前战力，隐藏黑色的装备战力，避免误解
-			new_card.get_node("strength_2").visible = false
+			# 战斗中始终显示实时状态：合并后的时机和基础技能、当前战斗力
+			new_card.face.start_live(u)
 			$"../card_manager".add_child(new_card)
 			player_battle_fields[side].append(new_card)
 			_cards[u.uid] = new_card
@@ -145,7 +138,7 @@ func play_events() -> void:
 		match e.type:
 			"pre_battle":
 				$"../start_battle".text = tr("ui.battle.pre_battle_running")
-				await play_step(e.units.filter(func(uid): return uid != ""), e.actors, "", step)
+				await play_step(e.units.filter(func(uid): return uid != ""), e.actors, "pre_battle", step)
 			"enter":
 				$"../start_battle".text = tr("ui.battle.running")
 				await play_step(e.units, e.units, "on_enter", step)
@@ -174,7 +167,8 @@ func play_events() -> void:
 				break
 
 
-## 一步：上前 → 出列（时机蓝字）→ 特殊技能（被唤醒的出列、出手、收回）→ 原本的逐拍 → 对撞 → 反噬 → 收回
+## 一步：上前 → 出列（时机图标发亮；入场、交战还有时机蓝字）→ 特殊技能（被唤醒的出列、出手、收回）→ 原本的逐拍
+## → 对撞 → 反噬 → 收回
 func play_step(units: Array, actors: Array, timing: String, step: Array) -> void:
 	var unit_cards := units.map(func(uid): return _cards[uid])
 	var actor_cards := actors.map(func(uid): return _cards[uid])
@@ -184,8 +178,9 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 		return
 	if not actor_cards.is_empty():
 		animate_cards(actor_cards, 40, 1.2)
+		light_timing(actor_cards, timing)
 		await wait(ACT_TIME)
-		if timing != "":
+		if timing != "pre_battle":
 			for card in actor_cards:
 				buff_text_effect(card, load_card.timing_name(timing), "blue")
 			await wait(TRIGGER_TEXT_TIME)
@@ -205,6 +200,7 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 			"clash":
 				if not actor_cards.is_empty():
 					animate_cards(actor_cards, -40, 1.1)
+					light_timing(actor_cards, "")
 					await wait(ACT_DOWN_TIME)
 					actor_cards = []
 				await play_clash(e, unit_cards)
@@ -215,12 +211,21 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 		await retract(woken_cards)
 	if not actor_cards.is_empty():
 		animate_cards(actor_cards, -40, 1.1)
+		light_timing(actor_cards, "")
 		await wait(ACT_DOWN_TIME)
 	if step[-1].type in ["clash", "backlash"]:
 		animate_cards(unit_cards, -90, 1.1, 0.2)
 		await wait(0.25)
 	animate_cards(unit_cards, -30, 1.0)
 	await wait(PREPARE_TIME)
+
+
+## 出列的卡：时机图标发亮（timing 为空表示熄灭）
+func light_timing(cards: Array, timing: String) -> void:
+	if have_been_skipped:
+		return
+	for card in cards:
+		card.face.set_firing(timing)
 
 
 ## 对撞：双方向前，致命显示绿字，结算伤害
@@ -290,11 +295,10 @@ func apply_effect(f: Dictionary) -> void:
 	if have_been_skipped:
 		return  # 跳过后最终局面已经摆好
 	var card = _cards[f.unit]
-	card.strength = f.strength
-	card.get_node("strength_1").text = str(f.strength)
+	card.face.set_strength(f.strength)
 	if f.kind == "damage" and f.shelter:
 		_consume_shelter(f.unit)
-		load_card.update_attribute_display(card, "skill_3", load_card.special_skill_text(_specials[f.unit]))
+		card.face.set_specials(_specials[f.unit])
 
 
 func _source_name(uid: String) -> String:
@@ -343,7 +347,6 @@ func show_final_state() -> void:
 		for u in _result.events[0]["p%d" % side]:
 			alive[side].append(u.uid)
 			_specials[u.uid] = u.special_skills.duplicate()
-	var sheltered := {}  # 庇护被消耗过的单位
 	for e in _result.events:
 		if e.type == "death":
 			for side in [1, 2]:
@@ -351,7 +354,6 @@ func show_final_state() -> void:
 		for f in e.get("effects", []):
 			if f.kind == "damage" and f.shelter:
 				_consume_shelter(f.unit)
-				sheltered[f.unit] = true
 	for uid in _cards:
 		var card = _cards[uid]
 		var side := int(uid.split("-")[0])
@@ -359,10 +361,9 @@ func show_final_state() -> void:
 		if n == -1:
 			card.queue_free()
 			continue
-		card.strength = _result["p%d" % side][n]
-		card.get_node("strength_1").text = str(card.strength)
-		if sheltered.has(uid):
-			load_card.update_attribute_display(card, "skill_3", load_card.special_skill_text(_specials[uid]))
+		card.face.set_strength(_result["p%d" % side][n])
+		card.face.set_specials(_specials[uid])
+		card.face.set_firing("")
 		card.position = player_slots[side][n].position
 		card.scale = Vector2.ONE
 		card.modulate.a = 1

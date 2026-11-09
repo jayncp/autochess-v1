@@ -162,7 +162,8 @@ def main() -> None:
     for folder, textures in (("theme", theme_textures()), ("card", card_textures())):
         out = REPO / "assets" / "ui" / folder
         for name, body in textures.items():
-            svg_to_png(body, out / f"{name}.png")
+            # 装备框按原样缩放（不是九宫格），按 2 倍渲染，卡牌放大查看时也清楚
+            svg_to_png(body, out / f"{name}.png", 2 if name.startswith("equip_box") else 1)
         print(f"{folder}：{len(textures)} 张贴图")
 
 
