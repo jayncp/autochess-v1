@@ -1,10 +1,9 @@
-[gd_scene load_steps=16 format=3 uid="uid://bylnhf6tvckt"]
+[gd_scene load_steps=15 format=3 uid="uid://bylnhf6tvckt"]
 
 [ext_resource type="Script" path="res://scenes/level/level_setup.gd" id="1_8laa7"]
 [ext_resource type="Texture2D" path="res://assets/backgrounds/setup.png" id="2_bg"]
 [ext_resource type="Script" path="res://scenes/level/advanced_card_manager.gd" id="2_yjbnq"]
 [ext_resource type="Script" path="res://scenes/level/player_hand.gd" id="5_eamkl"]
-[ext_resource type="Theme" path="res://assets/ui/theme.tres" id="6_theme"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/back.png" id="7_back"]
 [ext_resource type="Shader" path="res://scenes/components/ui/gold_text.gdshader" id="8_gold"]
 [ext_resource type="Script" path="res://scenes/components/ui/ui_button.gd" id="9_button"]
@@ -43,7 +42,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme = ExtResource("6_theme")
 script = ExtResource("1_8laa7")
 
 [node name="Background" type="TextureRect" parent="."]

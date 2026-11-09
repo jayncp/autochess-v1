@@ -1,10 +1,9 @@
-[gd_scene load_steps=12 format=3 uid="uid://cpr2agdiwp66v"]
+[gd_scene load_steps=11 format=3 uid="uid://cpr2agdiwp66v"]
 
 [ext_resource type="Script" path="res://scenes/sandbox/sandbox.gd" id="1_2pdes"]
 [ext_resource type="Texture2D" path="res://assets/backgrounds/setup.png" id="2_bg"]
 [ext_resource type="Script" path="res://scenes/sandbox/sandbox_board.gd" id="3_board"]
 [ext_resource type="Script" path="res://scenes/sandbox/card_picker.gd" id="4_picker"]
-[ext_resource type="Theme" path="res://assets/ui/theme.tres" id="5_theme"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/back.png" id="6_back"]
 [ext_resource type="Shader" path="res://scenes/components/ui/gold_text.gdshader" id="7_gold"]
 [ext_resource type="Script" path="res://scenes/components/ui/ui_button.gd" id="8_button"]
@@ -30,7 +29,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme = ExtResource("5_theme")
 script = ExtResource("1_2pdes")
 
 [node name="Background" type="TextureRect" parent="."]

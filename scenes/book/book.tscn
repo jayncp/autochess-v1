@@ -1,8 +1,7 @@
-[gd_scene load_steps=15 format=3 uid="uid://pcdmfoppb1ms"]
+[gd_scene load_steps=14 format=3 uid="uid://pcdmfoppb1ms"]
 
 [ext_resource type="Script" path="res://scenes/book/book.gd" id="1_vcj1x"]
 [ext_resource type="Texture2D" uid="uid://cpsnj5a6hkr6o" path="res://assets/backgrounds/book.png" id="2_i70xx"]
-[ext_resource type="Theme" path="res://assets/ui/theme.tres" id="3_theme"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/back.png" id="4_back"]
 [ext_resource type="Shader" path="res://scenes/components/ui/gold_text.gdshader" id="5_gold"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/search.png" id="6_search"]
@@ -36,7 +35,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("3_theme")
 script = ExtResource("1_vcj1x")
 
 [node name="Background" type="TextureRect" parent="."]

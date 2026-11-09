@@ -1,8 +1,7 @@
-[gd_scene load_steps=11 format=3 uid="uid://r6pjmyn3ohtg"]
+[gd_scene load_steps=10 format=3 uid="uid://r6pjmyn3ohtg"]
 
 [ext_resource type="Script" path="res://scenes/level/level_select.gd" id="1_w4dbt"]
 [ext_resource type="Texture2D" uid="uid://dv3up2w20cvgv" path="res://assets/backgrounds/level_select.png" id="2_odxgp"]
-[ext_resource type="Theme" path="res://assets/ui/theme.tres" id="3_theme"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/back.png" id="4_back"]
 [ext_resource type="Shader" path="res://scenes/components/ui/gold_text.gdshader" id="5_gold"]
 
@@ -34,7 +33,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("3_theme")
 script = ExtResource("1_w4dbt")
 
 [node name="Background" type="TextureRect" parent="."]

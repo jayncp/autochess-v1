@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://d4f8jau7mhyyj"]
+[gd_scene load_steps=13 format=3 uid="uid://d4f8jau7mhyyj"]
 
 [ext_resource type="Script" path="res://scenes/menu/menu.gd" id="1_menu"]
 [ext_resource type="Texture2D" path="res://assets/backgrounds/menu.png" id="2_bg"]
@@ -6,7 +6,6 @@
 [ext_resource type="Shader" path="res://scenes/components/ui/gold_text.gdshader" id="4_gold"]
 [ext_resource type="FontVariation" path="res://assets/fonts/serif_heavy.tres" id="5_serif"]
 [ext_resource type="Texture2D" path="res://assets/ui/theme/diamond.png" id="6_diamond"]
-[ext_resource type="Theme" path="res://assets/ui/theme.tres" id="7_theme"]
 
 [sub_resource type="Gradient" id="Gradient_shade"]
 offsets = PackedFloat32Array(0, 0.3, 0.55)
@@ -40,7 +39,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("7_theme")
 script = ExtResource("1_menu")
 
 [node name="Background" type="TextureRect" parent="."]
