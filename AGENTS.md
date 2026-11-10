@@ -30,7 +30,7 @@
 - `i18n/`：翻译表 `data.csv`（`card.<id>`、`race.<id>`、`timing.<id>`、`timing_desc.<id>`（时机说明）、`keyword.<id>`、`keyword_desc.<id>`（词条说明）、`effect.<id>`（描述型特殊技能的整句）、`level.<id>`）、`ui.csv`（`ui.<场景>.<名称>`）
 - `scenes/`：场景和脚本放在一起
   - `app/`：启动场景
-  - `menu/`、`sandbox/`（科研模式）、`level/`（关卡选择和布阵）、`battle/`（战斗界面、点卡查看 `CardDetail`；`battle/fx/` 是战斗特效：飘字 `FloatBadge` 和飘字层 `BadgeLayer`）、`book/`（图鉴）
+  - `menu/`、`sandbox/`（科研模式）、`level/`（关卡选择和布阵）、`battle/`（战斗界面、点卡查看 `CardDetail`；`battle/fx/` 是战斗特效：飘字 `FloatBadge` 和飘字层 `BadgeLayer`，特效 `FxEffect` 和特效层 `FxLayer`，阵亡烧散的着色器）、`book/`（图鉴）
   - `components/`：卡牌、卡位（`CardSlot`）等共用组件；`components/card/`：卡牌根节点 `card.tscn` 管拖放和悬停，卡面由 `CardFace`（`card_face.gd`）画，`load_card.gd` 按 id 生成卡牌、给出卡面文字，`UnitPortrait` 是关卡详情里的圆形头像；`components/board/` 是布阵界面共用的布局、拖放（`BoardDrag`）、阵营旗帜、放大查看；`components/ui/` 是界面控件（`UiButton`、`MenuItem`、`Dialog`、`FilterOption`、`TabButton`、金色标题着色器）
 - `scripts/`：`core/`（`CardDB`、`LevelDB`、`BattleSim`）、`global_var.gd`（场景之间共享的静态变量：开战的阵容、紧凑模式）
 - `cli/`：GDScript 无头命令，如 `sim.gd`（批量模拟）、`build_theme.gd`（生成主题）

@@ -17,10 +17,13 @@ var old_z_index
 ## 敌方的卡，不能拖动
 var is_enemy_card = false
 
-## 卡面
+## 卡面（第一次取时记下来：阵亡烧散时卡面会被挪进 CanvasGroup）
 var face: CardFace:
 	get:
-		return $face
+		if not _face:
+			_face = $face
+		return _face
+var _face: CardFace
 
 
 func _ready() -> void:
