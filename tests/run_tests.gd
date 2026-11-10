@@ -42,7 +42,7 @@ func _initialize() -> void:
 	_finish()
 
 
-## 数据检查：卡牌、种族、时机、词条、关卡都有中文名，词条都有说明；列出还没有卡图的卡。
+## 数据检查：卡牌、种族、时机、词条、关卡都有中文名，词条都有说明，基础技能和词条都有飘字的饰板；列出还没有卡图的卡。
 ## 字段和 id 的合法性由 CardDB、LevelDB 加载时校验，出错会被 ErrorCatcher 捕获。
 ## 临时切到英文环境，确认系统语言不是中文时也能回退到中文。
 func _check_data() -> void:
@@ -63,6 +63,11 @@ func _check_data() -> void:
 		else:
 			keys.append("keyword." + skill)
 			keys.append("keyword_desc." + skill)
+			# 飘字的饰板（just art 生成）：基础技能是端饰和中段，词条是圆章、中段和尖头
+			var parts := ["cap_", "mid_"] if skill in CardDB.BASE_SKILLS else ["medal_", "kmid_", "ktip_"]
+			for part in parts:
+				if not ResourceLoader.exists("res://assets/ui/fx/%s%s.png" % [part, skill]):
+					_failures.append("[data] 缺少飘字贴图：%s%s.png" % [part, skill])
 	for level_id in LevelDB.all():
 		keys.append("level." + level_id)
 	var locale := TranslationServer.get_locale()
@@ -124,7 +129,8 @@ func _run_unit_tests() -> void:
 	CardDB.add_cards(TEST_CARDS)
 	_test_rules_without_cards()
 	_test_skill_text()
-	print("单元测试：5 组")
+	_test_live_specials()
+	print("单元测试：6 组")
 
 
 ## 湮灭（目前没有卡带湮灭）：打对方全体、走伤害流程；同一时间节点先腐蚀后湮灭，所以庇护挡的是腐蚀
@@ -196,10 +202,12 @@ func _test_rules_without_cards() -> void:
 		var strengths := [sim.fields[1].map(func(u): return u.strength), sim.fields[2].map(func(u): return u.strength)]
 		if strengths != c[4]:
 			_failures.append("[unit-rules] %s：期望 %s，实际 %s" % [c[0], c[4], strengths])
-	# 蟾蜍的加成记在腐蚀伤害上，回放据此在蟾蜍身上弹名字
-	var hits: Array = BattleSim.simulate([["toad", ""]], [["pixie", ""]]).events.filter(func(e): return e.type == "beat" and e.skill == "corrode")
-	if hits.is_empty() or hits[0].effects[0].get("boosts") != ["1-0"]:
-		_failures.append("[unit-rules] 蟾蜍的腐蚀应记下加成来源 1-0")
+	# 蟾蜍的加成记在腐蚀伤害上，回放据此在蟾蜍身上弹名字；伤害记下发动者（后面那只蟾蜍在第 2 位，腐蚀是第 1 位发动的）
+	var hits: Array = BattleSim.simulate([["toad", ""], ["toad", ""]], [["pixie", ""]]).events.filter(func(e): return e.type == "beat" and e.skill == "corrode")
+	if hits.is_empty() or hits[0].effects[0].get("boosts") != ["1-0", "1-1"]:
+		_failures.append("[unit-rules] 蟾蜍的腐蚀应记下加成来源 1-0、1-1")
+	elif hits[0].effects[0].by != "1-0":
+		_failures.append("[unit-rules] 腐蚀伤害的 by 应是发动者 1-0，实际 %s" % hits[0].effects[0].by)
 
 
 ## 卡面文字：带时机的特殊技能、描述型特殊技能、按结算顺序排列
@@ -214,6 +222,21 @@ func _test_skill_text() -> void:
 	for c in cases:
 		if c[0] != c[1]:
 			_failures.append("[unit-skill-text] 期望 %s，实际 %s" % [c[1], c[0]])
+
+
+## 战斗中的特殊技能栏：庇护被消耗还有剩余时显示新的层数（标紫），用完就移除，不显示"庇护0"
+func _test_live_specials() -> void:
+	var face := CardFace.new()
+	face.show_cards("test_shelter_3", "")
+	face.start_live(BattleSim.new([["test_shelter_3", ""]], [["pixie", ""]]).fields[1][0].describe())
+	face.set_specials({"shelter": 1})
+	var parts := face._special_parts()
+	if parts.size() != 1 or parts[0][0] != "庇护1" or parts[0][2] != CardFace.CHANGED_SPECIAL:
+		_failures.append("[unit-live-specials] 庇护剩 1 层应显示紫色的庇护1，实际 %s" % [parts])
+	face.set_specials({})
+	if not face._special_parts().is_empty():
+		_failures.append("[unit-live-specials] 庇护用完应移除，实际 %s" % [face._special_parts()])
+	face.free()
 
 
 ## 回放检查：战斗场景最后显示的局面和 BattleSim 的结果一致。
@@ -244,6 +267,12 @@ func _run_replay_checks() -> void:
 		if c[3] >= 0 and not battle_manager.have_been_skipped:
 			_failures.append("[replay-%s] 战斗在跳过之前就播完了，没测到中途跳过" % c[0])
 		_check_replay(battle_manager, "replay-" + c[0])
+		# 结束（含跳过）后不留下飘字和亮起的技能方块、特殊技能栏
+		await process_frame
+		var lit: Array = (battle_manager.player_battle_fields[1] + battle_manager.player_battle_fields[2]).filter(
+			func(card): return card.face.firing_skill != "" or card.face.firing_special)
+		if scene.get_node("badges").get_child_count() > 0 or not lit.is_empty():
+			_failures.append("[replay-%s] 结束后还有飘字或亮起的卡" % c[0])
 		scene.free()
 	await _check_skip_keeps_shelter()
 	print("回放检查：%d 条" % (cases.size() + 1))

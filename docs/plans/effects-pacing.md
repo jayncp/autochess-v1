@@ -273,3 +273,26 @@
   - 没有冲突。
 
 [battle-rules.md](../design/battle-rules.md) 2.1 第 4 条已经补上"它自己的效果也照常发动"和这个例外。
+
+## 10. 执行记录
+
+issue #20。
+
+### PR 1 飘字和卡面反馈（分支 `fx-1-badges`）
+
+- **飘字**：`scenes/battle/fx/float_badge.gd`（`FloatBadge`，四类）和 `badge_layer.gd`（`BadgeLayer`，叠放、清空）；替换旧的 `buff_text.tscn`。时机的蓝字去掉（中间一带已经显示阶段）。
+- **饰板贴图**：`tools/autochess_tools/art/fx.py` 用样稿的同一份 SVG 生成 `assets/ui/fx/`（端饰、中段、光芒、水滴、圆章、尖头，外发光画进贴图），进 `just art`；生成结果是确定的。
+- **卡面**（`CardFace`）：`firing_skill`（方块亮起）、`firing_special`（特殊技能栏亮起）、`pulse_strength`（战斗力跳动）、庇护的保护罩；用完的词条不再显示"庇护0"。
+- **回放**（`battle_manager`）：
+  - 发动者的方块按拍亮起；
+  - 数值改成实际扣的，挡完只弹词条，坚固减了一部分时 0.15 秒后再弹数值；
+  - 致命 −∞、战斗力显示 0；
+  - 角色专属效果走通用方案（`_character_effect`，可用 `_fx_<效果 id>` 覆盖）。
+  - 节奏没动。
+- **事件日志**：伤害加 `by`，`BattleSim.VERSION` 3 → 4。
+- **测试**：
+  - 事件自洽检查加 `by`；
+  - 单元测试加"腐蚀的 by 是发动者"和战斗中特殊技能栏（剩余层数标紫、用完移除）；
+  - 数据检查加飘字贴图齐全；
+  - 回放检查加"结束后不留飘字和亮起的卡"。
+

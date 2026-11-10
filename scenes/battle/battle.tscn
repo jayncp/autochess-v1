@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://chrmft17cb2o3"]
+[gd_scene load_steps=20 format=3 uid="uid://chrmft17cb2o3"]
 
 [ext_resource type="Script" path="res://scenes/battle/battle.gd" id="1_cpj55"]
 [ext_resource type="Texture2D" uid="uid://cyncfc7fi8ndm" path="res://assets/backgrounds/battle.png" id="2_c26nl"]
@@ -10,6 +10,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/icons/skip.png" id="9_skip"]
 [ext_resource type="FontVariation" path="res://assets/fonts/serif_title.tres" id="10_title"]
 [ext_resource type="FontVariation" path="res://assets/fonts/sans_medium.tres" id="11_medium"]
+[ext_resource type="Script" path="res://scenes/battle/fx/badge_layer.gd" id="12_badges"]
 
 [sub_resource type="Gradient" id="Gradient_shade"]
 colors = PackedColorArray(0.024, 0.031, 0.078, 0.15, 0.024, 0.031, 0.078, 0.55)
@@ -194,8 +195,9 @@ expand_icon = true
 [node name="cards" type="Node2D" parent="."]
 script = ExtResource("3_cards")
 
-[node name="buff_text_container" type="Node2D" parent="."]
+[node name="badges" type="Node2D" parent="."]
 z_index = 10
+script = ExtResource("12_badges")
 
 [node name="battle_manager" type="Node2D" parent="."]
 script = ExtResource("4_3egiu")

@@ -42,11 +42,12 @@ experiment name:
 fonts:
     cd tools && uv run --group art python -m autochess_tools.art.fonts
 
-# 美术素材：图标、卡牌边框和法阵、界面贴图（SVG 渲染成 PNG），之后重建主题
+# 美术素材：图标、卡牌边框和法阵、界面贴图、战斗飘字的饰板（SVG 渲染成 PNG），之后重建主题
 art:
     cd tools && uv run --group art python -m autochess_tools.art.icons
     cd tools && uv run --group art python -m autochess_tools.art.ornaments
     cd tools && uv run --group art python -m autochess_tools.art.ui
+    cd tools && uv run --group art python -m autochess_tools.art.fx
     {{godot}} --headless --path . --import > /dev/null 2>&1
     just theme
 
