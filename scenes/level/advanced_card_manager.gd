@@ -3,6 +3,8 @@ extends BoardDrag
 ## 卡牌的样子由布阵界面给出：队列（lineup_look）、手牌（由 player_hand 设置）；拖到队列上方时变成队列的样式。
 
 const DEFAULT_CARD_MOVE_SPEED = 0.1
+## 场上互换时，被换的卡移到原位置的时长
+const SWAP_TIME := 0.14
 const CARD_DRAW_SPEED = 0.2
 
 var level_id
@@ -83,7 +85,7 @@ func drop_on_card(card, slot, origin_slot):
 		place_card(card, slot)
 		target.card_slot_card_is_in = origin_slot
 		origin_slot.card_in_slot = target
-		animate_card_to_position(target, origin_slot.position, DEFAULT_CARD_MOVE_SPEED * 2)
+		animate_card_to_position(target, origin_slot.position, SWAP_TIME)
 	# 手牌拖到场上的卡：手牌占位，原来那张整张回手，不拆开
 	else:
 		target.card_slot_card_is_in = null
