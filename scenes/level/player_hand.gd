@@ -34,6 +34,16 @@ func add_card_to_hand(card, speed):
 		card.move_to(card.starting_position, DEFAULT_CARD_MOVE_SPEED)
 
 
+## 整理手牌：按图鉴的默认顺序（卡牌序号，角色在前、装备在后）；合并过的卡按角色算
+func sort_hand() -> void:
+	player_hand.sort_custom(func(a, b): return _number(a) < _number(b))
+	update_hand_positions(DEFAULT_CARD_MOVE_SPEED * 2)
+
+
+func _number(card) -> int:
+	return CardDB.card(card.card_id if card.card_id else card.equip_id).no
+
+
 func remove_card_from_hand(card):
 	if card in player_hand:
 		player_hand.erase(card)

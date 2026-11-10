@@ -190,5 +190,14 @@ layout_mode = 2
 size_flags_horizontal = 4
 text = "ui.board.compact"
 
+[node name="SortHand" type="Button" parent="RightColumn"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"SmallButton"
+text = "ui.level_setup.sort_hand"
+script = ExtResource("9_button")
+
 [connection signal="pressed" from="BackButton" to="." method="_on_back_button_pressed"]
 [connection signal="pressed" from="RightColumn/StartBattle" to="." method="_on_start_battle_pressed"]
+[connection signal="pressed" from="RightColumn/SortHand" to="player_hand" method="sort_hand"]

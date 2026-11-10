@@ -484,6 +484,14 @@ func _check_lineup_rules(manager: Node) -> void:
 	for id in ["war_banner", "maneater", "vulture", "spiked_gauntlet"]:
 		if _hand_card(setup, id) == null:
 			_failures.append("[smoke-lineup] %s 应该回到手牌" % id)
+	# 整理手牌：按图鉴的默认顺序（卡牌序号）
+	var hand: Node = setup.get_node("player_hand")
+	hand.sort_hand()
+	var numbers: Array = hand.player_hand.map(func(c): return CardDB.card(c.card_id if c.card_id else c.equip_id).no)
+	var sorted := numbers.duplicate()
+	sorted.sort()
+	if numbers != sorted:
+		_failures.append("[smoke-lineup] 整理手牌后应按序号排列，实际 %s" % [numbers])
 
 
 ## 模拟玩家把卡拖到某个格子（null 表示格子以外）

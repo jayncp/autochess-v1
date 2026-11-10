@@ -285,6 +285,11 @@ func _screens() -> void:
 	sandbox.select_slot(2, 2)
 	await _frames(5)
 	await _shot("sandbox")
+	var cell: Control = sandbox.get_node("Picker")._cells["soldier"]
+	sandbox.get_node("Picker").preview_requested.emit("soldier", cell.get_global_rect())
+	await _frames(3)
+	await _shot("sandbox_preview")
+	sandbox._preview.hide_card()
 	sandbox.get_node("%Compact").button_pressed = true
 	sandbox.get_node("Picker").set_tab("equipment")
 	await _frames(5)
@@ -321,6 +326,17 @@ func _build_stage(setup: Node) -> void:
 		cards.drop_card(slots[step[1]])
 	await create_timer(0.3).timeout  # 等手牌归位的动画
 	await _shot("level")
+	# 看卡：手牌的放大卡在上方；我方一排的卡
+	cards._show_preview(hand[0])
+	await _frames(3)
+	await _shot("level_preview_hand")
+	cards._show_preview(slots[1].card_in_slot)
+	await _frames(3)
+	await _shot("level_preview_lineup")
+	cards._show_preview(cards.enemy_cards[1])
+	await _frames(3)
+	await _shot("level_preview_enemy")
+	cards.preview.hide_card()
 	var dragged = find.call("maneater")
 	cards.start_drag(dragged)
 	dragged.set_look(cards.lineup_look[0], cards.lineup_look[1])

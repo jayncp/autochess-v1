@@ -33,6 +33,7 @@ ui.level_select.enemy_count,共 %s 人
 ui.level_select.enter,进入关卡
 ui.level_setup.subtitle,闯关 · 第 %d 关
 ui.level_setup.need_character,请至少上场一个角色
+ui.level_setup.sort_hand,整理手牌
 ui.sandbox.title,科研模式
 ui.sandbox.swap,交换双方
 ui.sandbox.clear,清空全部
