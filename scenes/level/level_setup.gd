@@ -53,7 +53,7 @@ func _ready() -> void:
 
 
 func _on_back_button_pressed() -> void:
-	emit_signal("back_to_level_select")
+	back_to_level_select.emit()
 
 
 func _on_compact_toggled(on: bool) -> void:
@@ -72,7 +72,7 @@ func _on_start_battle_pressed() -> void:
 	global_var.battle_card_list_2 = lineup[0]
 	global_var.battle_equip_list_1 = enemy.map(func(u): return u[1])
 	global_var.battle_equip_list_2 = lineup[1]
-	emit_signal("start_battle")
+	start_battle.emit()
 
 
 # 检索我方队伍：按卡槽从左到右

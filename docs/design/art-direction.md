@@ -33,9 +33,7 @@
 
 ## 2. 控件
 
-由 `cli/build_theme.gd` 生成主题 `assets/ui/theme.tres`，贴图由 `tools/autochess_tools/art/ui.py` 生成。场景里不再单独覆盖样式。
-
-主题是项目全局主题（`project.godot` 的 `gui/theme/custom`），各界面不再单独设置。重建主题（`just theme`）的结果是确定的：子资源用固定 ID，图标贴图都是文件。
+由 `cli/build_theme.gd` 生成主题 `assets/ui/theme.tres`，贴图由 `tools/autochess_tools/art/ui.py` 生成。主题是项目全局主题（`project.godot` 的 `gui/theme/custom`），场景里不单独设置主题、不覆盖样式。重建主题（`just theme`）的结果是确定的：子资源用固定 ID，图标贴图都是文件。
 
 | 控件 | 样式 | 用法 |
 |---|---|---|
@@ -51,13 +49,13 @@
 | 详情面板 | 深色底加金框（关卡展开的详情） | `PanelContainer`，`DetailPanel` |
 | 弹出面板 | 深色底加金框（多选下拉的列表） | `PopupPanel` |
 | 开关、勾选块 | 金色 | `CheckButton`、`CheckBox` |
-| 筛选勾选块 | 带框，选中时金框淡金底；框里可以放图标、技能方块、星星 | `CheckBox`，`FilterCheck` |
+| 筛选勾选块 | 带框，选中时金框淡金底；框里可以放图标、技能方块、星星 | `FilterOption`（`scenes/components/ui/filter_option.gd`，主题 `FilterCheck`） |
 | 已选条件 | 圆角淡金底，点一下去掉 | `Button`，`TagButton` |
 | 小号按钮 | 同按钮，字小一号（重置筛选这类次要操作） | `UiButton`，`SmallButton` |
 | 自己画的按钮 | 没有底板（关卡格、标签页） | `Button`，`PlainButton` |
 | 输入框、下拉 | 深色底、金线 | `LineEdit`、`OptionButton` |
 | 搜索框、多选下拉 | 同输入框；搜索框左边放大镜 | `LineEdit`，`SearchEdit`；`Button`，`SelectButton` |
-| 标签页 | 选中的金色下划线 | `TabBar` |
+| 标签页 | 标题加一行小字（数量或"即将开放"），选中的金色下划线 | `TabButton`（`scenes/components/ui/tab_button.gd`），同一组用 `ButtonGroup` |
 | 滚动条 | 细金条，没有箭头 | `VScrollBar`、`HScrollBar` |
 | 对话框 | 居中，深蓝渐变底加金框，顶部一枚菱形徽记；标题、分隔线、正文、按钮 | `Dialog.notice()` 一个"知道了"；`Dialog.confirm()` "取消"+"确定" |
 
@@ -114,7 +112,7 @@
 | 卡图 | 高 | 矮 |
 | 时机和基础技能 | 2×2 表格 | 合并后的一行（和战斗实时状态同样的样式） |
 | 其余元素 | 同样大小 | 同样大小 |
-| 用在 | 图鉴、手牌、选卡区、构筑阶段的队列（默认） | 打开紧凑模式后的队列 |
+| 用在 | 图鉴、战斗、手牌、队列（默认）、放得下时的选卡区 | 打开紧凑模式后的队列、放不下完整卡时的选卡区 |
 
 ### 3.3 战斗中
 
@@ -125,8 +123,9 @@
 ### 3.4 实现
 
 - 卡牌根节点 `card.tscn`（`Node2D`）管拖放、悬停和动画；卡面是子节点 `face`（`CardFace`，`scenes/components/card/card_face.gd`），原点在卡牌中心。
-- 卡面全部在 `_draw` 里画，一张卡只有两个节点（卡面和背景）。布局按缩放 1 写，乘以 `display_scale`；文字按显示字号栅格化，缩小显示时也清楚。背景渐变是着色器 `card_background.gdshader`。
-- 接口：`show_cards(角色 id, 装备 id)`；`compact`、`display_scale`；战斗中 `start_live(开战时的单位属性)`，之后 `set_strength`、`set_specials`、`set_firing(时机)`。
+- 卡面全部在 `_draw` 里画，一张卡只有三个节点（卡面、背景、光晕）。布局按缩放 1 写，乘以 `display_scale`；文字按显示字号栅格化，缩小显示时也清楚。背景渐变是着色器 `card_background.gdshader`。
+- 接口：`show_cards(角色 id, 装备 id)`；`compact`、`display_scale`；`glow`（拖动、出列时的金光）、`shadow`（叠压的手牌）、`engaged`（交战位的红框）；战斗中 `start_live(开战时的单位属性)`，之后 `set_strength`、`set_specials`、`set_firing(时机)`，点卡查看用 `copy_live` 复制实时状态。
+- 卡面以外也要画卡面元素的地方（关卡头像、图鉴的筛选和词条说明）用它的静态函数：`apply_background`、`draw_chip`、`draw_placeholder`；在 `_draw` 里画的纹理都用 `cached_texture` 取（绘制命令只记纹理的 RID，没人持有的纹理会被释放）。
 - 卡面贴图和卡图导入时生成 mipmap（项目的导入默认值），缩小显示时不起锯齿。
 
 ### 3.5 卡图

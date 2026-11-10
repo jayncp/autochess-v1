@@ -214,7 +214,7 @@ func build() -> Theme:
 	var search_focus := _box("input_focus", 10, 18)
 	search_focus.content_margin_left = 54
 	t.set_stylebox("focus", "SearchEdit", search_focus)
-	t.set_type_variation("SelectButton", "MenuButton")
+	t.set_type_variation("SelectButton", "Button")
 	t.set_font("font", "SelectButton", fonts.sans)
 	t.set_font_size("font_size", "SelectButton", 22)
 	_button_colors(t, "SelectButton", Color.WHITE, Color.WHITE, Color.WHITE, TEXT_DIM)
@@ -236,20 +236,6 @@ func build() -> Theme:
 	t.set_stylebox("panel", "PopupPanel", popup)
 	t.set_icon("checked", "PopupMenu", on)
 	t.set_icon("unchecked", "PopupMenu", off)
-
-	# 标签页：选中的金色下划线
-	t.set_font("font", "TabBar", fonts.serif)
-	t.set_font_size("font_size", "TabBar", 24)
-	t.set_stylebox("tab_selected", "TabBar", _underline(GOLD))
-	t.set_stylebox("tab_hovered", "TabBar", _underline(Color(GOLD, 0.35)))
-	t.set_stylebox("tab_unselected", "TabBar", _underline(Color.TRANSPARENT))
-	t.set_stylebox("tab_disabled", "TabBar", _underline(Color.TRANSPARENT))
-	t.set_stylebox("tab_focus", "TabBar", StyleBoxEmpty.new())
-	t.set_color("font_selected_color", "TabBar", GOLD_BRIGHT)
-	t.set_color("font_hovered_color", "TabBar", GOLD_TEXT)
-	t.set_color("font_unselected_color", "TabBar", Color(GOLD_TEXT, 0.6))
-	t.set_color("font_disabled_color", "TabBar", Color(GOLD_TEXT, 0.35))
-	t.set_constant("h_separation", "TabBar", 8)
 
 	# 滚动条：细金条，没有箭头
 	for type in ["VScrollBar", "HScrollBar"]:
@@ -317,18 +303,6 @@ func _outlined(color: Color, border: Color, width: int, radius: int, margin: int
 	box.content_margin_right = margin
 	box.content_margin_top = 4
 	box.content_margin_bottom = 4
-	return box
-
-
-func _underline(color: Color) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color.TRANSPARENT
-	box.border_color = color
-	box.border_width_bottom = 2
-	box.content_margin_left = 24
-	box.content_margin_right = 24
-	box.content_margin_top = 10
-	box.content_margin_bottom = 12
 	return box
 
 

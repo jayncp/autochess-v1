@@ -19,10 +19,6 @@ run/main_scene="res://scenes/app/scene_manager.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
 
-[autoload]
-
-GlobalVar="*res://scripts/global_var.gd"
-
 [display]
 
 window/size/viewport_width=1920

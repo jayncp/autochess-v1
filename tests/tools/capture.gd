@@ -101,10 +101,14 @@ func _ui_kit() -> Control:
 		option.add_item(item)
 	option.custom_minimum_size = Vector2(260, 56)
 	inputs.add_child(option)
-	var tabs := TabBar.new()
-	tabs.add_tab("角色")
-	tabs.add_tab("装备")
-	tabs.add_tab("教学关")
+	var tabs := HBoxContainer.new()
+	var group := ButtonGroup.new()
+	for spec in [["角色", "27"], ["装备", "19"], ["教学关", "即将开放"]]:
+		var tab := TabButton.new(spec[0], spec[1])
+		tab.button_group = group
+		tab.button_pressed = spec[0] == "角色"
+		tab.disabled = spec[0] == "教学关"
+		tabs.add_child(tab)
 	column.add_child(tabs)
 	var hint := Label.new()
 	hint.theme_type_variation = &"HintLabel"

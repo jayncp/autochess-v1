@@ -1,111 +1,80 @@
 extends Node
+## 场景切换：主菜单 → 科研模式 / 闯关（关卡选择 → 布阵）/ 图鉴。
+## 开战时战斗场景盖在当前场景上面，当前场景隐藏并停用（停用后它的卡牌不参与物理拾取），战斗结束后回到它。
 
+const MENU := preload("res://scenes/menu/menu.tscn")
+const SANDBOX := preload("res://scenes/sandbox/sandbox.tscn")
+const LEVEL_SELECT := preload("res://scenes/level/level_select.tscn")
+const LEVEL_SETUP := preload("res://scenes/level/level_setup.tscn")
+const BOOK := preload("res://scenes/book/book.tscn")
+const BATTLE := preload("res://scenes/battle/battle.tscn")
 
+## 当前的场景（主菜单以外）；在主菜单时为 null
 var current_scene = null
 
-# Called when the node enters the scene tree for the first time.
+
 func _ready() -> void:
 	load_menu_scene()
 
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
-
-###
-# "主菜单"
-###
-func load_menu_scene():
-	# 清除其他场景
+func load_menu_scene() -> void:
 	if current_scene:
 		current_scene.queue_free()
 		current_scene = null
-	
-	var menu_scene = preload("res://scenes/menu/menu.tscn").instantiate()
-	menu_scene.connect("to_test_mode", Callable(self, "_on_to_test_mode"))
-	menu_scene.connect("to_single_mode", Callable(self, "_on_to_single_mode"))
-	menu_scene.connect("to_book_mode", Callable(self, "_on_to_book_mode"))
-
-	add_child(menu_scene)
-
-###
-# "科研模式"
-###
-func _on_to_test_mode():
-
-	get_node("MenuScene").queue_free()
-
-	current_scene = preload("res://scenes/sandbox/sandbox.tscn").instantiate()
-	current_scene.connect("start_battle",Callable(self, "_on_start_battle"))
-	current_scene.connect("back_to_menu",Callable(self, "_on_selection_back_to_menu"))
-
-	add_child(current_scene)
-
-###
-# "闯关模式"
-###
-func _on_to_single_mode():
-
-	get_node("MenuScene").queue_free()
-
-	current_scene = preload("res://scenes/level/level_select.tscn").instantiate()
-	current_scene.connect("select_level",Callable(self, "_on_select_level"))
-	current_scene.connect("back_to_menu",Callable(self, "_on_selection_back_to_menu"))
-
-	add_child(current_scene)
-
-# 进入指定关卡
-func _on_select_level(level_id):
-	get_node("LevelSelectScene").queue_free()
-	current_scene = preload("res://scenes/level/level_setup.tscn").instantiate()
-	current_scene.connect("back_to_level_select",Callable(self, "_on_back_to_level_select"))
-	current_scene.connect("start_battle",Callable(self, "_on_start_battle"))
-	current_scene.level_id = level_id
-	add_child(current_scene)
-
-# 返回关卡选择
-func _on_back_to_level_select():
-	get_node("PreBattleScene").queue_free()
-
-	current_scene = preload("res://scenes/level/level_select.tscn").instantiate()
-	current_scene.connect("select_level",Callable(self, "_on_select_level"))
-	current_scene.connect("back_to_menu",Callable(self, "_on_selection_back_to_menu"))
-
-	add_child(current_scene)
-
-###
-# "图鉴模式"
-###
-func _on_to_book_mode():
-	get_node("MenuScene").queue_free()
-	current_scene = preload("res://scenes/book/book.tscn").instantiate()
-	current_scene.connect("back_to_menu",Callable(self, "_on_selection_back_to_menu"))
-	add_child(current_scene)
+	var menu := MENU.instantiate()
+	menu.to_test_mode.connect(_on_to_test_mode)
+	menu.to_single_mode.connect(_show_level_select)
+	menu.to_book_mode.connect(_on_to_book_mode)
+	add_child(menu)
 
 
+## 换成新场景：去掉主菜单或当前场景
+func _switch(scene: Node) -> void:
+	if has_node("MenuScene"):
+		get_node("MenuScene").queue_free()
+	if current_scene:
+		current_scene.queue_free()
+	current_scene = scene
+	add_child(scene)
 
 
-# 返回主菜单
-func _on_selection_back_to_menu():
-	current_scene.queue_free()
-	current_scene = null
-	load_menu_scene()
+func _on_to_test_mode() -> void:
+	var sandbox := SANDBOX.instantiate()
+	sandbox.start_battle.connect(_on_start_battle)
+	sandbox.back_to_menu.connect(load_menu_scene)
+	_switch(sandbox)
 
-# "开始战斗"
-func _on_start_battle():
-	var battle_scene = preload("res://scenes/battle/battle.tscn").instantiate()
-	battle_scene.get_node("battle_manager").connect("back_to_last_scene",Callable(self,"_on_back_to_last_scene"))
-	# 隐藏当前场景
+
+func _show_level_select() -> void:
+	var select := LEVEL_SELECT.instantiate()
+	select.select_level.connect(_on_select_level)
+	select.back_to_menu.connect(load_menu_scene)
+	_switch(select)
+
+
+func _on_select_level(level_id: String) -> void:
+	var setup := LEVEL_SETUP.instantiate()
+	setup.level_id = level_id
+	setup.back_to_level_select.connect(_show_level_select)
+	setup.start_battle.connect(_on_start_battle)
+	_switch(setup)
+
+
+func _on_to_book_mode() -> void:
+	var book := BOOK.instantiate()
+	book.back_to_menu.connect(load_menu_scene)
+	_switch(book)
+
+
+func _on_start_battle() -> void:
+	var battle := BATTLE.instantiate()
+	battle.get_node("battle_manager").back_to_last_scene.connect(_on_back_to_last_scene)
 	current_scene.visible = false
-	# 将整个场景向下移动到屏幕外，防止射线投射检测
-	current_scene.position.y += 1500
+	current_scene.process_mode = Node.PROCESS_MODE_DISABLED
+	add_child(battle)
 
-	add_child(battle_scene)
 
-# 战斗结束返回到上一层
-func _on_back_to_last_scene():
+func _on_back_to_last_scene() -> void:
 	get_node("main").queue_free()
-	# 显示当前场景
 	current_scene.visible = true
-	# 将整个场景向上移动到屏幕内
-	current_scene.position.y -= 1500
+	current_scene.process_mode = Node.PROCESS_MODE_INHERIT

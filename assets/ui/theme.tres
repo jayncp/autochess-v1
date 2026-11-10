@@ -748,44 +748,6 @@ texture_margin_top = 10.0
 texture_margin_right = 10.0
 texture_margin_bottom = 10.0
 
-[sub_resource type="StyleBoxFlat" id="TabBar_tab_disabled"]
-content_margin_left = 24.0
-content_margin_top = 10.0
-content_margin_right = 24.0
-content_margin_bottom = 12.0
-bg_color = Color(1, 1, 1, 0)
-border_width_bottom = 2
-border_color = Color(1, 1, 1, 0)
-
-[sub_resource type="StyleBoxEmpty" id="TabBar_tab_focus"]
-
-[sub_resource type="StyleBoxFlat" id="TabBar_tab_hovered"]
-content_margin_left = 24.0
-content_margin_top = 10.0
-content_margin_right = 24.0
-content_margin_bottom = 12.0
-bg_color = Color(1, 1, 1, 0)
-border_width_bottom = 2
-border_color = Color(1, 0.8509804, 0.5411765, 0.35)
-
-[sub_resource type="StyleBoxFlat" id="TabBar_tab_selected"]
-content_margin_left = 24.0
-content_margin_top = 10.0
-content_margin_right = 24.0
-content_margin_bottom = 12.0
-bg_color = Color(1, 1, 1, 0)
-border_width_bottom = 2
-border_color = Color(1, 0.8509804, 0.5411765, 1)
-
-[sub_resource type="StyleBoxFlat" id="TabBar_tab_unselected"]
-content_margin_left = 24.0
-content_margin_top = 10.0
-content_margin_right = 24.0
-content_margin_bottom = 12.0
-bg_color = Color(1, 1, 1, 0)
-border_width_bottom = 2
-border_color = Color(1, 1, 1, 0)
-
 [sub_resource type="StyleBoxEmpty" id="TagButton_focus"]
 
 [sub_resource type="StyleBoxFlat" id="TagButton_hover"]
@@ -1114,7 +1076,7 @@ RailPanel/styles/panel = SubResource("RailPanel_panel")
 SearchEdit/base_type = &"LineEdit"
 SearchEdit/styles/focus = SubResource("SearchEdit_focus")
 SearchEdit/styles/normal = SubResource("SearchEdit_normal")
-SelectButton/base_type = &"MenuButton"
+SelectButton/base_type = &"Button"
 SelectButton/colors/font_color = Color(1, 1, 1, 1)
 SelectButton/colors/font_disabled_color = Color(1, 1, 1, 0.55)
 SelectButton/colors/font_focus_color = Color(1, 1, 1, 1)
@@ -1136,18 +1098,6 @@ SelectButton/styles/normal = SubResource("SelectButton_normal")
 SelectButton/styles/pressed = SubResource("SelectButton_pressed")
 SmallButton/base_type = &"Button"
 SmallButton/font_sizes/font_size = 22
-TabBar/colors/font_disabled_color = Color(0.9529412, 0.9019608, 0.76862746, 0.35)
-TabBar/colors/font_hovered_color = Color(0.9529412, 0.9019608, 0.76862746, 1)
-TabBar/colors/font_selected_color = Color(1, 0.9529412, 0.8156863, 1)
-TabBar/colors/font_unselected_color = Color(0.9529412, 0.9019608, 0.76862746, 0.6)
-TabBar/constants/h_separation = 8
-TabBar/font_sizes/font_size = 24
-TabBar/fonts/font = ExtResource("1_acm8m")
-TabBar/styles/tab_disabled = SubResource("TabBar_tab_disabled")
-TabBar/styles/tab_focus = SubResource("TabBar_tab_focus")
-TabBar/styles/tab_hovered = SubResource("TabBar_tab_hovered")
-TabBar/styles/tab_selected = SubResource("TabBar_tab_selected")
-TabBar/styles/tab_unselected = SubResource("TabBar_tab_unselected")
 TagButton/base_type = &"Button"
 TagButton/colors/font_color = Color(1, 1, 1, 1)
 TagButton/colors/font_disabled_color = Color(1, 1, 1, 0.55)

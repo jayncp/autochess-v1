@@ -53,7 +53,7 @@ func _ready() -> void:
 
 
 func _on_back_button_pressed() -> void:
-	emit_signal("back_to_menu")
+	back_to_menu.emit()
 
 
 # ---------- 阵容 ----------
@@ -129,7 +129,7 @@ func _on_start_battle_pressed() -> void:
 	global_var.battle_equip_list_1 = battle_lineup(1).map(func(u): return u[1])
 	global_var.battle_card_list_2 = battle_lineup(2).map(func(u): return u[0])
 	global_var.battle_equip_list_2 = battle_lineup(2).map(func(u): return u[1])
-	emit_signal("start_battle")
+	start_battle.emit()
 
 
 ## 按阵容重摆卡牌，更新选中的卡位和选卡区的提示

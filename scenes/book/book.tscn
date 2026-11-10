@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://pcdmfoppb1ms"]
+[gd_scene load_steps=13 format=3 uid="uid://pcdmfoppb1ms"]
 
 [ext_resource type="Script" path="res://scenes/book/book.gd" id="1_vcj1x"]
 [ext_resource type="Texture2D" uid="uid://cpsnj5a6hkr6o" path="res://assets/backgrounds/book.png" id="2_i70xx"]

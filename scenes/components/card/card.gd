@@ -1,23 +1,21 @@
 extends Node2D
 ## 卡牌：拖放、悬停、动画用这个根节点；卡面由子节点 face（CardFace）画。用 load_card.generate 生成。
 
-# 鼠标悬停信号
-signal hovered
-signal hovered_off
+## 鼠标进入、离开卡牌（布阵界面用来悬停看卡）
+signal hovered(card)
+signal hovered_off(card)
 
-var starting_position
-# 所在卡槽，判断是否在卡槽内
-var card_slot_card_is_in
-# 记录旧的z_index
-var old_z_index
-# 标记为敌人卡牌，无法互动
-var is_enemy_card = false
-
-# 卡牌身份：角色和装备的 id，空字符串表示没有
+## 卡牌身份：角色和装备的 id，空字符串表示没有
 var card_id := ""
 var equip_id := ""
-
-var is_playing_animation = false
+## 在手牌里的位置（放回手牌时回到这里）
+var starting_position
+## 所在的卡位，不在卡位上为 null
+var card_slot_card_is_in
+## 平时的图层（拖动时临时提到最上面，放下后恢复）
+var old_z_index
+## 敌方的卡，不能拖动
+var is_enemy_card = false
 
 ## 卡面
 var face: CardFace:
@@ -59,9 +57,10 @@ func set_look(display_scale: float, compact: bool) -> void:
 	face.compact = compact
 	$Area2D/CollisionShape2D.shape.size = face.get_size()
 
-# 卡牌悬停信号发送
+
 func _on_area_2d_mouse_entered() -> void:
-	emit_signal("hovered",self)
+	hovered.emit(self)
+
 
 func _on_area_2d_mouse_exited() -> void:
-	emit_signal("hovered_off",self)
+	hovered_off.emit(self)

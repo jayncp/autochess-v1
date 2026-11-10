@@ -1,8 +1,9 @@
 """图标：种族、时机，以及界面用的几个通用图标。48 网格的实心剪影，颜色用 currentColor。
 
-每个图标导出两种 PNG 到 assets/ui/icons/：
+导出 PNG 到 assets/ui/icons/：
 - <id>.png：白色剪影，在 Godot 里用 modulate 上色；
-- <id>_outline.png：白色剪影加黑色描边，直接压在卡图上用（同样用 modulate 上色，描边保持黑色）。
+- <id>_outline.png：白色剪影加黑色描边，直接压在卡图上用（同样用 modulate 上色，描边保持黑色），只有种族和时机图标有；
+- 下拉箭头不单独导出，ui.py 用它生成主题里的箭头。
 
 用法：just art
 """
@@ -70,6 +71,10 @@ ICONS = {
     "check": '<path d="M18 32.4 9.6 24l-2.8 2.8L18 38 42 14l-2.8-2.8z"/>',
     "chevron_down": '<path d="M10 16l14 14 14-14 3.5 3.5L24 37 6.5 19.5z"/>',
 }
+## 压在卡图上的图标（种族、时机），要导出描边版
+OUTLINED = ["human", "beast", "divine", "elf", "nature", "treasure", "pre_battle", "on_enter", "on_engage"]
+## 只给 ui.py 当素材用，不导出
+SOURCE_ONLY = ["chevron_down"]
 
 SIZE = 96  # 导出尺寸：48 网格放大 2 倍
 PAD = 4  # 描边版四周留的空（网格单位）
@@ -91,9 +96,12 @@ def svg(body: str, outline: bool) -> str:
 def main() -> None:
     out = REPO / "assets" / "ui" / "icons"
     for name, body in ICONS.items():
+        if name in SOURCE_ONLY:
+            continue
         svg_to_png(svg(body, False), out / f"{name}.png", zoom=SIZE / 48)
-        svg_to_png(svg(body, True), out / f"{name}_outline.png", zoom=SIZE / 48)
-    print(f"图标：{len(ICONS)} 个，写到 {out.relative_to(REPO)}")
+        if name in OUTLINED:
+            svg_to_png(svg(body, True), out / f"{name}_outline.png", zoom=SIZE / 48)
+    print(f"图标：{len(ICONS) - len(SOURCE_ONLY)} 个，写到 {out.relative_to(REPO)}")
 
 
 if __name__ == "__main__":

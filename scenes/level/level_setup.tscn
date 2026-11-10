@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://bylnhf6tvckt"]
+[gd_scene load_steps=16 format=3 uid="uid://bylnhf6tvckt"]
 
 [ext_resource type="Script" path="res://scenes/level/level_setup.gd" id="1_8laa7"]
 [ext_resource type="Texture2D" path="res://assets/backgrounds/setup.png" id="2_bg"]

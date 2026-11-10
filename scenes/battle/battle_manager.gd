@@ -114,7 +114,7 @@ func _on_start_battle_pressed_battle() -> void:
 		if not have_been_skipped:
 			show_final_state()
 	elif winner:
-		emit_signal("back_to_last_scene")
+		back_to_last_scene.emit()
 
 func show_winner():
 	_ui.show_result(winner, _result_text())
