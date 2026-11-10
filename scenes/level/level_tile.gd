@@ -1,9 +1,16 @@
 class_name LevelTile
 extends Button
 ## 关卡列表的一格：编号菱形、关卡名（太长时省略号截断）、展开箭头。
+## 点这一格进入关卡；点右边的箭头（圆形按钮）展开或收起详情。
 ## 展开时金框加光；已通关时绿框加光、右上角一个绿色对号，不写文字。
 
+signal enter_requested
+signal detail_requested
+
 const HEIGHT := 88.0
+## 右边箭头按钮的点击范围（宽）和圆的半径
+const ARROW_ZONE := 84.0
+const ARROW_RADIUS := 24.0
 const GOLD := Color("ffd98a")
 const GREEN := Color("8fd14f")
 const NUMBER_FONT := preload("res://assets/fonts/sans_bold.tres")
@@ -30,6 +37,22 @@ func _init() -> void:
 	mouse_exited.connect(queue_redraw)
 
 
+func _pressed() -> void:
+	if _on_arrow():
+		detail_requested.emit()
+	else:
+		enter_requested.emit()
+
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		queue_redraw()
+
+
+func _on_arrow() -> bool:
+	return get_local_mouse_position().x >= size.x - ARROW_ZONE
+
+
 func _draw() -> void:
 	var rect := Rect2(Vector2.ZERO, size)
 	draw_style_box(get_theme_stylebox("panel", "PanelContainer"), rect)
@@ -50,7 +73,7 @@ func _draw() -> void:
 
 	# 关卡名：放不下时省略号
 	var left := center.x + r + 22
-	var right := size.x - 54
+	var right := size.x - ARROW_ZONE - 4
 	var line := TextLine.new()
 	line.add_string(title, NAME_FONT, 32)
 	line.width = right - left
@@ -59,8 +82,11 @@ func _draw() -> void:
 	line.draw(get_canvas_item(), Vector2(left, top + 2), Color(0, 0, 0, 0.8))
 	line.draw(get_canvas_item(), Vector2(left, top), Color.WHITE)
 
-	# 展开箭头：收起时朝下，展开时朝上
-	var arrow := Vector2(size.x - 36, size.y / 2)
+	# 展开箭头：圆形按钮，收起时朝下，展开时朝上；指针在上面时加亮
+	var arrow := Vector2(size.x - ARROW_ZONE / 2, size.y / 2)
+	var lit := open or (is_hovered() and _on_arrow())
+	draw_circle(arrow, ARROW_RADIUS, Color(GOLD, 0.16 if lit else 0.06), true, -1, true)
+	draw_arc(arrow, ARROW_RADIUS, 0, TAU, 48, Color(GOLD, 0.8 if lit else 0.4), 1.5, true)
 	var d := -1.0 if open else 1.0
 	draw_polyline(PackedVector2Array([arrow + Vector2(-9, -4.5 * d), arrow + Vector2(0, 4.5 * d), arrow + Vector2(9, -4.5 * d)]), GOLD, 3, true)
 

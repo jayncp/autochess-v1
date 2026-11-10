@@ -286,6 +286,19 @@ func _check_replay(battle_manager: Node, label: String) -> void:
 		shown["p%d" % side] = battle_manager.player_battle_fields[side].map(func(card): return card.face.live.strength)
 	if not Harness.same(shown, expected):
 		_failures.append("[%s] 场景显示 %s，BattleSim 结果 %s" % [label, shown, expected])
+	# 中间一带显示胜负（我方是下面一排，即 p2）
+	var result: String = battle_manager.get_parent().get_node("%Result").text
+	var word: String = tr({1: "ui.battle.lose", 2: "ui.battle.win", 3: "ui.battle.draw"}[expected.winner])
+	if result != word:
+		_failures.append("[%s] 应显示%s，实际 %s" % [label, word, result])
+	# 点卡查看：大卡和场上的一样（当前战斗力）
+	var survivors: Array = battle_manager.player_battle_fields[1] + battle_manager.player_battle_fields[2]
+	if not survivors.is_empty():
+		var detail: CardDetail = battle_manager.get_node("../cards").open_detail(survivors[0])
+		var big: CardFace = detail.find_children("*", "CardFace", true, false)[0]
+		if big.live.strength != survivors[0].face.live.strength:
+			_failures.append("[%s] 点卡查看的战斗力 %s，场上 %s" % [label, big.live.strength, survivors[0].face.live.strength])
+		detail.free()
 
 
 func _run_smoke() -> void:
@@ -471,6 +484,14 @@ func _check_lineup_rules(manager: Node) -> void:
 	for id in ["war_banner", "maneater", "vulture", "spiked_gauntlet"]:
 		if _hand_card(setup, id) == null:
 			_failures.append("[smoke-lineup] %s 应该回到手牌" % id)
+	# 整理手牌：按图鉴的默认顺序（卡牌序号）
+	var hand: Node = setup.get_node("player_hand")
+	hand.sort_hand()
+	var numbers: Array = hand.player_hand.map(func(c): return CardDB.card(c.card_id if c.card_id else c.equip_id).no)
+	var sorted := numbers.duplicate()
+	sorted.sort()
+	if numbers != sorted:
+		_failures.append("[smoke-lineup] 整理手牌后应按序号排列，实际 %s" % [numbers])
 
 
 ## 模拟玩家把卡拖到某个格子（null 表示格子以外）

@@ -53,7 +53,7 @@ func _ready() -> void:
 
 
 func _on_back_button_pressed() -> void:
-	emit_signal("back_to_menu")
+	back_to_menu.emit()
 
 
 # ---------- 阵容 ----------
@@ -129,7 +129,7 @@ func _on_start_battle_pressed() -> void:
 	global_var.battle_equip_list_1 = battle_lineup(1).map(func(u): return u[1])
 	global_var.battle_card_list_2 = battle_lineup(2).map(func(u): return u[0])
 	global_var.battle_equip_list_2 = battle_lineup(2).map(func(u): return u[1])
-	emit_signal("start_battle")
+	start_battle.emit()
 
 
 ## 按阵容重摆卡牌，更新选中的卡位和选卡区的提示
@@ -156,7 +156,9 @@ func _on_compact_toggled(on: bool) -> void:
 	_layout()
 
 
-## 两排卡位和选卡区上下排开，共享高度：卡位的缩放受宽度和高度限制；选卡区放得下完整卡就用完整卡
+## 两排卡位和选卡区上下排开，共享高度：卡位的缩放受宽度和高度限制；
+## 选卡区的卡填满剩下的高度（最大缩放 1），放得下和队列一样大的完整卡就用完整卡，否则用紧凑卡；
+## 卡已经最大还有空余时，选卡区收紧，整体上下居中
 func _layout() -> void:
 	var compact: bool = global_var.compact_mode
 	var row_unit := BoardLayout.card_height(1, compact)
@@ -165,8 +167,19 @@ func _layout() -> void:
 	var columns := BoardLayout.columns(BoardLayout.TAG_COLUMN, size.x - BoardLayout.RIGHT_COLUMN, fit)
 	var card_scale: float = columns.scale
 	var row_height := row_unit * card_scale
-	var tops := {1: MARGIN, 2: MARGIN + row_height + GAP_ROWS}
+
+	var picker_height := size.y - 2 * MARGIN - 2 * (row_height + GAP_ROWS)
+	var room := picker_height - picker_head - 22
+	var picker_scale := minf(1.0, room / BoardLayout.card_height(1, false))
+	var full := picker_scale >= card_scale
+	if not full:
+		picker_scale = minf(1.0, room / BoardLayout.card_height(1, true))
+	var spare := maxf(0, room - BoardLayout.card_height(picker_scale, not full))
+	picker_height -= spare
+	var top := MARGIN + spare / 2
+	var tops := {1: top, 2: top + row_height + GAP_ROWS}
 	var picker_top: float = tops[2] + row_height + GAP_ROWS
+
 	for side in [1, 2]:
 		for i in BoardLayout.SLOTS:
 			var slot: CardSlot = _slots[side][i]
@@ -174,16 +187,8 @@ func _layout() -> void:
 			slot.position = Vector2(columns.center.call(i), tops[side] + row_height / 2)
 	_board.lineup_look = [card_scale, compact]
 	_board.lineup_band = Vector2(0, picker_top - GAP_ROWS / 2)
-
 	_picker.position = Vector2(30, picker_top)
-	_picker.size = Vector2(size.x - 60, size.y - MARGIN - picker_top)
-	# 选卡区：平时和队列一样大，放得下完整卡就用完整卡，否则用紧凑卡；紧凑模式下放大成完整卡（最大缩放 1）
-	var room := _picker.size.y - picker_head - 22
-	var full := BoardLayout.card_height(card_scale, false) <= room
-	var picker_scale := card_scale if full else minf(card_scale, room / BoardLayout.card_height(1, true))
-	if compact:
-		full = true
-		picker_scale = minf(1.0, room / BoardLayout.card_height(1, false))
+	_picker.size = Vector2(size.x - 60, picker_height)
 	_picker.layout(picker_scale, not full)
 	_board.picker_look = [picker_scale, not full]
 

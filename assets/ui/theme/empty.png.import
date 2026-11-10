@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b2aa5l1g4msx5"
-path="res://.godot/imported/chevron_down.png-3b449b29510f94157fefc6d06e2fc603.ctex"
+uid="uid://biqd15eobqawf"
+path="res://.godot/imported/empty.png-b4d0a5002acbc4312b65e86cb06c4569.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/icons/chevron_down.png"
-dest_files=["res://.godot/imported/chevron_down.png-3b449b29510f94157fefc6d06e2fc603.ctex"]
+source_file="res://assets/ui/theme/empty.png"
+dest_files=["res://.godot/imported/empty.png-b4d0a5002acbc4312b65e86cb06c4569.ctex"]
 
 [params]
 

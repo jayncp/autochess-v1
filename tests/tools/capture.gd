@@ -1,28 +1,32 @@
 extends SceneTree
 ## 界面截图：把各界面截到指定目录，用来对照样稿、给用户看。需要窗口（不能 --headless）。
-## 用法：just shots <输出目录> [宽度]，宽度默认 1920，手机用 2376
+## 用法：just shots <输出目录> [宽度] [高度]，默认 1920 × 1080，手机用 2376；更高的屏幕比如 1920 × 1200（16:10）、1920 × 1440（4:3）
 ## 截图：主菜单、主题控件、对话框；卡牌一览（cards_*，缩放 1，和样稿 cards.html 的几页对应）；用到卡牌的各界面
 
 var out: String
+## 截图画在这个固定大小的视口里（宽 × 高），和窗口、屏幕大小无关
+var _view := SubViewport.new()
 
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	out = args[0] if args.size() > 0 else "/tmp/autochess_shots"
 	var width := int(args[1]) if args.size() > 1 else 1920
+	var height := int(args[2]) if args.size() > 2 else 1080
 	DirAccess.make_dir_recursive_absolute(out)
-	root.size = Vector2i(width, 1080)
-	root.content_scale_size = Vector2i(width, 1080)
+	_view.size = Vector2i(width, height)
+	_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	root.add_child(_view)
 	await _frames(3)
 
 	var manager: Node = load("res://scenes/app/scene_manager.tscn").instantiate()
-	root.add_child(manager)
+	_view.add_child(manager)
 	await _frames(5)
 	await _shot("menu")
 	manager.free()
 
 	var kit := _ui_kit()
-	root.add_child(kit)
+	_view.add_child(kit)
 	await _frames(5)
 	await _shot("ui_kit")
 	Dialog.confirm(kit, "清空全部", "确定要清空双方的阵容吗？")
@@ -38,7 +42,6 @@ func _initialize() -> void:
 ## 主题控件一览
 func _ui_kit() -> Control:
 	var page := Control.new()
-	page.theme = load("res://assets/ui/theme.tres")
 	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := TextureRect.new()
 	bg.texture = load("res://assets/backgrounds/menu.png")
@@ -98,10 +101,14 @@ func _ui_kit() -> Control:
 		option.add_item(item)
 	option.custom_minimum_size = Vector2(260, 56)
 	inputs.add_child(option)
-	var tabs := TabBar.new()
-	tabs.add_tab("角色")
-	tabs.add_tab("装备")
-	tabs.add_tab("教学关")
+	var tabs := HBoxContainer.new()
+	var group := ButtonGroup.new()
+	for spec in [["角色", "27"], ["装备", "19"], ["教学关", "即将开放"]]:
+		var tab := TabButton.new(spec[0], spec[1])
+		tab.button_group = group
+		tab.button_pressed = spec[0] == "角色"
+		tab.disabled = spec[0] == "教学关"
+		tabs.add_child(tab)
 	column.add_child(tabs)
 	var hint := Label.new()
 	hint.theme_type_variation = &"HintLabel"
@@ -168,7 +175,6 @@ func _card_pages() -> void:
 ## 一页：每行一个标题和一排卡
 func _card_page(name: String, rows: Array) -> void:
 	var page := Control.new()
-	page.theme = load("res://assets/ui/theme.tres")
 	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := ColorRect.new()
 	bg.color = Color("161c38")
@@ -188,7 +194,7 @@ func _card_page(name: String, rows: Array) -> void:
 		column.add_child(cards)
 		for spec in row[1]:
 			cards.add_child(_card_cell(spec))
-	root.add_child(page)
+	_view.add_child(page)
 	await _frames(5)
 	await _shot(name)
 	page.free()
@@ -231,10 +237,10 @@ func _card_cell(spec: Dictionary) -> Control:
 
 
 ## 各界面：图鉴（默认、筛选中、点卡放大）、关卡选择（展开详情、关卡多阵容长）、闯关布阵（默认、拖动中、紧凑模式、手牌多）、
-## 科研模式（默认、紧凑模式加装备页）、战斗开始前、战斗中、战斗结束
+## 科研模式（默认、紧凑模式加装备页）、战斗开始前、战斗中、点卡查看、战斗结束
 func _screens() -> void:
 	var manager: Node = load("res://scenes/app/scene_manager.tscn").instantiate()
-	root.add_child(manager)
+	_view.add_child(manager)
 	await _frames(3)
 	manager.get_node("MenuScene")._on_book_mode_pressed()
 	await _frames(5)
@@ -283,6 +289,11 @@ func _screens() -> void:
 	sandbox.select_slot(2, 2)
 	await _frames(5)
 	await _shot("sandbox")
+	var cell: Control = sandbox.get_node("Picker")._cells["soldier"]
+	sandbox.get_node("Picker").preview_requested.emit("soldier", cell.get_global_rect())
+	await _frames(3)
+	await _shot("sandbox_preview")
+	sandbox._preview.hide_card()
 	sandbox.get_node("%Compact").button_pressed = true
 	sandbox.get_node("Picker").set_tab("equipment")
 	await _frames(5)
@@ -297,6 +308,11 @@ func _screens() -> void:
 	battle_manager._on_start_battle_pressed_battle()
 	await create_timer(2.2).timeout
 	await _shot("battle_mid")
+	var front = battle_manager.player_battle_fields[2][0]
+	var detail: CardDetail = manager.get_node("main/cards").open_detail(front)
+	await _frames(5)
+	await _shot("battle_detail")
+	detail.free()
 	battle_manager._on_skip_button_pressed()
 	await _frames(5)
 	await _shot("battle_end")
@@ -312,8 +328,19 @@ func _build_stage(setup: Node) -> void:
 	for step in [["tiger_man", 0], ["war_banner", 0], ["half_elf", 1], ["vulture", 2]]:
 		cards.start_drag(find.call(step[0]))
 		cards.drop_card(slots[step[1]])
-	await _frames(5)
+	await create_timer(0.3).timeout  # 等手牌归位的动画
 	await _shot("level")
+	# 看卡：手牌的放大卡在上方；我方一排的卡
+	cards._show_preview(hand[0])
+	await _frames(3)
+	await _shot("level_preview_hand")
+	cards._show_preview(slots[1].card_in_slot)
+	await _frames(3)
+	await _shot("level_preview_lineup")
+	cards._show_preview(cards.enemy_cards[1])
+	await _frames(3)
+	await _shot("level_preview_enemy")
+	cards.preview.hide_card()
 	var dragged = find.call("maneater")
 	cards.start_drag(dragged)
 	dragged.set_look(cards.lineup_look[0], cards.lineup_look[1])
@@ -364,5 +391,5 @@ func _frames(n: int) -> void:
 
 func _shot(name: String) -> void:
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("%s/%s.png" % [out, name])
+	_view.get_texture().get_image().save_png("%s/%s.png" % [out, name])
 	print("截图 ", name)

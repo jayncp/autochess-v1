@@ -54,6 +54,6 @@ art:
 theme:
     {{limit}} {{godot}} --headless --path . --script res://cli/build_theme.gd
 
-# 界面截图：各界面截到指定目录（默认 /tmp/autochess_shots），宽度默认 1920，手机用 2376。需要窗口
-shots out="/tmp/autochess_shots" width="1920":
-    {{limit}} {{godot}} --path . --script res://tests/tools/capture.gd -- {{out}} {{width}}
+# 界面截图：各界面截到指定目录（默认 /tmp/autochess_shots），默认 1920 × 1080，手机用 2376 宽。需要窗口
+shots out="/tmp/autochess_shots" width="1920" height="1080":
+    {{limit}} {{godot}} --path . --script res://tests/tools/capture.gd -- {{out}} {{width}} {{height}}

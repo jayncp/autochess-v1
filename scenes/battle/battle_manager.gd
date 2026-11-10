@@ -4,6 +4,10 @@ extends Node2D
 
 signal back_to_last_scene
 
+# 出列、对撞时朝中间移动的距离，按两排卡之间的空隙算；和缩放一起给出。节奏和特效之后单独设计
+const PREPARE := [0.08, 1.03]
+const ACT := [0.11, 1.06]
+const CLASH := [0.245, 1.03]
 # 动画时长（秒，1 倍速）
 const PREPARE_TIME := 0.5
 const ACT_TIME := 0.5
@@ -14,10 +18,6 @@ const DEATH_TIME := 1.5
 const REFILL_TIME := 0.6
 ## 连续多少次完全相同的交战算僵持，之后直接跳到结束
 const STALEMATE_REPEATS := 3
-## 连续多少次交战无人阵亡后显示计数
-const NO_DEATH_HINT_FROM := 10
-
-var player_slots = {1: [], 2: []}
 ## 双方当前在场的卡牌节点
 var player_battle_fields = {1: [], 2: []}
 ## 0 = 未结束；1/2 = 该方胜；3 = 平局。播放结束或跳过后才设置
@@ -26,7 +26,8 @@ var is_pre_battle = false
 
 var battle_speed = 1.0
 var have_been_skipped = false
-@onready var speed_button = $"../speed_button"
+## 战斗界面（布局和状态显示）
+@onready var _ui = $".."
 
 var _result: Dictionary
 var _cards := {}  # uid -> 卡牌节点
@@ -40,10 +41,16 @@ var _tweens: Array[Tween] = []
 #==============================================
 func _ready() -> void:
 	show_battle_speed()
-	for i in range(1, 8):
-		player_slots[1].append(get_node("../card_slots/card_slot%d" % i))
-		player_slots[2].append(get_node("../card_slots/card_slot%d" % (i + 7)))
 	load_player_deck()
+
+
+## 按界面的布局摆卡（界面大小变化时也调用）：卡牌缩放、每个位置
+func relayout() -> void:
+	for side in [1, 2]:
+		for n in player_battle_fields[side].size():
+			var card = player_battle_fields[side][n]
+			card.set_look(_ui.card_scale, false)
+			card.position = _ui.slot_position(side, n)
 
 
 func load_player_deck():
@@ -59,10 +66,9 @@ func load_player_deck():
 		for n in units.size():
 			var u: Dictionary = units[n]
 			var new_card = load_card.generate(u.card_id, u.equip_id)
-			new_card.position = player_slots[side][n].position
 			# 战斗中始终显示实时状态：合并后的时机和基础技能、当前战斗力
 			new_card.face.start_live(u)
-			$"../card_manager".add_child(new_card)
+			$"../cards".add_child(new_card)
 			player_battle_fields[side].append(new_card)
 			_cards[u.uid] = new_card
 			_specials[u.uid] = u.special_skills.duplicate()
@@ -79,7 +85,7 @@ func _on_speed_button_pressed() -> void:
 	show_battle_speed()
 
 func show_battle_speed():
-	speed_button.text = tr("ui.battle.speed") % str(battle_speed)
+	_ui.set_speed_text(battle_speed)
 
 func cycle_battle_speed():
 	if battle_speed == 1.0:
@@ -102,19 +108,33 @@ func _on_skip_button_pressed() -> void:
 func _on_start_battle_pressed_battle() -> void:
 	if not is_pre_battle:
 		is_pre_battle = true
-		$"../start_battle".text = tr("ui.battle.pre_battle_running")
+		_ui.show_phase("pre_battle", "")
+		mark_front()
 		await play_events()
 		if not have_been_skipped:
 			show_final_state()
 	elif winner:
-		emit_signal("back_to_last_scene")
+		back_to_last_scene.emit()
 
 func show_winner():
-	$"../start_battle".text = tr("ui.common.back")
+	_ui.show_result(winner, _result_text())
+
+
+## 结束的原因（我方是下面一排）：谁全部阵亡、另一方幸存几人；平局是同时全灭或连续无人阵亡
+func _result_text() -> String:
 	match winner:
-		1: $"../output_text".text = tr("ui.battle.p1_win")
-		2: $"../output_text".text = tr("ui.battle.p2_win")
-		3: $"../output_text".text = tr("ui.battle.draw")
+		2: return tr("ui.battle.enemy_wiped") % player_battle_fields[2].size()
+		1: return tr("ui.battle.ally_wiped") % player_battle_fields[1].size()
+	if _result.events[-1].reason == "no_death":
+		return tr("ui.battle.no_death_draw") % BattleSim.NO_DEATH_ENGAGES
+	return tr("ui.battle.both_wiped")
+
+
+## 中间一带的计数："第 3 次交战 · 无人阵亡 1 / 20"
+func _engage_text(engages: int, no_death: int) -> String:
+	if engages == 0:
+		return ""
+	return tr("ui.battle.engage_count") % [engages, no_death, BattleSim.NO_DEATH_ENGAGES]
 
 
 #==============================================
@@ -125,6 +145,8 @@ func show_winner():
 func play_events() -> void:
 	var events: Array = _result.events
 	var no_death_engages := 0
+	var engages := 0
+	var pre_battle_steps := 0
 	var last_engage := ""
 	var repeats := 0
 	var i := 1  # 第 0 个是 start
@@ -137,31 +159,31 @@ func play_events() -> void:
 			i += 1
 		match e.type:
 			"pre_battle":
-				$"../start_battle".text = tr("ui.battle.pre_battle_running")
+				pre_battle_steps += 1
+				_ui.show_phase("pre_battle", tr("ui.battle.step") % pre_battle_steps)
 				await play_step(e.units.filter(func(uid): return uid != ""), e.actors, "pre_battle", step)
 			"enter":
-				$"../start_battle".text = tr("ui.battle.running")
+				_ui.show_phase("on_enter", _engage_text(engages, no_death_engages))
 				await play_step(e.units, e.units, "on_enter", step)
 			"engage":
-				$"../start_battle".text = tr("ui.battle.running")
+				engages += 1
+				_ui.show_phase("on_engage", _engage_text(engages, no_death_engages))
 				# 僵持：连续几次完全相同的交战，直接跳到结束
 				var signature := JSON.stringify(step)
 				repeats = repeats + 1 if signature == last_engage else 1
 				last_engage = signature
 				if repeats >= STALEMATE_REPEATS:
-					$"../output_text".text = tr("ui.battle.stalemate")
+					_ui.show_note(tr("ui.battle.stalemate"))
 					await wait(DEATH_TIME)
 					break
 				await play_step(e.units, e.actors, "on_engage", step)
 				if have_been_skipped:
 					return
 				no_death_engages += 1
-				if no_death_engages >= NO_DEATH_HINT_FROM:
-					$"../output_text".text = tr("ui.battle.no_death") % [no_death_engages, BattleSim.NO_DEATH_ENGAGES]
+				_ui.show_note(_engage_text(engages, no_death_engages))
 			"death":
 				no_death_engages = 0
 				last_engage = ""
-				$"../output_text".text = ""
 				await play_death(e.units)
 			"end":
 				break
@@ -172,12 +194,12 @@ func play_events() -> void:
 func play_step(units: Array, actors: Array, timing: String, step: Array) -> void:
 	var unit_cards := units.map(func(uid): return _cards[uid])
 	var actor_cards := actors.map(func(uid): return _cards[uid])
-	animate_cards(unit_cards, 30, 1.1)
+	animate_cards(unit_cards, PREPARE[0], PREPARE[1])
 	await wait(PREPARE_TIME)
 	if have_been_skipped:
 		return
 	if not actor_cards.is_empty():
-		animate_cards(actor_cards, 40, 1.2)
+		animate_cards(actor_cards, ACT[0], ACT[1])
 		light_timing(actor_cards, timing)
 		await wait(ACT_TIME)
 		if timing != "pre_battle":
@@ -199,7 +221,7 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 				await wait(BEAT_TIME)
 			"clash":
 				if not actor_cards.is_empty():
-					animate_cards(actor_cards, -40, 1.1)
+					animate_cards(actor_cards, -ACT[0], PREPARE[1])
 					light_timing(actor_cards, "")
 					await wait(ACT_DOWN_TIME)
 					actor_cards = []
@@ -210,27 +232,35 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 	if not woken_cards.is_empty():
 		await retract(woken_cards)
 	if not actor_cards.is_empty():
-		animate_cards(actor_cards, -40, 1.1)
+		animate_cards(actor_cards, -ACT[0], PREPARE[1])
 		light_timing(actor_cards, "")
 		await wait(ACT_DOWN_TIME)
 	if step[-1].type in ["clash", "backlash"]:
-		animate_cards(unit_cards, -90, 1.1, 0.2)
+		animate_cards(unit_cards, -CLASH[0], PREPARE[1], 0.2)
 		await wait(0.25)
-	animate_cards(unit_cards, -30, 1.0)
+	animate_cards(unit_cards, -PREPARE[0], 1.0)
 	await wait(PREPARE_TIME)
 
 
-## 出列的卡：时机图标发亮（timing 为空表示熄灭）
+## 出列的卡：时机图标发亮、卡牌发光（timing 为空表示熄灭）
 func light_timing(cards: Array, timing: String) -> void:
 	if have_been_skipped:
 		return
 	for card in cards:
 		card.face.set_firing(timing)
+		card.face.glow = timing != ""
+
+
+## 双方交战位的卡加红框
+func mark_front() -> void:
+	for side in [1, 2]:
+		for n in player_battle_fields[side].size():
+			player_battle_fields[side][n].face.engaged = n == 0
 
 
 ## 对撞：双方向前，致命显示绿字，结算伤害
 func play_clash(e: Dictionary, unit_cards: Array) -> void:
-	animate_cards(unit_cards, 90, 1.1, 0.2)
+	animate_cards(unit_cards, CLASH[0], PREPARE[1], 0.2)
 	await wait(0.25)
 	var lethal := false
 	for k in 2:
@@ -249,14 +279,18 @@ func play_special(e: Dictionary) -> Array:
 		buff_text_effect(_cards[f.source], tr("keyword." + e.skill), "blue")
 	await wait(TRIGGER_TEXT_TIME)
 	var woken: Array = e.effects.map(func(f): return _cards[f.unit])
-	animate_cards(woken, 40, 1.2)
+	animate_cards(woken, ACT[0], ACT[1])
+	for card in woken:
+		card.face.glow = not have_been_skipped
 	await wait(ACT_TIME)
 	return woken
 
 
 ## 被唤醒的卡收回原位
 func retract(cards: Array) -> void:
-	animate_cards(cards, -40, 1.0)
+	animate_cards(cards, -ACT[0], 1.0)
+	for card in cards:
+		card.face.glow = false
 	await wait(ACT_DOWN_TIME)
 
 
@@ -323,14 +357,17 @@ func play_death(uids: Array) -> void:
 		var tween := create_battle_tween()
 		tween.tween_property(card, "modulate:a", 0, 1.0 / battle_speed)
 		tween.tween_property(card, "position", card.position + Vector2(0, -500 if side == 1 else 500), 1.2 / battle_speed)
+		card.face.engaged = false
 	await wait(DEATH_TIME)
 	if have_been_skipped:
 		return
 	for side in [1, 2]:
 		for n in player_battle_fields[side].size():
 			var card = player_battle_fields[side][n]
-			if card.position != player_slots[side][n].position:
-				create_battle_tween().tween_property(card, "position", player_slots[side][n].position, REFILL_TIME / battle_speed)
+			var target: Vector2 = _ui.slot_position(side, n)
+			if card.position != target:
+				create_battle_tween().tween_property(card, "position", target, REFILL_TIME / battle_speed)
+	mark_front()
 	await wait(DEATH_TIME)
 
 
@@ -364,7 +401,9 @@ func show_final_state() -> void:
 		card.face.set_strength(_result["p%d" % side][n])
 		card.face.set_specials(_specials[uid])
 		card.face.set_firing("")
-		card.position = player_slots[side][n].position
+		card.face.glow = false
+		card.face.engaged = false
+		card.position = _ui.slot_position(side, n)
 		card.scale = Vector2.ONE
 		card.modulate.a = 1
 	for side in [1, 2]:
@@ -387,7 +426,7 @@ func create_battle_tween() -> Tween:
 	return tween
 
 
-## 双方卡牌朝对方移动 offset（P1 向下、P2 向上），并缩放到 card_scale
+## 双方卡牌朝对方移动 offset（两排卡之间空隙的比例；P1 向下、P2 向上），并缩放到 card_scale
 func animate_cards(cards: Array, offset: float, card_scale: float, duration := 0.3) -> void:
 	if cards.is_empty() or have_been_skipped:
 		return
@@ -395,7 +434,7 @@ func animate_cards(cards: Array, offset: float, card_scale: float, duration := 0
 	for card in cards:
 		var side := 1 if card in player_battle_fields[1] else 2
 		var direction := 1 if side == 1 else -1
-		tween.tween_property(card, "position", card.position + Vector2(0, offset * direction), duration / battle_speed)
+		tween.tween_property(card, "position", card.position + Vector2(0, offset * _ui.row_gap * direction), duration / battle_speed)
 		tween.tween_property(card, "scale", Vector2(card_scale, card_scale), duration / battle_speed)
 
 

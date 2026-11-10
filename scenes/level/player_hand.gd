@@ -4,6 +4,8 @@ extends Node2D
 
 const GAP := 18.0
 const DEFAULT_CARD_MOVE_SPEED = 0.1
+## 整理手牌时卡牌移到新位置的时长
+const SORT_TIME := 0.14
 
 var player_hand = []
 ## 手牌的缩放（完整卡）
@@ -32,6 +34,16 @@ func add_card_to_hand(card, speed):
 		update_hand_positions(speed)
 	else:
 		card.move_to(card.starting_position, DEFAULT_CARD_MOVE_SPEED)
+
+
+## 整理手牌：按图鉴的默认顺序（卡牌序号，角色在前、装备在后）；合并过的卡按角色算
+func sort_hand() -> void:
+	player_hand.sort_custom(func(a, b): return _number(a) < _number(b))
+	update_hand_positions(SORT_TIME)
+
+
+func _number(card) -> int:
+	return CardDB.card(card.card_id if card.card_id else card.equip_id).no
 
 
 func remove_card_from_hand(card):

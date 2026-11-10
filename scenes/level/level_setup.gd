@@ -1,7 +1,7 @@
 extends Control
 ## 闯关布阵（构筑阶段）：上面一排是对方，中间一排是我方的卡位，底部一整行是手牌；
-## 右列是关卡名（和对方一排对齐）、上场计数、"开始战斗"、紧凑模式开关（和我方一排对齐）。
-## 布局按画布大小算；紧凑模式下双方队列换成紧凑卡，腾出的高度给手牌（放大成完整卡）。拖放规则在 advanced_card_manager。
+## 右列是关卡名（和对方一排对齐）、上场计数、"开始战斗"、紧凑模式开关、整理手牌（和我方一排对齐）。
+## 布局按画布大小算，多出来的高度给手牌；紧凑模式下双方队列换成紧凑卡，腾出的高度也给手牌。拖放规则在 advanced_card_manager。
 
 signal back_to_level_select
 signal start_battle
@@ -11,7 +11,7 @@ const ENEMY_SCALE := 0.6
 const MARGIN := 14.0
 const GAP_ENEMY_ALLY := 30.0
 const GAP_ALLY_HAND := 24.0
-## 紧凑模式：手牌最大缩放；队列的缩放要保证手牌至少能按 HAND_MIN 显示
+## 手牌最大缩放；紧凑模式下队列的缩放要保证手牌至少能按 HAND_MIN 显示
 const HAND_MAX := 1.0
 const HAND_MIN := 0.87
 ## 返回按钮下面才放对方的旗子
@@ -53,7 +53,7 @@ func _ready() -> void:
 
 
 func _on_back_button_pressed() -> void:
-	emit_signal("back_to_level_select")
+	back_to_level_select.emit()
 
 
 func _on_compact_toggled(on: bool) -> void:
@@ -72,7 +72,7 @@ func _on_start_battle_pressed() -> void:
 	global_var.battle_card_list_2 = lineup[0]
 	global_var.battle_equip_list_1 = enemy.map(func(u): return u[1])
 	global_var.battle_equip_list_2 = lineup[1]
-	emit_signal("start_battle")
+	start_battle.emit()
 
 
 # 检索我方队伍：按卡槽从左到右
@@ -92,7 +92,8 @@ func _update_count() -> void:
 	%Deployed.text = str(generate_battle_list()[0].size())
 
 
-## 对方、我方、手牌三行上下居中排开；我方一排的缩放受宽度和高度限制，手牌和我方一样大（紧凑模式下手牌更大）
+## 对方、我方、手牌三行上下居中排开；我方一排的缩放受宽度和高度限制；
+## 多出来的高度给手牌（最大 1），再给对方一排（最大和我方一样大）。紧凑模式下队列是紧凑卡，手牌更大
 func _layout() -> void:
 	var compact: bool = global_var.compact_mode
 	var full := BoardLayout.card_height(1, false)
@@ -107,9 +108,12 @@ func _layout() -> void:
 	var row_height := BoardLayout.card_height(card_scale, compact)
 	var enemy_scale := card_scale if compact else minf(ENEMY_SCALE, card_scale)
 	var enemy_height := BoardLayout.card_height(enemy_scale, compact)
-	var hand_scale := card_scale
-	if compact:
-		hand_scale = minf(HAND_MAX, (size.y - 2 * MARGIN - enemy_height - GAP_ENEMY_ALLY - row_height - GAP_ALLY_HAND) / full)
+	# 多出来的高度先给手牌（最大 HAND_MAX），再给对方一排（最大和我方一样大），剩下的上下平分
+	var room := size.y - 2 * MARGIN - enemy_height - GAP_ENEMY_ALLY - row_height - GAP_ALLY_HAND
+	var hand_scale := minf(HAND_MAX, room / full)
+	if not compact:
+		enemy_scale = minf(card_scale, enemy_scale + (room - full * hand_scale) / full)
+		enemy_height = BoardLayout.card_height(enemy_scale, compact)
 	var used := enemy_height + GAP_ENEMY_ALLY + row_height + GAP_ALLY_HAND + full * hand_scale
 	var enemy_y := (size.y - used) / 2
 	var ally_y := enemy_y + enemy_height + GAP_ENEMY_ALLY

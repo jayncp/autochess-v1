@@ -1,7 +1,7 @@
 keys,zh_CN
 ui.common.back,返回
-ui.common.start,开始
 ui.common.none,无
+ui.common.close_hint,点击任意处关闭
 ui.dialog.ok,知道了
 ui.dialog.cancel,取消
 ui.dialog.confirm,确定
@@ -32,6 +32,7 @@ ui.level_select.enemy_count,共 %s 人
 ui.level_select.enter,进入关卡
 ui.level_setup.subtitle,闯关 · 第 %d 关
 ui.level_setup.need_character,请至少上场一个角色
+ui.level_setup.sort_hand,整理手牌
 ui.sandbox.title,科研模式
 ui.sandbox.swap,交换双方
 ui.sandbox.clear,清空全部
@@ -46,15 +47,18 @@ ui.sandbox.unequip,卸下装备
 ui.sandbox.all_stars,全部星级
 ui.sandbox.search_hint,卡名、词条
 ui.battle.start,开始战斗
-ui.battle.speed,速度: %sx
-ui.battle.skip,跳过战斗
-ui.battle.pre_battle_running,战前结算中
-ui.battle.running,战斗中
-ui.battle.p1_win,"战斗结束,玩家1获胜!"
-ui.battle.p2_win,"战斗结束,玩家2获胜!"
-ui.battle.draw,"战斗结束,双方平局!"
-ui.battle.no_death,无人阵亡 %d/%d
+ui.battle.speed,%s×
+ui.battle.step,第 %d 步
+ui.battle.engage_count,第 %d 次交战 · 无人阵亡 %d / %d
 ui.battle.stalemate,双方僵持
+ui.battle.win,胜利
+ui.battle.lose,失败
+ui.battle.draw,平局
+ui.battle.enemy_wiped,对方全部阵亡 · 我方幸存 %d 人
+ui.battle.ally_wiped,我方全部阵亡 · 对方幸存 %d 人
+ui.battle.both_wiped,双方同时全部阵亡
+ui.battle.no_death_draw,连续 %d 次交战无人阵亡
+ui.battle.original,原始卡面
 ui.book.title,图鉴
 ui.book.search_hint,卡名、种族、词条、效果
 ui.book.type,类型
@@ -73,6 +77,5 @@ ui.book.sort_star,排序：星级
 ui.book.sort_strength,排序：战斗力
 ui.book.reset,重置筛选
 ui.book.glossary,词条说明
-ui.book.close_hint,点击任意处关闭
 ui.book.meta_character,%s · %d★ 角色 · No.%d
 ui.book.meta_equipment,%d★ 装备 · No.%d

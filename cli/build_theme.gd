@@ -46,7 +46,9 @@ func _stable_ids(theme: Theme) -> void:
 		for name in theme.get_stylebox_list(type):
 			theme.get_stylebox(name, type).resource_scene_unique_id = ("%s_%s" % [type, name]).validate_node_name()
 		for name in theme.get_icon_list(type):
-			theme.get_icon(name, type).resource_scene_unique_id = ("icon_%s_%s" % [type, name]).validate_node_name()
+			var icon := theme.get_icon(name, type)
+			if icon.resource_path.is_empty():  # 图标贴图都是 assets/ui/theme/ 下的文件；只有内嵌的才需要命名
+				icon.resource_scene_unique_id = ("icon_%s_%s" % [type, name]).validate_node_name()
 
 
 func _save(resource: Resource, path: String) -> void:
@@ -203,7 +205,7 @@ func build() -> Theme:
 	_button_colors(t, "OptionButton", Color.WHITE, Color.WHITE, Color.WHITE, TEXT_DIM)
 	for state in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
 		t.set_stylebox(state, "OptionButton", _box("input_focus" if state in ["hover", "pressed", "hover_pressed"] else "input", 10, 18))
-	t.set_icon("arrow", "OptionButton", _icon("chevron_down", 22, GOLD))
+	t.set_icon("arrow", "OptionButton", _tex("arrow_down"))
 	# 搜索框：左边留出放大镜的位置；多选下拉：按钮样式同输入框
 	t.set_type_variation("SearchEdit", "LineEdit")
 	var search := _box("input", 10, 18)
@@ -212,7 +214,7 @@ func build() -> Theme:
 	var search_focus := _box("input_focus", 10, 18)
 	search_focus.content_margin_left = 54
 	t.set_stylebox("focus", "SearchEdit", search_focus)
-	t.set_type_variation("SelectButton", "MenuButton")
+	t.set_type_variation("SelectButton", "Button")
 	t.set_font("font", "SelectButton", fonts.sans)
 	t.set_font_size("font_size", "SelectButton", 22)
 	_button_colors(t, "SelectButton", Color.WHITE, Color.WHITE, Color.WHITE, TEXT_DIM)
@@ -235,20 +237,6 @@ func build() -> Theme:
 	t.set_icon("checked", "PopupMenu", on)
 	t.set_icon("unchecked", "PopupMenu", off)
 
-	# 标签页：选中的金色下划线
-	t.set_font("font", "TabBar", fonts.serif)
-	t.set_font_size("font_size", "TabBar", 24)
-	t.set_stylebox("tab_selected", "TabBar", _underline(GOLD))
-	t.set_stylebox("tab_hovered", "TabBar", _underline(Color(GOLD, 0.35)))
-	t.set_stylebox("tab_unselected", "TabBar", _underline(Color.TRANSPARENT))
-	t.set_stylebox("tab_disabled", "TabBar", _underline(Color.TRANSPARENT))
-	t.set_stylebox("tab_focus", "TabBar", StyleBoxEmpty.new())
-	t.set_color("font_selected_color", "TabBar", GOLD_BRIGHT)
-	t.set_color("font_hovered_color", "TabBar", GOLD_TEXT)
-	t.set_color("font_unselected_color", "TabBar", Color(GOLD_TEXT, 0.6))
-	t.set_color("font_disabled_color", "TabBar", Color(GOLD_TEXT, 0.35))
-	t.set_constant("h_separation", "TabBar", 8)
-
 	# 滚动条：细金条，没有箭头
 	for type in ["VScrollBar", "HScrollBar"]:
 		t.set_stylebox("scroll", type, _flat(Color(1, 1, 1, 0.12), 3, 6))
@@ -256,7 +244,7 @@ func build() -> Theme:
 		for state in ["grabber", "grabber_highlight", "grabber_pressed"]:
 			t.set_stylebox(state, type, _flat(Color(GOLD, 0.8 if state == "grabber" else 1.0), 3, 6))
 		for icon in ["increment", "increment_highlight", "increment_pressed", "decrement", "decrement_highlight", "decrement_pressed"]:
-			t.set_icon(icon, type, ImageTexture.create_from_image(Image.create_empty(1, 1, false, Image.FORMAT_RGBA8)))
+			t.set_icon(icon, type, _tex("empty"))
 	return t
 
 
@@ -318,29 +306,5 @@ func _outlined(color: Color, border: Color, width: int, radius: int, margin: int
 	return box
 
 
-func _underline(color: Color) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color.TRANSPARENT
-	box.border_color = color
-	box.border_width_bottom = 2
-	box.content_margin_left = 24
-	box.content_margin_right = 24
-	box.content_margin_top = 10
-	box.content_margin_bottom = 12
-	return box
-
-
 func _tex(name: String) -> Texture2D:
 	return load(THEME_DIR + name + ".png")
-
-
-## 图标贴图缩到指定大小并上色（主题图标不能单独设颜色）
-func _icon(name: String, size: int, color: Color) -> Texture2D:
-	var image: Image = load("res://assets/ui/icons/%s.png" % name).get_image()
-	image.clear_mipmaps()  # 图标导入时带 mipmap（卡面上要缩小显示），控件里按原大小用，不需要
-	image.resize(size, size, Image.INTERPOLATE_LANCZOS)
-	for y in size:
-		for x in size:
-			var c := image.get_pixel(x, y)
-			image.set_pixel(x, y, Color(color, c.a))
-	return ImageTexture.create_from_image(image)

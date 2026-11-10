@@ -99,6 +99,11 @@ var shadow := false:
 	set(value):
 		shadow = value
 		_halo.queue_redraw()
+## 战斗中在交战位：红色外框加红光
+var engaged := false:
+	set(value):
+		engaged = value
+		_halo.queue_redraw()
 
 var _character := {}
 var _equipment := {}
@@ -179,6 +184,13 @@ func set_strength(value: int) -> void:
 
 func set_specials(specials: Dictionary) -> void:
 	live.special_skills = specials.duplicate()
+	queue_redraw()
+
+
+## 复制另一张卡的实时状态（点卡查看时，放大的卡和场上的一样，改变的数值也标紫）
+func copy_live(other: CardFace) -> void:
+	live = other.live.duplicate(true)
+	_origin = other._origin.duplicate(true)
 	queue_redraw()
 
 
@@ -269,9 +281,21 @@ func _draw() -> void:
 
 ## 光晕和投影（StyleBoxFlat 的阴影画成柔和的边）
 func _draw_halo() -> void:
-	if not (glow or shadow) or (_character.is_empty() and _equipment.is_empty()):
+	if not (glow or shadow or engaged) or (_character.is_empty() and _equipment.is_empty()):
 		return
 	var rect := Rect2(_offset, get_size())
+	if engaged and not glow:
+		var red := StyleBoxFlat.new()
+		red.draw_center = false
+		red.set_corner_radius_all(roundi((RADIUS + 3) * display_scale))
+		red.border_color = Color(1, 0.43, 0.35, 0.85)
+		red.set_border_width_all(2)
+		red.set_expand_margin_all(7 * display_scale)
+		red.shadow_color = Color(1, 0.35, 0.27, 0.55)
+		red.shadow_size = roundi(18 * display_scale)
+		_halo.draw_style_box(red, rect)
+		if not shadow:
+			return
 	var box := StyleBoxFlat.new()
 	box.draw_center = false
 	box.set_corner_radius_all(roundi(RADIUS * display_scale))

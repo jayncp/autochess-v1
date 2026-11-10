@@ -4,6 +4,7 @@
 用法：just art
 """
 
+from autochess_tools.art.icons import ICONS
 from autochess_tools.art.render import svg_to_png
 from autochess_tools.data import REPO
 
@@ -128,6 +129,10 @@ def theme_textures() -> dict[str, str]:
         ),
         # 菱形点缀（白色，用 modulate 上色）
         "diamond": svg(16, 16, '<path d="M8 1 15 8 8 15 1 8z" fill="#fff" stroke="#000" stroke-width="1"/>'),
+        # 下拉箭头（金色，22 像素）
+        "arrow_down": f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="22" height="22" fill="{GOLD}">{ICONS["chevron_down"]}</svg>',
+        # 空图标：滚动条不要箭头
+        "empty": svg(1, 1, ""),
     }
 
 

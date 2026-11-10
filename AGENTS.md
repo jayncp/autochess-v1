@@ -5,7 +5,7 @@
 
 ## 现状
 
-- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。现在在做 UI 重做（计划 `docs/plans/ui-redesign.md`，设计稿在仓库外的 `../design-workspace/`）；之后再做 3★/4★、卡图和强度测试。设计稿在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；接下来是交互特效和战斗节奏（先写规格讨论），之后 3★/4★、卡图和强度测试。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
 - 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关）、图鉴、战斗演出（速度/跳过）。冒险、线下对战未实现。
 - 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并和各种显示顺序在 `CardDB`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。
 - 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
@@ -30,9 +30,9 @@
 - `i18n/`：翻译表 `data.csv`（`card.<id>`、`race.<id>`、`timing.<id>`、`timing_desc.<id>`（时机说明）、`keyword.<id>`、`keyword_desc.<id>`（词条说明）、`effect.<id>`（描述型特殊技能的整句）、`level.<id>`）、`ui.csv`（`ui.<场景>.<名称>`）
 - `scenes/`：场景和脚本放在一起
   - `app/`：启动场景
-  - `menu/`、`sandbox/`（科研模式）、`level/`（关卡选择和布阵）、`battle/`、`book/`（图鉴）
-  - `components/`：卡牌、卡槽等共用组件；`components/card/`：卡牌根节点 `card.tscn` 管拖放和悬停，卡面由 `CardFace`（`card_face.gd`）画，`load_card.gd` 按 id 生成卡牌、给出卡面文字，`UnitPortrait` 是关卡详情里的圆形头像；`components/board/` 是布阵界面共用的布局、拖放（`BoardDrag`）、阵营旗帜、放大查看；`components/ui/` 是界面控件（`UiButton`、`MenuItem`、`Dialog`、`FilterOption`、`TabButton`、金色标题着色器）
-- `scripts/`：`core/`（`CardDB`、`LevelDB`、`BattleSim`）、`global_var.gd`（场景之间传阵容）
+  - `menu/`、`sandbox/`（科研模式）、`level/`（关卡选择和布阵）、`battle/`（战斗界面、点卡查看 `CardDetail`）、`book/`（图鉴）
+  - `components/`：卡牌、卡位（`CardSlot`）等共用组件；`components/card/`：卡牌根节点 `card.tscn` 管拖放和悬停，卡面由 `CardFace`（`card_face.gd`）画，`load_card.gd` 按 id 生成卡牌、给出卡面文字，`UnitPortrait` 是关卡详情里的圆形头像；`components/board/` 是布阵界面共用的布局、拖放（`BoardDrag`）、阵营旗帜、放大查看；`components/ui/` 是界面控件（`UiButton`、`MenuItem`、`Dialog`、`FilterOption`、`TabButton`、金色标题着色器）
+- `scripts/`：`core/`（`CardDB`、`LevelDB`、`BattleSim`）、`global_var.gd`（场景之间共享的静态变量：开战的阵容、紧凑模式）
 - `cli/`：GDScript 无头命令，如 `sim.gd`（批量模拟）、`build_theme.gd`（生成主题）
 - `assets/`：`cards/<id>.png`（没有卡图的卡，卡面上显示淡显的种族图标）、`backgrounds/`、`ui/`（主题 `theme.tres`、图标、卡牌边框和法阵、控件贴图，都由脚本生成）、`fonts/`（子集化的字体和字体变体）
 - `tests/`：基线测试，说明见 `tests/README.md`
@@ -43,7 +43,7 @@
 - 运行：`just run`；测试：`just test`（约 2 秒，说明和维护方法见 `tests/README.md`）
 - 批量模拟：`just sim <输入.jsonl> <输出.jsonl> [--log] [--cards <额外卡牌.json>]`，单线程约 6600 场/秒（带事件日志约 4300）
 - 关卡检查：`just level-check [关卡文件.json]`；平衡实验：`just experiment <名字>`；Python 检查：`just tools-check`
-- 美术素材：`just fonts`（字体子集）、`just art`（图标、卡框、法阵、控件贴图，之后重建主题）、`just theme`（只重建主题）；截图：`just shots <目录> [宽度]`（需要窗口）。规范见 `docs/design/art-direction.md`
+- 美术素材：`just fonts`（字体子集）、`just art`（图标、卡框、法阵、控件贴图，之后重建主题）、`just theme`（只重建主题）；截图：`just shots <目录> [宽度] [高度]`（需要窗口；画在固定大小的视口里，手机宽度 2376 也是原尺寸）。规范见 `docs/design/art-direction.md`
 - Godot：`/Applications/Godot.app/Contents/MacOS/Godot`（`justfile` 里可用环境变量 `GODOT` 覆盖）
 - 无头脚本：`... --headless --path . --script <file.gd>`
   - 脚本 `extends SceneTree`；

@@ -11,6 +11,7 @@
 | 0.5 行为基线 | 基线测试（战斗用例、冒烟流程），已确认的规则 bug 修复，关卡全部解作为基线 | [tests/README.md](../tests/README.md)、[design/levels.md](design/levels.md) |
 | 1 规范整理 | 英文 id、数据外置到 `data/`、翻译表 `i18n/`、目录按场景分组 | [plans/stage-1-reorg.md](plans/stage-1-reorg.md) |
 | 2 战斗核心 | 纯逻辑 `BattleSim` + 事件日志，战斗场景按日志回放；无头模拟 `cli/sim.gd`；Python 平衡工具 `tools/` | [plans/stage-2-battle-core.md](plans/stage-2-battle-core.md)、[design/battle-rules.md](design/battle-rules.md) |
+| UI 重做 | 玩法和结算不变，重做卡面、各界面、控件、背景、字体、图标；画布宽随屏幕（`expand`） | [plans/ui-redesign.md](plans/ui-redesign.md)、[design/art-direction.md](design/art-direction.md) |
 
 ## 阶段 3：卡牌补全
 
@@ -19,9 +20,9 @@
 3. 卡图：先讨论形象，再 codex 生图、抠图、导出（流程见 [takeover/06-assets.md](takeover/06-assets.md#6-后续-ai-生图建议codex-cli)）。没有卡图的卡、剧毒之牙待画。
 4. 强度测试：分档环境、宿主适配、经济卡怎么评估，到时再规划。
 
-## 进行中：UI 重做
+## 下一步：交互特效和战斗节奏
 
-玩法和结算不变，重做卡面、各界面、控件、背景、字体、图标，分 5 个 PR，计划见 [plans/ui-redesign.md](plans/ui-redesign.md)。之后再做交互特效和战斗节奏（先写规格讨论）。
+静态的界面已经重做完（见上表）。接下来先写规格和用户讨论：飘字换成技能方块加数字、出列和对撞的动画和节奏、拖动和点击的反馈。
 
 ## 阶段 4：闯关模式
 
@@ -60,7 +61,7 @@
 ## 平台：移动端优先，兼顾 PC
 
 - **已定**：
-  - 卡面布局、看卡方式、屏幕比例适配放到 UI 重做（见"进行中：UI 重做"）；
+  - 卡面布局、看卡方式、屏幕比例适配已在 UI 重做里完成（[design/art-direction.md](design/art-direction.md)）；
   - 渲染器暂不换；
   - iOS 到联机阶段再说。
 - **开发方式**：日常在 PC 上开发调试，定期真机测试；尽早建好 PC 导出预设，两端都保持可构建。

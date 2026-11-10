@@ -48,7 +48,7 @@ func _init(id: String) -> void:
 
 	var hint := Label.new()
 	hint.theme_type_variation = &"HintLabel"
-	hint.text = "ui.book.close_hint"
+	hint.text = "ui.common.close_hint"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.set_anchors_and_offsets_preset(PRESET_BOTTOM_WIDE)
 	hint.offset_top = -70
