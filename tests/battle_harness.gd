@@ -39,6 +39,10 @@ static func check_events(result: Dictionary) -> String:
 			alive[side].append(u.uid)
 	for e in events:
 		for f in e.get("effects", []):
+			if f.kind == "damage":
+				var by_error := _check_by(f)
+				if by_error:
+					return by_error
 			if f.kind not in ["buff", "damage"]:
 				continue  # 唤醒、财富不改战力
 			strength[f.unit] += f.amount if f.kind == "buff" else -f.dealt
@@ -56,6 +60,15 @@ static func check_events(result: Dictionary) -> String:
 	for side in [1, 2]:
 		if alive[side].map(func(uid): return strength[uid]) != result["p%d" % side]:
 			return "P%d 幸存单位推演为 %s，结果为 %s" % [side, alive[side].map(func(uid): return strength[uid]), result["p%d" % side]]
+	return ""
+
+
+## 伤害的 by（回放据此找发动者）：反噬是自己，交战、腐蚀、湮灭是对方的单位
+static func _check_by(f: Dictionary) -> String:
+	var own: bool = f.by == f.unit
+	var opposite: bool = f.by.get_slice("-", 0) != f.unit.get_slice("-", 0)
+	if (f.source == "backlash" and not own) or (f.source != "backlash" and not opposite):
+		return "%s 的伤害（%s）记录的来源 %s 不对" % [f.unit, f.source, f.by]
 	return ""
 
 

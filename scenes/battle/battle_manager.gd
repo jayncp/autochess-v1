@@ -13,6 +13,10 @@ const PREPARE_TIME := 0.5
 const ACT_TIME := 0.5
 const ACT_DOWN_TIME := 0.75
 const TRIGGER_TEXT_TIME := 0.1
+## 坚固减了一部分伤害：先弹坚固，过这么久再弹实际扣的数值
+const DEFEND_TIME := 0.15
+## 特殊技能栏亮起多久
+const SPECIAL_LIT_TIME := 0.6
 const BEAT_TIME := 0.3
 const DEATH_TIME := 1.5
 const REFILL_TIME := 0.6
@@ -33,6 +37,7 @@ var _result: Dictionary
 var _cards := {}  # uid -> 卡牌节点
 var _specials := {}  # uid -> 当前特殊技能（庇护会被消耗）
 var _special_sources := {}  # uid -> 特殊技能来自哪张卡（描述型效果的飘字用它的名字）
+@onready var _badges: BadgeLayer = $"../badges"
 var _tweens: Array[Tween] = []
 
 
@@ -189,7 +194,7 @@ func play_events() -> void:
 				break
 
 
-## 一步：上前 → 出列（时机图标发亮；入场、交战还有时机蓝字）→ 特殊技能（被唤醒的出列、出手、收回）→ 原本的逐拍
+## 一步：上前 → 出列（时机图标发亮）→ 特殊技能（被唤醒的出列、出手、收回）→ 原本的逐拍（发动者的技能方块亮起）
 ## → 对撞 → 反噬 → 收回
 func play_step(units: Array, actors: Array, timing: String, step: Array) -> void:
 	var unit_cards := units.map(func(uid): return _cards[uid])
@@ -202,10 +207,6 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 		animate_cards(actor_cards, ACT[0], ACT[1])
 		light_timing(actor_cards, timing)
 		await wait(ACT_TIME)
-		if timing != "pre_battle":
-			for card in actor_cards:
-				buff_text_effect(card, load_card.timing_name(timing), "blue")
-			await wait(TRIGGER_TEXT_TIME)
 	var woken_cards := []
 	for e in step:
 		if have_been_skipped:
@@ -217,8 +218,11 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 			"special":
 				woken_cards = await play_special(e)
 			"beat":
-				await play_effects(e.effects, e.skill)
+				var casters := _casters(e)
+				light_skill(casters, e.skill)
+				await play_effects(e.effects)
 				await wait(BEAT_TIME)
+				light_skill(casters, "")
 			"clash":
 				if not actor_cards.is_empty():
 					animate_cards(actor_cards, -ACT[0], PREPARE[1])
@@ -227,7 +231,9 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 					actor_cards = []
 				await play_clash(e, unit_cards)
 			"backlash":
-				await play_effects(e.effects, "backlash")
+				for f in e.effects:
+					_light_special(_cards[f.unit])
+				await play_effects(e.effects)
 				await wait(TRIGGER_TEXT_TIME)
 	if not woken_cards.is_empty():
 		await retract(woken_cards)
@@ -251,6 +257,24 @@ func light_timing(cards: Array, timing: String) -> void:
 		card.face.glow = timing != ""
 
 
+## 发动者的技能方块亮起（skill 为空表示熄灭）
+func light_skill(cards: Array, skill: String) -> void:
+	if have_been_skipped:
+		return
+	for card in cards:
+		card.face.firing_skill = skill
+
+
+## 一拍里发动技能的卡：增益、财富的 source，伤害的 by（队长这类描述型效果不算，它们亮特殊技能栏）
+func _casters(e: Dictionary) -> Array:
+	var cards := []
+	for f in e.effects:
+		var uid: String = f.by if f.kind == "damage" else f.source
+		if f.get("skill", "") not in CardDB.DESCRIPTIVE_SPECIALS and _cards[uid] not in cards:
+			cards.append(_cards[uid])
+	return cards
+
+
 ## 双方交战位的卡加红框
 func mark_front() -> void:
 	for side in [1, 2]:
@@ -258,25 +282,27 @@ func mark_front() -> void:
 			player_battle_fields[side][n].face.engaged = n == 0
 
 
-## 对撞：双方向前，致命显示绿字，结算伤害
+## 对撞：双方向前，发动致命的一方弹"致命"、特殊技能栏亮起，结算伤害
 func play_clash(e: Dictionary, unit_cards: Array) -> void:
 	animate_cards(unit_cards, CLASH[0], PREPARE[1], 0.2)
 	await wait(0.25)
 	var lethal := false
 	for k in 2:
 		if e.attacks[k] == BattleSim.LETHAL_ATTACK:
-			buff_text_effect(unit_cards[k], tr("keyword.lethal"), "green")
+			_badge(unit_cards[k], FloatBadge.keyword("lethal"))
+			_light_special(unit_cards[k])
 			lethal = true
 	if lethal:
 		await wait(TRIGGER_TEXT_TIME)
-	await play_effects(e.effects, "")
+	await play_effects(e.effects)
 	await wait(0.2)
 
 
-## 特殊技能阶段：发动者显示唤醒蓝字，被唤醒的出列；返回出列的卡，它们的拍播完后收回
+## 特殊技能阶段：发动者弹"唤醒"、特殊技能栏亮起，被唤醒的出列；返回出列的卡，它们的拍播完后收回
 func play_special(e: Dictionary) -> Array:
 	for f in e.effects:
-		buff_text_effect(_cards[f.source], tr("keyword." + e.skill), "blue")
+		_badge(_cards[f.source], FloatBadge.keyword(e.skill))
+		_light_special(_cards[f.source])
 	await wait(TRIGGER_TEXT_TIME)
 	var woken: Array = e.effects.map(func(f): return _cards[f.unit])
 	animate_cards(woken, ACT[0], ACT[1])
@@ -294,49 +320,100 @@ func retract(cards: Array) -> void:
 	await wait(ACT_DOWN_TIME)
 
 
-## 同时显示一组效果：增益绿字、财富黄字、伤害红字（交战伤害不显示数字），坚固、庇护随后显示绿字。
-## 描述型特殊技能用来源卡的名字：改了战斗力的带数字（"队长 + 2"），没改的只弹名字（腐蚀被蟾蜍加成时）
-func play_effects(effects: Array, skill: String) -> void:
-	var defenses := []
+## 同时生效的一组效果：飘字和战斗力（docs/plans/effects-pacing.md 第 2、3 节）。
+## 数值只表示战斗力实际的变化。被庇护挡下、被坚固挡完只弹词条（受击的卡特殊技能栏亮起）；
+## 坚固减了一部分时先弹坚固，再弹实际扣的数值。描述型特殊技能走 _character_effect
+func play_effects(effects: Array) -> void:
+	var after_sturdy := []
 	for f in effects:
 		var card = _cards[f.unit]
-		if f.kind == "buff":
-			var label := _source_name(f.source) if f.skill in CardDB.DESCRIPTIVE_SPECIALS else tr("keyword." + f.skill)
-			buff_text_effect(card, label + " + " + str(f.amount), "green")
-		elif f.kind == "wealth":
-			buff_text_effect(card, tr("keyword.wealth") + " + " + str(f.amount), "yellow")
-			continue
-		else:
-			for uid in f.get("boosts", []):
-				buff_text_effect(_cards[uid], _source_name(uid), "blue")
-			if f.source != "clash":
-				buff_text_effect(card, tr("keyword." + f.source) + " - " + str(f.amount), "red")
-			if f.sturdy > 0 or f.shelter:
-				defenses.append(f)
+		match f.kind:
+			"buff":
+				if f.skill in CardDB.DESCRIPTIVE_SPECIALS:
+					_character_effect(f.skill, f.source, f.unit, f.amount)
+				else:
+					_badge(card, FloatBadge.skill(f.skill, f.amount))
+			"wealth":
+				_badge(card, FloatBadge.skill("wealth", f.amount))
+				continue  # 只做特效，不改战力
+			"damage":
+				for uid in f.get("boosts", []):
+					_character_effect("corrode_boost", uid, f.unit, 0)
+				if f.shelter or f.sturdy > 0:
+					_badge(card, FloatBadge.keyword("shelter" if f.shelter else "sturdy"))
+					_light_special(card)
+					if f.dealt > 0:
+						after_sturdy.append(f)
+						continue
+				else:
+					_badge(card, _damage_badge(f))
 		apply_effect(f)
-	if defenses.is_empty():
+	if after_sturdy.is_empty():
 		return
-	await wait(TRIGGER_TEXT_TIME)
-	for f in defenses:
-		if f.sturdy > 0:
-			buff_text_effect(_cards[f.unit], tr("keyword.sturdy") + str(f.sturdy), "green")
-		if f.shelter:
-			buff_text_effect(_cards[f.unit], tr("keyword.shelter"), "green")
+	await wait(DEFEND_TIME)
+	for f in after_sturdy:
+		_badge(_cards[f.unit], _damage_badge(f))
+		apply_effect(f)
 
 
-## 把一个效果写到卡面上：战力；庇护被消耗时更新特殊技能栏
+## 伤害的飘字：交战是大号数字（致命命中是 −∞），反噬是词条，腐蚀、湮灭是基础技能；没有造成伤害就不带数值
+func _damage_badge(f: Dictionary) -> FloatBadge:
+	var change = -f.dealt if f.dealt > 0 else null
+	match f.source:
+		"clash":
+			return FloatBadge.clash(-INF if f.amount >= BattleSim.LETHAL_ATTACK else -f.dealt)
+		"backlash":
+			return FloatBadge.keyword("backlash", change)
+	return FloatBadge.skill(f.source, change)
+
+
+## 角色专属效果（描述型特殊技能）的表现。要单独设计的效果，写一个 _fx_<效果 id>(持有者, 作用对象, 数值) 方法就会用它；
+## 没有就用通用方案：持有者的特殊技能栏亮起，弹白色卡名（特殊技能来自哪张卡就用哪张卡的名字），
+## 改了持有者自己的战斗力就带数值。作用对象和触发者之间的连线在节奏 PR 里加
+func _character_effect(effect_id: String, holder: String, target: String, amount: int) -> void:
+	if has_method("_fx_" + effect_id):
+		call("_fx_" + effect_id, holder, target, amount)
+		return
+	var card = _cards[holder]
+	_light_special(card)
+	_badge(card, FloatBadge.card_name(_special_sources[holder], amount if target == holder and amount != 0 else null))
+
+
+## 把一个效果写到卡面上：战力（变化时跳动）；庇护被消耗时更新特殊技能栏，用完就移除
 func apply_effect(f: Dictionary) -> void:
 	if have_been_skipped:
 		return  # 跳过后最终局面已经摆好
 	var card = _cards[f.unit]
-	card.face.set_strength(f.strength)
+	var before: int = card.face.live.strength
+	card.face.set_strength(_shown_strength(f.strength))
+	if card.face.live.strength != before:
+		card.face.pulse_strength(card.face.live.strength > before, 0.45 / battle_speed)
 	if f.kind == "damage" and f.shelter:
 		_consume_shelter(f.unit)
 		card.face.set_specials(_specials[f.unit])
 
 
-func _source_name(uid: String) -> String:
-	return tr("card." + _special_sources[uid])
+## 卡面上显示的战斗力：致命命中后是一个很大的负数（攻击按 LETHAL_ATTACK 算），显示成 0
+func _shown_strength(value: int) -> int:
+	return 0 if value <= -BattleSim.LETHAL_ATTACK / 2 else value
+
+
+func _badge(card, badge: FloatBadge) -> void:
+	if have_been_skipped:
+		return
+	_badges.add(card, badge, battle_speed)
+
+
+## 特殊技能栏亮起一会儿；连着亮时以最后一次为准
+func _light_special(card) -> void:
+	if have_been_skipped:
+		return
+	card.face.firing_special = true
+	var seconds: float = SPECIAL_LIT_TIME / battle_speed
+	card.set_meta("special_lit_until", Time.get_ticks_msec() + seconds * 1000)
+	await get_tree().create_timer(seconds).timeout
+	if is_instance_valid(card) and card.get_meta("special_lit_until") <= Time.get_ticks_msec():
+		card.face.firing_special = false
 
 
 ## 庇护消耗一层，用完就去掉（和 BattleSim.damage 一致）
@@ -376,8 +453,7 @@ func show_final_state() -> void:
 	for tween in _tweens:
 		tween.kill()
 	_tweens.clear()
-	for text in $"../buff_text_container".get_children():
-		text.queue_free()
+	_badges.clear()
 	# 从初始状态重新推演：播放途中跳过时，前面已经消耗过的庇护不能重复扣
 	var alive := {1: [], 2: []}
 	for side in [1, 2]:
@@ -401,6 +477,8 @@ func show_final_state() -> void:
 		card.face.set_strength(_result["p%d" % side][n])
 		card.face.set_specials(_specials[uid])
 		card.face.set_firing("")
+		card.face.firing_skill = ""
+		card.face.firing_special = false
 		card.face.glow = false
 		card.face.engaged = false
 		card.position = _ui.slot_position(side, n)
@@ -436,17 +514,3 @@ func animate_cards(cards: Array, offset: float, card_scale: float, duration := 0
 		var direction := 1 if side == 1 else -1
 		tween.tween_property(card, "position", card.position + Vector2(0, offset * _ui.row_gap * direction), duration / battle_speed)
 		tween.tween_property(card, "scale", Vector2(card_scale, card_scale), duration / battle_speed)
-
-
-# 显示buff数字特效
-func buff_text_effect(card, text, color):
-	if have_been_skipped:
-		return
-	var buff_text_prefab = preload("res://scenes/battle/buff_text.tscn")
-	var buff_text = buff_text_prefab.instantiate()
-	$"../buff_text_container".add_child(buff_text)
-	buff_text.position = card.position
-	buff_text.get_node("buff_text_label").text = text
-	var player: AnimationPlayer = buff_text.get_node("AnimationPlayer")
-	player.animation_finished.connect(func(_name): buff_text.queue_free())
-	player.play(color+"_text")

@@ -18,13 +18,14 @@ extends RefCounted
 ## - death：units 为阵亡单位
 ## - end：winner（1/2 = 该方胜，3 = 平局），reason（wipe = 全灭，no_death = 连续无人阵亡）
 ## 效果：buff {source, unit, skill, amount, strength}；
-##       damage {unit, source（clash/corrode/annihilate/backlash）, amount, sturdy, shelter（是否被庇护挡下）, dealt, strength,
+##       damage {unit, by（造成伤害的单位：腐蚀、湮灭是发动者，交战是对方交战位，反噬是自己）,
+##              source（clash/corrode/annihilate/backlash）, amount, sturdy, shelter（是否被庇护挡下）, dealt, strength,
 ##              腐蚀被加成时还有 boosts（加成来自哪些单位）}；
 ##       wealth {source, unit, amount}（只做特效，不改战力）；awaken {source, unit}（unit 是被唤醒的单位）。
 ##       strength 是结算后的战力。
 
 ## 事件日志的版本，规则或事件格式变化时加一，供以后的重播判断版本是否一致
-const VERSION := 3
+const VERSION := 4
 ## 致命的攻击值
 const LETHAL_ATTACK := 10000
 ## 平局：连续多少次交战无人阵亡
@@ -165,11 +166,11 @@ func engage_step() -> void:
 		return
 	var attacks := fronts.map(func(u): return LETHAL_ATTACK if u.special_skills.has("lethal") else u.strength)
 	events.append({"type": "clash", "attacks": attacks,
-		"effects": [damage(fronts[0], attacks[1], "clash"), damage(fronts[1], attacks[0], "clash")]})
+		"effects": [damage(fronts[0], attacks[1], "clash", fronts[1]), damage(fronts[1], attacks[0], "clash", fronts[0])]})
 	var backlash := []
 	for u in fronts:
 		if u.special_skills.has("backlash"):
-			backlash.append(damage(u, u.special_skills.backlash, "backlash"))
+			backlash.append(damage(u, u.special_skills.backlash, "backlash", u))
 	if not backlash.is_empty():
 		events.append({"type": "backlash", "effects": backlash})
 
@@ -251,12 +252,12 @@ func apply_skill(u: Unit, skill: String, value: int) -> Array:
 				if partner.special_skills.has("corrode_boost"):
 					boost += partner.special_skills.corrode_boost
 					boosts.append(partner.uid)
-			var hit := damage(enemies[0], value + boost, skill)
+			var hit := damage(enemies[0], value + boost, skill, u)
 			if not boosts.is_empty():
 				hit.boosts = boosts
 			return [hit]
 		"annihilate":
-			return enemies.map(func(target): return damage(target, value, skill))
+			return enemies.map(func(target): return damage(target, value, skill, u))
 		"wealth":
 			return [{"kind": "wealth", "source": u.uid, "unit": u.uid, "amount": value}]
 	push_error("BattleSim：未知的基础技能 %s" % skill)
@@ -268,8 +269,8 @@ func buff(source: Unit, target: Unit, amount: int, skill: String) -> Dictionary:
 	return {"kind": "buff", "source": source.uid, "unit": target.uid, "skill": skill, "amount": amount, "strength": target.strength}
 
 
-## 伤害流程：有庇护就挡下这次伤害、消耗一层（先于坚固）→ 否则减去坚固（最低 0）→ 扣战力
-func damage(target: Unit, amount: int, source: String) -> Dictionary:
+## 伤害流程：有庇护就挡下这次伤害、消耗一层（先于坚固）→ 否则减去坚固（最低 0）→ 扣战力。by 是造成伤害的单位
+func damage(target: Unit, amount: int, source: String, by: Unit) -> Dictionary:
 	var sheltered := amount > 0 and target.special_skills.has("shelter")
 	var sturdy := 0
 	var dealt := 0
@@ -281,7 +282,7 @@ func damage(target: Unit, amount: int, source: String) -> Dictionary:
 		sturdy = target.special_skills.get("sturdy", 0)
 		dealt = maxi(0, amount - sturdy)
 	target.strength -= dealt
-	return {"kind": "damage", "unit": target.uid, "source": source, "amount": amount,
+	return {"kind": "damage", "unit": target.uid, "by": by.uid, "source": source, "amount": amount,
 		"sturdy": sturdy, "shelter": sheltered, "dealt": dealt, "strength": target.strength}
 
 

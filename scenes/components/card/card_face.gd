@@ -2,7 +2,8 @@ class_name CardFace
 extends Node2D
 ## 卡面：完整卡 300×420 或紧凑卡 300×300，原点在卡牌中心。规范见 docs/design/art-direction.md 第 3 节。
 ## - 构筑阶段：时机和基础技能是 2×2 表格；紧凑卡是"时机图标 + 合并后的基础技能"；
-## - 战斗中（start_live 之后）：同样是"时机图标 + 基础技能"，发动的时机发亮，战斗中改变的数值显示紫色，战斗力是当前值。
+## - 战斗中（start_live 之后）：同样是"时机图标 + 基础技能"，发动的时机发亮，战斗中改变的数值显示紫色，战斗力是当前值；
+##   正在结算的技能方块、正在起作用的特殊技能栏亮起，战斗力变化时跳动，有庇护时罩着保护罩。
 ## 全部在 _draw 里画：布局按缩放 1 写，乘以 display_scale；文字按显示字号栅格化，缩小显示时也清楚。
 ## 卡图背景的渐变是子节点上的着色器（card_background.gdshader）。
 
@@ -104,6 +105,16 @@ var engaged := false:
 	set(value):
 		engaged = value
 		_halo.queue_redraw()
+## 战斗中正在结算的基础技能：这个方块亮起（白框、外发光、放大）；空字符串表示没有
+var firing_skill := "":
+	set(value):
+		firing_skill = value
+		queue_redraw()
+## 战斗中特殊技能正在起作用（发动，或受击时庇护、坚固挡伤害）：特殊技能栏亮起
+var firing_special := false:
+	set(value):
+		firing_special = value
+		queue_redraw()
 
 var _character := {}
 var _equipment := {}
@@ -111,6 +122,13 @@ var _origin := {}  # 开战时的实时状态，用来标出战斗中改变的�
 var _offset := Vector2.ZERO  # 左上角（像素）
 var _background := ColorRect.new()
 var _halo := Node2D.new()  # 光晕和投影：画在卡面背后
+## 战斗力跳动的进度（1 → 0，由 pulse_strength 的补间推进）和方向
+var _pulse := 0.0:
+	set(value):
+		_pulse = value
+		queue_redraw()
+var _pulse_up := true
+var _pulse_tween: Tween
 
 
 static func _static_init() -> void:
@@ -175,6 +193,7 @@ func start_live(unit: Dictionary) -> void:
 	}
 	_origin = live.duplicate(true)
 	queue_redraw()
+	_halo.queue_redraw()
 
 
 func set_strength(value: int) -> void:
@@ -182,9 +201,20 @@ func set_strength(value: int) -> void:
 	queue_redraw()
 
 
+## 战斗力变化时数字放大回弹，带绿光（增）或红光（减），duration 秒内恢复
+func pulse_strength(up: bool, duration: float) -> void:
+	_pulse_up = up
+	if _pulse_tween:
+		_pulse_tween.kill()
+	_pulse_tween = create_tween()
+	_pulse_tween.tween_property(self, "_pulse", 0.0, duration).from(1.0)
+
+
+## 特殊技能（庇护被消耗、用完时移除）；保护罩跟着庇护有没有
 func set_specials(specials: Dictionary) -> void:
 	live.special_skills = specials.duplicate()
 	queue_redraw()
+	_halo.queue_redraw()
 
 
 ## 复制另一张卡的实时状态（点卡查看时，放大的卡和场上的一样，改变的数值也标紫）
@@ -192,6 +222,7 @@ func copy_live(other: CardFace) -> void:
 	live = other.live.duplicate(true)
 	_origin = other._origin.duplicate(true)
 	queue_redraw()
+	_halo.queue_redraw()
 
 
 ## 正在发动的时机（这张卡有这个时机时图标发亮）；空字符串表示没有
@@ -279,11 +310,13 @@ func _draw() -> void:
 	_draw_panels(layout, tier)
 
 
-## 光晕和投影（StyleBoxFlat 的阴影画成柔和的边）
+## 光晕和投影（StyleBoxFlat 的阴影画成柔和的边）：庇护的保护罩、交战位的红框、拖动和出列的金光、叠压的投影
 func _draw_halo() -> void:
-	if not (glow or shadow or engaged) or (_character.is_empty() and _equipment.is_empty()):
+	if _character.is_empty() and _equipment.is_empty():
 		return
 	var rect := Rect2(_offset, get_size())
+	if live and live.special_skills.get("shelter", 0) > 0:
+		_draw_shelter(rect)
 	if engaged and not glow:
 		var red := StyleBoxFlat.new()
 		red.draw_center = false
@@ -294,8 +327,8 @@ func _draw_halo() -> void:
 		red.shadow_color = Color(1, 0.35, 0.27, 0.55)
 		red.shadow_size = roundi(18 * display_scale)
 		_halo.draw_style_box(red, rect)
-		if not shadow:
-			return
+	if not (glow or shadow):
+		return
 	var box := StyleBoxFlat.new()
 	box.draw_center = false
 	box.set_corner_radius_all(roundi(RADIUS * display_scale))
@@ -314,6 +347,19 @@ func _draw_halo() -> void:
 		box.shadow_color = Color(0, 0, 0, 0.5)
 		box.shadow_size = roundi(16 * display_scale)
 		box.shadow_offset = Vector2(-4, 8) * display_scale
+	_halo.draw_style_box(box, rect)
+
+
+## 庇护的保护罩：有庇护（层数大于 0）时一直罩着，多层和单层一样。卡外一圈淡金的光带、细金边、外发光
+func _draw_shelter(rect: Rect2) -> void:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(1, 0.9, 0.6, 0.16)
+	box.set_corner_radius_all(roundi(26 * display_scale))
+	box.set_expand_margin_all(14 * display_scale)
+	box.border_color = Color(1, 0.97, 0.82)
+	box.set_border_width_all(2)
+	box.shadow_color = Color(1, 0.84, 0.47, 0.5)
+	box.shadow_size = roundi(16 * display_scale)
 	_halo.draw_style_box(box, rect)
 
 
@@ -392,6 +438,8 @@ func _draw_panels(layout: Dictionary, tier: int) -> void:
 	var rect: Rect2 = layout.special
 	var mid := rect.get_center()
 	_panel(rect, tier, [Vector2(rect.position.x, mid.y), Vector2(rect.end.x, mid.y)], 1.0 if special else 0.6)
+	if live and firing_special:
+		_draw_lit(rect, Color.WHITE, 4, 14)
 	_draw_special(special, rect.grow_individual(-12, -3, -12, -3), layout.special_font)
 
 	rect = layout.slots
@@ -411,7 +459,25 @@ func _draw_panels(layout: Dictionary, tier: int) -> void:
 		strength = str(_character.strength + _equipment.get("strength", 0))
 	elif _equipment.has("strength"):
 		strength = "+%d" % _equipment.strength
-	_text(strength, SANS_BOLD, mid, 46 if _character else 36, Color.WHITE, 4, rect.size.x - 4)
+	# 战斗力跳动：先放大、带绿光或红光，再回到原样
+	var grow := 1 + 0.28 * _pulse * _pulse
+	var tint := Color("b9ffc6") if _pulse_up else Color("ffc0b8")
+	var glow_color := Color(Color("3dff6a") if _pulse_up else Color("ff4a3a"), 0.7 * _pulse)
+	_text(strength, SANS_BOLD, mid, (46 if _character else 36) * grow, Color.WHITE.lerp(tint, _pulse), 4, (rect.size.x - 4) * grow, false, glow_color)
+
+
+## 亮起的框（像素坐标画，细线不随缩放变粗）：白框加外发光；rect 是缩放 1 的坐标
+func _draw_lit(rect: Rect2, glow_color: Color, radius: float, glow_size: float) -> void:
+	var box := StyleBoxFlat.new()
+	box.draw_center = false
+	box.set_corner_radius_all(roundi(radius * display_scale))
+	box.border_color = Color.WHITE
+	box.set_border_width_all(2)
+	box.shadow_color = Color(glow_color, 0.6)
+	box.shadow_size = roundi(glow_size * display_scale)
+	_pixel_space()
+	draw_style_box(box, Rect2(rect.position * display_scale, rect.size * display_scale))
+	_unit_space()
 
 
 ## 面板：深蓝底、细线（颜色随星级），边上的菱形点缀
@@ -490,10 +556,10 @@ func _slot(slot: String) -> Variant:
 
 # ---------- 基础技能方块 ----------
 
-## 方块：[名称, 数值, 底色, 是否在战斗中改变]，按显示顺序
+## 方块：[名称, 数值, 底色, 是否在战斗中改变, 技能 id]，按显示顺序
 func _chips(skills: Dictionary, origin: Dictionary) -> Array:
 	return CardDB.sorted_skills(skills).map(func(skill): return [
-		tr("keyword." + skill), str(skills[skill]), CHIP_COLORS[skill], origin.get(skill) != skills[skill]])
+		tr("keyword." + skill), str(skills[skill]), CHIP_COLORS[skill], origin.get(skill) != skills[skill], skill])
 
 
 ## 方块按行排开，每行居中、整体垂直居中；放不下就缩字。wrap 为假时只排一行
@@ -512,13 +578,32 @@ func _draw_chips(chips: Array, area: Rect2, wrap: bool) -> void:
 	var height := roundf(px * 1.5)
 	var y := area.get_center().y * k - (rows.size() * height + (rows.size() - 1) * gap) / 2
 	_pixel_space()
+	var firing := []  # 正在结算的方块放大了，最后画，压在旁边的方块上面
 	for row in rows:
 		var width: float = row.reduce(func(sum, item): return sum + item[1], 0.0) + (row.size() - 1) * gap
 		var x := area.get_center().x * k - width / 2
 		for item in row:
-			draw_chip(self, item[0], Rect2(x, y, item[1], height), px)
+			var rect := Rect2(x, y, item[1], height)
+			if live and item[0][4] == firing_skill:
+				firing = [item[0], rect]
+			else:
+				draw_chip(self, item[0], rect, px)
 			x += item[1] + gap
 		y += height + gap
+	if firing:
+		# 放大 1.16，白框，外发光用方块的颜色
+		var rect: Rect2 = firing[1]
+		var big := Rect2(rect.get_center() - rect.size * 0.58, rect.size * 1.16)
+		var box := StyleBoxFlat.new()
+		box.draw_center = false
+		box.set_corner_radius_all(roundi(4 * k))
+		box.border_color = Color.WHITE
+		box.set_border_width_all(2)
+		box.set_expand_margin_all(2)
+		box.shadow_color = Color(firing[0][2], 0.9)
+		box.shadow_size = roundi(12 * k)
+		draw_style_box(box, big)
+		draw_chip(self, firing[0], big, roundi(px * 1.16))
 	_unit_space()
 
 
@@ -561,25 +646,21 @@ static func draw_chip(canvas: CanvasItem, chip: Array, rect: Rect2, px: int) -> 
 
 # ---------- 特殊技能 ----------
 
-## 特殊技能分段：[文字, 字体, 颜色]。词条加粗；描述型写整句；战斗中改变的显示浅紫（庇护用完显示"庇护0"）
+## 特殊技能分段：[文字, 字体, 颜色]。词条加粗；描述型写整句；战斗中改变的显示浅紫。
+## 数值降到 0 的词条（如庇护用完）已经移除，不显示
 func _special_parts() -> Array:
 	var skills = live.special_skills if live else _slot("special_skills")
 	if skills == null:
 		return []
 	if skills is String:
 		return [[tr("ui.card.clear"), SANS_BOLD, Color(1, 1, 1, 0.6)]]
-	var shown: Dictionary = skills.duplicate()
-	if live:
-		for skill in _origin.special_skills:
-			if not shown.has(skill):
-				shown[skill] = 0
 	var parts := []
-	for skill in CardDB.sorted_skills(shown):
+	for skill in CardDB.sorted_skills(skills):
 		if parts:
 			parts.append([tr("ui.card.special_separator"), SANS, Color(1, 1, 1, 0.7)])
-		var changed: bool = live and shown[skill] != _origin.special_skills.get(skill)
+		var changed: bool = live and skills[skill] != _origin.special_skills.get(skill)
 		var font := SANS if skill in CardDB.DESCRIPTIVE_SPECIALS else SANS_BOLD
-		parts.append([load_card.one_skill_text(skill, shown[skill]), font, CHANGED_SPECIAL if changed else Color.WHITE])
+		parts.append([load_card.one_skill_text(skill, skills[skill]), font, CHANGED_SPECIAL if changed else Color.WHITE])
 	return parts
 
 
@@ -639,8 +720,9 @@ func _px(size: float) -> int:
 	return maxi(1, roundi(size * display_scale))
 
 
-## 一行字，以 center 为中心；size、outline、max_width 都是缩放 1 的值。放不下 max_width 就逐级缩小
-func _text(text: String, font: Font, center: Vector2, size: float, color: Color, outline := 0.0, max_width := 0.0, shadow := false) -> void:
+## 一行字，以 center 为中心；size、outline、max_width 都是缩放 1 的值。放不下 max_width 就逐级缩小；glow 不透明时描边外再加一圈光
+func _text(text: String, font: Font, center: Vector2, size: float, color: Color, outline := 0.0, max_width := 0.0, shadow := false,
+		glow := Color(0, 0, 0, 0)) -> void:
 	if text.is_empty():
 		return
 	var k := display_scale
@@ -650,6 +732,8 @@ func _text(text: String, font: Font, center: Vector2, size: float, color: Color,
 	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
 	var at := center * k + Vector2(-width / 2, (font.get_ascent(px) - font.get_descent(px)) / 2)
 	_pixel_space()
+	if glow.a > 0:
+		draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, _px(outline + 12), glow)
 	if shadow:
 		draw_string_outline(font, at + Vector2(0, 3 * k), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, _px(outline + 2), Color(0, 0, 0, 0.6))
 	if outline > 0:

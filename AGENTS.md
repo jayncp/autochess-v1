@@ -30,11 +30,11 @@
 - `i18n/`：翻译表 `data.csv`（`card.<id>`、`race.<id>`、`timing.<id>`、`timing_desc.<id>`（时机说明）、`keyword.<id>`、`keyword_desc.<id>`（词条说明）、`effect.<id>`（描述型特殊技能的整句）、`level.<id>`）、`ui.csv`（`ui.<场景>.<名称>`）
 - `scenes/`：场景和脚本放在一起
   - `app/`：启动场景
-  - `menu/`、`sandbox/`（科研模式）、`level/`（关卡选择和布阵）、`battle/`（战斗界面、点卡查看 `CardDetail`）、`book/`（图鉴）
+  - `menu/`、`sandbox/`（科研模式）、`level/`（关卡选择和布阵）、`battle/`（战斗界面、点卡查看 `CardDetail`；`battle/fx/` 是战斗特效：飘字 `FloatBadge` 和飘字层 `BadgeLayer`）、`book/`（图鉴）
   - `components/`：卡牌、卡位（`CardSlot`）等共用组件；`components/card/`：卡牌根节点 `card.tscn` 管拖放和悬停，卡面由 `CardFace`（`card_face.gd`）画，`load_card.gd` 按 id 生成卡牌、给出卡面文字，`UnitPortrait` 是关卡详情里的圆形头像；`components/board/` 是布阵界面共用的布局、拖放（`BoardDrag`）、阵营旗帜、放大查看；`components/ui/` 是界面控件（`UiButton`、`MenuItem`、`Dialog`、`FilterOption`、`TabButton`、金色标题着色器）
 - `scripts/`：`core/`（`CardDB`、`LevelDB`、`BattleSim`）、`global_var.gd`（场景之间共享的静态变量：开战的阵容、紧凑模式）
 - `cli/`：GDScript 无头命令，如 `sim.gd`（批量模拟）、`build_theme.gd`（生成主题）
-- `assets/`：`cards/<id>.png`（没有卡图的卡，卡面上显示淡显的种族图标）、`backgrounds/`、`ui/`（主题 `theme.tres`、图标、卡牌边框和法阵、控件贴图，都由脚本生成）、`fonts/`（子集化的字体和字体变体）
+- `assets/`：`cards/<id>.png`（没有卡图的卡，卡面上显示淡显的种族图标）、`backgrounds/`、`ui/`（主题 `theme.tres`、图标、卡牌边框和法阵、控件贴图、飘字的饰板 `ui/fx/`，都由脚本生成）、`fonts/`（子集化的字体和字体变体）
 - `tests/`：基线测试，说明见 `tests/README.md`
 - `tools/`：Python 分析和平衡实验、美术素材生成（uv 管理，带 `.gdignore`），说明见 `tools/README.md`
 
@@ -43,7 +43,7 @@
 - 运行：`just run`；测试：`just test`（约 2 秒，说明和维护方法见 `tests/README.md`）
 - 批量模拟：`just sim <输入.jsonl> <输出.jsonl> [--log] [--cards <额外卡牌.json>]`，单线程约 6600 场/秒（带事件日志约 4300）
 - 关卡检查：`just level-check [关卡文件.json]`；平衡实验：`just experiment <名字>`；Python 检查：`just tools-check`
-- 美术素材：`just fonts`（字体子集）、`just art`（图标、卡框、法阵、控件贴图，之后重建主题）、`just theme`（只重建主题）；截图：`just shots <目录> [宽度] [高度]`（需要窗口；画在固定大小的视口里，手机宽度 2376 也是原尺寸）。规范见 `docs/design/art-direction.md`
+- 美术素材：`just fonts`（字体子集）、`just art`（图标、卡框、法阵、控件贴图、飘字饰板，之后重建主题）、`just theme`（只重建主题）；截图：`just shots <目录> [宽度] [高度]`（需要窗口；画在固定大小的视口里，手机宽度 2376 也是原尺寸）。规范见 `docs/design/art-direction.md`
 - Godot：`/Applications/Godot.app/Contents/MacOS/Godot`（`justfile` 里可用环境变量 `GODOT` 覆盖）
 - 无头脚本：`... --headless --path . --script <file.gd>`
   - 脚本 `extends SceneTree`；
