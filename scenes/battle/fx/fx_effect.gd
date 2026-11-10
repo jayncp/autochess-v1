@@ -22,8 +22,6 @@ enum Kind {
 	EMBERS,        ## 余烬：阵亡烧散时从卡上飘起
 }
 
-## 卡图中心相对卡牌中心（缩放 1 的完整卡）
-const ART_Y := -60.0
 const VENOM_COLORS: Array[Color] = [Color("24520f"), Color("5fae35"), Color("b9f08f"), Color("f4ffd8")]
 const DROP := Color(0.56, 0.86, 0.36)
 const GOLD_LIGHT := Color(1, 0.96, 0.8)
@@ -272,7 +270,7 @@ func _draw_steel(p: float) -> void:
 
 ## 反噬：卡上炸开一圈尖刺（放大、旋转、淡出）
 func _draw_thorns(p: float) -> void:
-	var center := _center(to) + Vector2(0, ART_Y * _k * 0.5)
+	var center := _center(to) + Vector2(0, FloatBadge.ART_Y * _k * 0.5)
 	var scale_now := 200 * _k / 48 * (0.5 + _ease_out(p) * 0.8)
 	_dot(center, 23 * scale_now * 1.2, Color(0.9, 0.28, 0.23, 0.5 * (1 - p)))
 	draw_set_transform(center, deg_to_rad(p * 30), Vector2.ONE)
@@ -359,7 +357,7 @@ func _center(card: Node2D) -> Vector2:
 
 func _art(card: Node2D) -> Vector2:
 	var scale_y: float = card.scale.y if is_instance_valid(card) else 1.0
-	return _center(card) + Vector2(0, ART_Y * _k * scale_y)
+	return _center(card) + Vector2(0, FloatBadge.ART_Y * _k * scale_y)
 
 
 func _size(card: Node2D) -> Vector2:

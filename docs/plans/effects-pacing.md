@@ -1,6 +1,6 @@
 # 战斗特效和回放节奏计划
 
-> **状态**：方案已确认（2026-11-10），下一步开 issue、分 PR 实现，规范随 PR 整理进 [design/art-direction.md](../design/art-direction.md)。协战、神佑的规则和表现都已确定（规则见 [design/battle-rules.md](../design/battle-rules.md) 第 4 节），等有卡用到时一起实现。
+> **状态**：已完成（2026-11-10），issue #20，PR #21（飘字和卡面反馈）、#22（动作和节奏），执行记录见第 10 节。现行规范以 [design/art-direction.md](../design/art-direction.md) 为准。协战、神佑的规则和表现都已确定（规则见 [design/battle-rules.md](../design/battle-rules.md) 第 4 节），等有卡用到时一起实现。
 > 样稿在仓库外的工作区 `design-workspace/mockups/`：
 > - `fx_badges.html` / `fx_badges.png`：飘字一览；
 > - `fx_battle.html`：节奏原型，用 Chrome 打开，播放 `BattleSim` 跑出来的真实事件日志，可以播放、暂停、拖动、单步（← →、空格）、变速；最后一场"协战、神佑"是手写的示意日志；

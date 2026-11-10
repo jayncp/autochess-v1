@@ -505,7 +505,7 @@ func _land(f: Dictionary, delay: float, trigger = null) -> void:
 				_character_effect(f.skill, f.source, f.unit, f.amount, trigger.get_meta("uid") if trigger else "", 0.5)
 				apply_effect(f)
 				return
-			if f.skill != "rally":
+			if f.skill != "rally":  # 集结的光在 play_beat 里已经在发动者身上爆开
 				_spawn(FxEffect.Kind.BURST, 0.35, {to = card, color = FloatBadge.SKILL_COLORS[f.skill]})
 			_badge(card, FloatBadge.skill(f.skill, f.amount))
 			apply_effect(f)

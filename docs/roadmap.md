@@ -12,6 +12,7 @@
 | 1 规范整理 | 英文 id、数据外置到 `data/`、翻译表 `i18n/`、目录按场景分组 | [plans/stage-1-reorg.md](plans/stage-1-reorg.md) |
 | 2 战斗核心 | 纯逻辑 `BattleSim` + 事件日志，战斗场景按日志回放；无头模拟 `cli/sim.gd`；Python 平衡工具 `tools/` | [plans/stage-2-battle-core.md](plans/stage-2-battle-core.md)、[design/battle-rules.md](design/battle-rules.md) |
 | UI 重做 | 玩法和结算不变，重做卡面、各界面、控件、背景、字体、图标；画布宽随屏幕（`expand`） | [plans/ui-redesign.md](plans/ui-redesign.md)、[design/art-direction.md](design/art-direction.md) |
+| 战斗特效和回放节奏 | 四类飘字，发动者和作用对象的表现，每拍约 0.85 秒的节奏，交战撞击，阵亡烧散，庇护保护罩，战前光圈；随机对局平均从约 75 秒降到约 49 秒 | [plans/effects-pacing.md](plans/effects-pacing.md)、[design/art-direction.md](design/art-direction.md) |
 
 ## 阶段 3：卡牌补全
 
@@ -20,9 +21,9 @@
 3. 卡图：先讨论形象，再 codex 生图、抠图、导出（流程见 [takeover/06-assets.md](takeover/06-assets.md#6-后续-ai-生图建议codex-cli)）。没有卡图的卡、剧毒之牙待画。
 4. 强度测试：分档环境、宿主适配、经济卡怎么评估，到时再规划。
 
-## 下一步：交互特效和战斗节奏
+## 下一步：设置和存档
 
-静态的界面已经重做完（见上表）。战斗特效和回放节奏的方案已确认，见 [plans/effects-pacing.md](plans/effects-pacing.md)：技能飘字、发动者和作用对象的表现、每拍和交战的节奏、阵亡效果。构筑阶段的拖放反馈不在这一轮。
+规划讨论中：设置页面（默认速度、默认紧凑模式、显示存档位置），存档目录改成固定的 `niuma_autochess`，接上闯关的通关记录。构筑阶段的拖放反馈、音效之后再定。
 
 ## 阶段 4：闯关模式
 
