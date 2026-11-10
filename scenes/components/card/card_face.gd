@@ -105,6 +105,11 @@ var engaged := false:
 	set(value):
 		engaged = value
 		_halo.queue_redraw()
+## 战前进行到的位置：青色光圈（0–1 是透明度，淡入淡出用）；套在交战位红框、保护罩外面
+var turn := 0.0:
+	set(value):
+		turn = value
+		_halo.queue_redraw()
 ## 战斗中正在结算的基础技能：这个方块亮起（白框、外发光、放大）；空字符串表示没有
 var firing_skill := "":
 	set(value):
@@ -310,11 +315,21 @@ func _draw() -> void:
 	_draw_panels(layout, tier)
 
 
-## 光晕和投影（StyleBoxFlat 的阴影画成柔和的边）：庇护的保护罩、交战位的红框、拖动和出列的金光、叠压的投影
+## 光晕和投影（StyleBoxFlat 的阴影画成柔和的边）：战前的青色光圈、庇护的保护罩、交战位的红框、拖动和出列的金光、叠压的投影
 func _draw_halo() -> void:
 	if _character.is_empty() and _equipment.is_empty():
 		return
 	var rect := Rect2(_offset, get_size())
+	if turn > 0:
+		var cyan := StyleBoxFlat.new()
+		cyan.draw_center = false
+		cyan.set_corner_radius_all(roundi(30 * display_scale))
+		cyan.set_expand_margin_all(19 * display_scale)
+		cyan.border_color = Color(0.43, 0.91, 0.96, turn)
+		cyan.set_border_width_all(3)
+		cyan.shadow_color = Color(0.16, 0.77, 0.84, 0.7 * turn)
+		cyan.shadow_size = roundi(24 * display_scale)
+		_halo.draw_style_box(cyan, rect)
 	if live and live.special_skills.get("shelter", 0) > 0:
 		_draw_shelter(rect)
 	if engaged and not glow:
