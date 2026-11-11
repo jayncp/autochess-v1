@@ -61,7 +61,8 @@ var player_battle_fields = {1: [], 2: []}
 var winner = 0
 var is_pre_battle = false
 
-var battle_speed = 1.0
+## 开战时是设置里的默认速度，战斗中可以临时切换
+var battle_speed: float = GameSettings.speed
 var have_been_skipped = false
 ## 战斗界面（布局和状态显示）
 @onready var _ui = $".."
@@ -161,7 +162,10 @@ func _on_start_battle_pressed_battle() -> void:
 	elif winner:
 		back_to_last_scene.emit()
 
+## 显示胜负；闯关打赢了（我方是 2）记通关
 func show_winner():
+	if winner == 2 and global_var.battle_level:
+		SaveData.mark_cleared(global_var.battle_level)
 	_ui.show_result(winner, _result_text())
 
 

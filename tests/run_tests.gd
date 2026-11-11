@@ -1,5 +1,6 @@
 extends SceneTree
-## 测试入口：战斗用例（含镜像检查）+ 冒烟流程。
+## 测试入口：战斗用例（含镜像检查）+ 存档 + 冒烟流程。
+## 设置和存档用测试专用的文件（test_*），不读写玩家的存档。
 ## 运行中出现任何错误都算失败；协程因错误中断而卡住时，由看门狗判失败。
 ## 用法：just test
 
@@ -13,6 +14,9 @@ const TEST_CARDS := [
 	{"id": "test_shelter_2", "no": 0, "type": "character", "star": 3, "races": ["divine"], "strength": 8, "timing_1": "on_enter", "special_skills": {"shelter": 2}},
 	{"id": "test_shelter_3", "no": 0, "type": "character", "star": 3, "races": ["divine"], "strength": 8, "timing_1": "on_enter", "special_skills": {"shelter": 3}},
 ]
+## 能打赢的摆法（golden 用例的 level 组），冒烟流程用它记通关
+const WINNING := {"boar_rush": [["vulture", "war_banner"], ["maneater", ""], ["tiger_man", "spiked_gauntlet"], ["half_elf", ""]]}
+const TEST_FILES := ["test_settings.cfg", "test_save.json", "test_save.json.bak", "test_save.json.tmp", "test_save.json.broken"]
 
 
 class ErrorCatcher extends Logger:
@@ -30,15 +34,20 @@ var _failures: Array[String] = []
 func _initialize() -> void:
 	OS.add_logger(_catcher)
 	create_timer(TIMEOUT_SEC).timeout.connect(_on_timeout)
+	GameSettings.path = "user://test_settings.cfg"
+	SaveData.path = "user://test_save.json"
+	_remove_test_files()
 	await process_frame
 	_check_data()
 	await _run_battle_cases()
 	await _run_unit_tests()
+	_run_save_tests()
 	await _run_replay_checks()
 	for c in TEST_CARDS:
 		CardDB.all().erase(c.id)
 	await _run_smoke()
 	await _frames(3)  # 让 queue_free 的节点真正释放，避免退出时报泄漏
+	_remove_test_files()
 	_finish()
 
 
@@ -278,6 +287,81 @@ func _run_replay_checks() -> void:
 	print("回放检查：%d 条" % (cases.size() + 1))
 
 
+## 设置和进度存档：读写往返、不合法的值、备份恢复、新版本只读
+func _run_save_tests() -> void:
+	var fail := func(label: String, message: String) -> void: _failures.append("[save-%s] %s" % [label, message])
+	GameSettings.speed = 5.0
+	GameSettings.compact = false
+	GameSettings.save()
+	GameSettings.load()
+	if GameSettings.speed != 5.0 or GameSettings.compact:
+		fail.call("settings", "读写往返应是 5× 和关闭，实际 %s×、%s" % [GameSettings.speed, GameSettings.compact])
+	_write(GameSettings.path, "[battle]\nspeed=3\n[board]\ncompact=\"yes\"\n")
+	GameSettings.load()
+	if GameSettings.speed != 1.0 or not GameSettings.compact:
+		fail.call("settings", "不合法的值应该用默认值，实际 %s×、%s" % [GameSettings.speed, GameSettings.compact])
+
+	var path := SaveData.path
+	SaveData.load()
+	if SaveData.notice or SaveData.is_cleared("boar_rush"):
+		fail.call("empty", "没有存档时应是空进度、没有通知")
+	SaveData.mark_cleared("boar_rush")
+	var first: String = _read_json(path).levels.boar_rush.first_cleared
+	SaveData.load()
+	SaveData.mark_cleared("boar_rush")
+	if not SaveData.is_cleared("boar_rush") or SaveData.is_cleared("tiger_gale") or _read_json(path).levels.boar_rush.first_cleared != first:
+		fail.call("round-trip", "读写往返后应只有 boar_rush 通关，第一次通关的时间不变")
+	SaveData.mark_cleared("tiger_gale")  # 备份是写入前的：只有 boar_rush
+
+	# 正式文件坏了：用备份恢复，坏文件改名为 .broken；之后再写入，备份不被坏文件覆盖
+	_write(path, "{\"version\": 1, \"levels\": ")
+	SaveData.load()
+	if SaveData.notice != "ui.save.restored" or not SaveData.is_cleared("boar_rush") or SaveData.is_cleared("tiger_gale"):
+		fail.call("restore", "应该用备份恢复（只有 boar_rush），通知 %s" % SaveData.notice)
+	if FileAccess.file_exists(path) or not FileAccess.file_exists(path + ".broken"):
+		fail.call("restore", "坏的存档应改名为 .broken")
+	SaveData.mark_cleared("tiger_gale")
+	if _read_json(path + ".bak").levels.keys() != ["boar_rush"] or _read_json(path).levels.size() != 2:
+		fail.call("restore", "恢复后再写入，备份应保持原样")
+
+	# 备份也坏了：从空进度开始
+	_write(path, "not json")
+	_write(path + ".bak", "[]")
+	SaveData.load()
+	if SaveData.notice != "ui.save.reset" or SaveData.is_cleared("boar_rush"):
+		fail.call("reset", "备份也坏了应从空进度开始，通知 %s" % SaveData.notice)
+
+	# 比游戏新的版本：能读，但只读不写
+	var newer := "{\"version\": 2, \"levels\": {\"boar_rush\": {\"cleared\": true}}, \"coins\": 5}"
+	_write(path, newer)
+	SaveData.load()
+	if SaveData.notice != "ui.save.newer" or not SaveData.read_only or not SaveData.is_cleared("boar_rush"):
+		fail.call("newer", "新版本的存档应该能读、只读，通知 %s" % SaveData.notice)
+	SaveData.mark_cleared("tiger_gale")
+	SaveData.clear_levels()
+	if FileAccess.get_file_as_string(path) != newer:
+		fail.call("newer", "新版本的存档不应被改写")
+
+	_remove_test_files()
+	GameSettings.load()
+	SaveData.load()
+	print("存档测试：6 组")
+
+
+func _write(path: String, text: String) -> void:
+	FileAccess.open(path, FileAccess.WRITE).store_string(text)
+
+
+func _read_json(path: String) -> Dictionary:
+	return JSON.parse_string(FileAccess.get_file_as_string(path))
+
+
+func _remove_test_files() -> void:
+	for file in TEST_FILES:
+		if FileAccess.file_exists("user://" + file):
+			DirAccess.remove_absolute("user://" + file)
+
+
 ## 播放途中跳过：已经播放过的庇护消耗不能在最终局面里重复扣。
 ## 淤泥怪的腐蚀和交战各消耗一层，庇护3 最后剩 1
 func _check_skip_keeps_shelter() -> void:
@@ -331,19 +415,43 @@ func _check_replay(battle_manager: Node, label: String) -> void:
 
 
 func _run_smoke() -> void:
+	# 启动时存档坏了：用备份恢复，主菜单弹一次通知
+	_write(SaveData.path, "{")
+	_write(SaveData.path + ".bak", JSON.stringify({"version": 1, "levels": {}}))
 	var manager: Node = load("res://scenes/app/scene_manager.tscn").instantiate()
 	root.add_child(manager)
 	await _frames(2)
+	var notices := manager.get_node("MenuScene").find_children("*", "Dialog", true, false)
+	if notices.size() != 1:
+		_failures.append("[smoke-save] 存档用备份恢复时主菜单应弹通知，实际 %d 个" % notices.size())
+	for dialog in notices:
+		dialog._close(true)
+
+	# 设置：改默认速度和紧凑模式，立刻保存
+	manager.get_node("MenuScene")._on_settings_pressed()
+	await _frames(2)
+	var settings: Node = manager.current_scene
+	settings.set_speed(2.0)
+	settings.set_compact(false)
+	GameSettings.load()
+	if GameSettings.speed != 2.0 or GameSettings.compact or not settings._speed_buttons[2.0].button_pressed:
+		_failures.append("[smoke-settings] 改了设置应立刻保存，实际 %s×、%s" % [GameSettings.speed, GameSettings.compact])
+	settings._on_back_button_pressed()
+	await _frames(2)
 
 	# 科研模式：选卡、拖放规则；设置阵容 → 开始战斗 → 跳过 → 返回 → 主菜单
+	# 紧凑模式进入时是默认值；临时打开，打完一场回来还开着
 	manager.get_node("MenuScene")._on_test_mode_pressed()
 	await _frames(2)
 	var sandbox: Node = manager.current_scene
+	_expect_compact(sandbox, false, "进入科研模式")
 	await _check_sandbox(sandbox)
 	for slot in [[1, 0, "tiger_man", "lionheart"], [2, 0, "porcupine", "holy_shield"], [2, 1, "fairy", ""]]:
 		sandbox.set_unit(slot[0], slot[1], slot[2], slot[3])
+	sandbox.get_node("%Compact").button_pressed = true
 	sandbox._on_start_battle_pressed()
 	await _play_battle_and_return(manager)
+	_expect_compact(sandbox, true, "从战斗回到科研模式")
 	sandbox._on_back_button_pressed()
 	await _frames(2)
 
@@ -356,19 +464,56 @@ func _run_smoke() -> void:
 	await _check_lineup_rules(manager)
 	manager.current_scene._on_back_button_pressed()
 	await _frames(2)
+	# 进入时紧凑模式是默认值，临时切换后打完回来保持；赢了才记通关（第一关用能赢的摆法）
 	for level_id in LevelDB.all():
 		manager.current_scene.enter_level(level_id)
 		await create_timer(0.3).timeout
 		var setup: Node = manager.current_scene
+		_expect_compact(setup, GameSettings.compact, "进入构筑阶段")
 		var slots: Array = setup.get_node("player_card_slots").get_children()
-		var hand: Array = setup.get_node("player_hand").player_hand.duplicate()
-		var chars := hand.filter(func(card): return card.card_id != "")
-		for i in chars.size():
-			_drag(setup, chars[i], slots[i])
+		if WINNING.has(level_id):
+			for i in WINNING[level_id].size():
+				for id in WINNING[level_id][i]:
+					if id:
+						_drag(setup, _hand_card(setup, id), slots[i])
+		else:
+			var hand: Array = setup.get_node("player_hand").player_hand.duplicate()
+			var chars := hand.filter(func(card): return card.card_id != "")
+			for i in chars.size():
+				_drag(setup, chars[i], slots[i])
+		setup.get_node("%Compact").button_pressed = not GameSettings.compact
 		setup._on_start_battle_pressed()
-		await _play_battle_and_return(manager)
+		var winner: int = await _play_battle_and_return(manager)
+		_expect_compact(setup, not GameSettings.compact, "从战斗回到构筑阶段")
+		if SaveData.is_cleared(level_id) != (winner == 2):
+			_failures.append("[smoke-records] %s：胜负 %d，通关记录 %s" % [level_id, winner, SaveData.is_cleared(level_id)])
 		setup._on_back_button_pressed()
 		await _frames(2)
+	if not SaveData.is_cleared(WINNING.keys()[0]):
+		_failures.append("[smoke-records] 打赢了应记通关")
+	_check_cleared_tiles(manager.current_scene, "打完之后")
+	manager.current_scene._on_back_button_pressed()
+	await _frames(2)
+
+	# 设置：清除闯关记录（确认框点"确定"），关卡选择不再显示已通关
+	manager.get_node("MenuScene")._on_settings_pressed()
+	await _frames(2)
+	settings = manager.current_scene
+	settings.clear_records()
+	await _frames(1)
+	var dialogs := settings.find_children("*", "Dialog", true, false)
+	if dialogs.size() == 1:
+		dialogs[0]._close(true)
+	else:
+		_failures.append("[smoke-settings] 清除闯关记录应弹确认框")
+	await _frames(1)
+	if LevelDB.all().keys().any(func(id): return SaveData.is_cleared(id)) or not settings._clear.disabled:
+		_failures.append("[smoke-settings] 清除后不应还有通关记录")
+	settings._on_back_button_pressed()
+	await _frames(2)
+	manager.get_node("MenuScene")._on_single_mode_pressed()
+	await _frames(2)
+	_check_cleared_tiles(manager.current_scene, "清除之后")
 	manager.current_scene._on_back_button_pressed()
 	await _frames(2)
 
@@ -523,6 +668,20 @@ func _check_lineup_rules(manager: Node) -> void:
 		_failures.append("[smoke-lineup] 整理手牌后应按序号排列，实际 %s" % [numbers])
 
 
+func _expect_compact(scene: Node, on: bool, label: String) -> void:
+	if global_var.compact_mode != on or scene.get_node("%Compact").button_pressed != on:
+		_failures.append("[smoke-compact] %s：紧凑模式应是 %s，实际 %s" % [label, on, global_var.compact_mode])
+
+
+## 关卡选择的已通关样式和存档一致
+func _check_cleared_tiles(select: Node, label: String) -> void:
+	var ids: Array = LevelDB.all().keys()
+	var tiles := select.find_children("*", "LevelTile", true, false)
+	for i in tiles.size():
+		if tiles[i].cleared != SaveData.is_cleared(ids[i]):
+			_failures.append("[smoke-records] %s：关卡 %s 的已通关样式和存档不一致" % [label, ids[i]])
+
+
 ## 模拟玩家把卡拖到某个格子（null 表示格子以外）
 func _drag(setup: Node, card: Node, slot: Node) -> void:
 	var cards: Node = setup.get_node("advanced_card_manager")
@@ -537,18 +696,22 @@ func _hand_card(setup: Node, id: String) -> Node:
 	return null
 
 
-## 模拟玩家点击：开始战斗 → 跳过 → 等结束 → 返回
-func _play_battle_and_return(manager: Node) -> void:
+## 模拟玩家点击：开始战斗 → 跳过 → 等结束 → 返回；开战速度是默认值。返回胜负
+func _play_battle_and_return(manager: Node) -> int:
 	await _frames(2)
 	var battle_manager: Node = manager.get_node("main/battle_manager")
+	if battle_manager.battle_speed != GameSettings.speed:
+		_failures.append("[smoke-battle] 开战速度应是默认的 %s×，实际 %s×" % [GameSettings.speed, battle_manager.battle_speed])
 	battle_manager._on_start_battle_pressed_battle()
 	await _frames(2)
 	battle_manager._on_skip_button_pressed()
 	while battle_manager.winner == 0:
 		await process_frame
 	_check_replay(battle_manager, "smoke-battle")
+	var winner: int = battle_manager.winner
 	battle_manager._on_start_battle_pressed_battle()
 	await _frames(2)
+	return winner
 
 
 func _frames(n: int) -> void:

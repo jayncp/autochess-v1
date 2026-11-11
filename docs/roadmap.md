@@ -13,6 +13,7 @@
 | 2 战斗核心 | 纯逻辑 `BattleSim` + 事件日志，战斗场景按日志回放；无头模拟 `cli/sim.gd`；Python 平衡工具 `tools/` | [plans/stage-2-battle-core.md](plans/stage-2-battle-core.md)、[design/battle-rules.md](design/battle-rules.md) |
 | UI 重做 | 玩法和结算不变，重做卡面、各界面、控件、背景、字体、图标；画布宽随屏幕（`expand`） | [plans/ui-redesign.md](plans/ui-redesign.md)、[design/art-direction.md](design/art-direction.md) |
 | 战斗特效和回放节奏 | 四类飘字，发动者和作用对象的表现，每拍约 0.85 秒的节奏，交战撞击，阵亡烧散，庇护保护罩，战前光圈；随机对局平均从约 75 秒降到约 49 秒 | [plans/effects-pacing.md](plans/effects-pacing.md)、[design/art-direction.md](design/art-direction.md) |
+| 设置和存档 | 设置页面（默认速度、默认紧凑模式、存档位置、清除闯关记录），存档目录 `niuma_autochess`，闯关的通关记录 | [plans/settings-save.md](plans/settings-save.md)、[design/save-data.md](design/save-data.md) |
 
 ## 阶段 3：卡牌补全
 
@@ -21,16 +22,12 @@
 3. 卡图：先讨论形象，再 codex 生图、抠图、导出（流程见 [takeover/06-assets.md](takeover/06-assets.md#6-后续-ai-生图建议codex-cli)）。没有卡图的卡、剧毒之牙待画。
 4. 强度测试：分档环境、宿主适配、经济卡怎么评估，到时再规划。
 
-## 下一步：设置和存档
-
-计划见 [plans/settings-save.md](plans/settings-save.md)：设置页面（默认速度、默认紧凑模式、显示存档位置、清除闯关记录），存档目录改成固定的 `niuma_autochess`，接上闯关的通关记录。构筑阶段的拖放反馈、音效之后再定。
-
 ## 阶段 4：闯关模式
 
 - 只用裸卡和装备，不含羁绊、升星、经济。
 - **教学关**：每个词条一关，循序渐进。
 - **解谜关**：先定名字或敌方阵容，估算我方可用卡，用工具验证通过率，再微调；报告通过率和解的数量。
-- 关卡描述、提示、评价，进度存档与解锁。
+- 关卡描述、提示、评价，解锁（通关记录已经有了）。
 
 ## 阶段 5：冒险模式
 
@@ -50,6 +47,8 @@
 
 ## 功能待办（不排阶段）
 
+- **构筑阶段的拖放反馈、音效**：之后再定。
+- **Android 的存档导入导出**：存档在应用内部，玩家拿不到，换机或备份时需要。
 - **阵容码**：
   - 两种格式可以互相转换：可读、可编辑的文本，以及压缩成一串、便于复制的文本；
   - 科研模式和其他模式的阵容编辑处加"导出"，科研模式加"导入"；

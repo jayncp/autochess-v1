@@ -16,6 +16,7 @@ ui.menu.levels,闯关模式
 ui.menu.adventure,冒险模式
 ui.menu.lan,线下对战
 ui.menu.book,图鉴模式
+ui.menu.settings,设置
 ui.menu.locked,未开放
 ui.board.enemy,对方
 ui.board.ally,我方
@@ -79,3 +80,23 @@ ui.book.reset,重置筛选
 ui.book.glossary,词条说明
 ui.book.meta_character,%s · %d★ 角色 · No.%d
 ui.book.meta_equipment,%d★ 装备 · No.%d
+ui.settings.title,设置
+ui.settings.battle,战斗
+ui.settings.speed,默认速度
+ui.settings.speed_hint,每场战斗开始时的速度，战斗中可以临时切换
+ui.settings.board,布阵
+ui.settings.compact_hint,进入构筑阶段、科研模式时的状态，进入后可以临时切换
+ui.settings.save,存档
+ui.settings.location,存档位置
+ui.settings.location_hint,设置和闯关记录都存在这个文件夹里
+ui.settings.mobile_note,存档在应用内部，卸载游戏会一起删除
+ui.settings.copy,复制路径
+ui.settings.copied,已复制
+ui.settings.open,打开文件夹
+ui.settings.records,闯关记录
+ui.settings.cleared_count,已通关 %d / %d 关
+ui.settings.clear,清除闯关记录
+ui.settings.clear_text,所有关卡的通关记录都会清除，设置不受影响。
+ui.save.restored,存档读取失败，已用备份恢复。
+ui.save.reset,存档读取失败，进度已重置。
+ui.save.newer,存档来自更新版本的游戏，这次的进度不会保存。
