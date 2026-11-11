@@ -1,6 +1,6 @@
 # 设置和存档计划
 
-> **状态**：已实施（2026-11-11），issue #23，分支 `settings-save`，执行记录见第 7 节。现行规范以 [design/save-data.md](../design/save-data.md)（存档）和 [design/art-direction.md](../design/art-direction.md) 第 5.8 节（设置页面）为准。
+> **状态**：已实施（2026-11-11），issue #23，PR #24，执行记录见第 7 节。现行规范以 [design/save-data.md](../design/save-data.md)（存档）和 [design/art-direction.md](../design/art-direction.md) 第 5.8 节（设置页面）为准。
 
 ## 目标
 

@@ -13,7 +13,7 @@
 - 阶段 3 第一轮：1★/2★ 打底（PR #11 规范、#12 机制、#13 新卡，计划和执行记录 `docs/plans/stage-3-cards.md`）。
 - UI 重做（issue #14，PR #15–#19，计划和执行记录 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`）：字体、图标、主题、背景，卡面，图鉴，关卡选择，构筑阶段，科研模式，战斗界面，`expand` 适配。
 - 战斗特效和回放节奏（issue #20，PR #21 飘字和卡面反馈、#22 动作和节奏，计划和执行记录 `docs/plans/effects-pacing.md`）。协战、神佑的规则和表现已定，等有卡用到时实现。
-- 设置和存档（issue #23，计划和执行记录 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）：设置页面、存档目录 `niuma_autochess`、闯关通关记录、清除记录。
+- 设置和存档（issue #23，PR #24，计划和执行记录 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）：设置页面、存档目录 `niuma_autochess`、闯关通关记录、清除记录。
 
 ## 待办
 
