@@ -5,8 +5,8 @@
 
 ## 现状
 
-- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；接下来是设置和存档（计划 `docs/plans/settings-save.md`），之后 3★/4★、卡图和强度测试。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
-- 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关）、图鉴、战斗演出（速度/跳过）。冒险、线下对战未实现。
+- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；接下来 3★/4★、卡图和强度测试。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关，记录通关）、图鉴、战斗演出（速度/跳过）、设置。冒险、线下对战未实现。
 - 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并和各种显示顺序在 `CardDB`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。
 - 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
 
@@ -30,9 +30,9 @@
 - `i18n/`：翻译表 `data.csv`（`card.<id>`、`race.<id>`、`timing.<id>`、`timing_desc.<id>`（时机说明）、`keyword.<id>`、`keyword_desc.<id>`（词条说明）、`effect.<id>`（描述型特殊技能的整句）、`level.<id>`）、`ui.csv`（`ui.<场景>.<名称>`）
 - `scenes/`：场景和脚本放在一起
   - `app/`：启动场景
-  - `menu/`、`sandbox/`（科研模式）、`level/`（关卡选择和布阵）、`battle/`（战斗界面、点卡查看 `CardDetail`；`battle/fx/` 是战斗特效：飘字 `FloatBadge` 和飘字层 `BadgeLayer`，特效 `FxEffect` 和特效层 `FxLayer`，阵亡烧散的着色器）、`book/`（图鉴）
+  - `menu/`、`sandbox/`（科研模式）、`level/`（关卡选择和布阵）、`battle/`（战斗界面、点卡查看 `CardDetail`；`battle/fx/` 是战斗特效：飘字 `FloatBadge` 和飘字层 `BadgeLayer`，特效 `FxEffect` 和特效层 `FxLayer`，阵亡烧散的着色器）、`book/`（图鉴）、`settings/`（设置）
   - `components/`：卡牌、卡位（`CardSlot`）等共用组件；`components/card/`：卡牌根节点 `card.tscn` 管拖放和悬停，卡面由 `CardFace`（`card_face.gd`）画，`load_card.gd` 按 id 生成卡牌、给出卡面文字，`UnitPortrait` 是关卡详情里的圆形头像；`components/board/` 是布阵界面共用的布局、拖放（`BoardDrag`）、阵营旗帜、放大查看；`components/ui/` 是界面控件（`UiButton`、`MenuItem`、`Dialog`、`FilterOption`、`TabButton`、金色标题着色器）
-- `scripts/`：`core/`（`CardDB`、`LevelDB`、`BattleSim`）、`global_var.gd`（场景之间共享的静态变量：开战的阵容、紧凑模式）
+- `scripts/`：`core/`（`CardDB`、`LevelDB`、`BattleSim`；设置 `GameSettings`、进度存档 `SaveData`）、`global_var.gd`（场景之间共享的静态变量：开战的阵容和来自哪个关卡、当次的紧凑模式）
 - `cli/`：GDScript 无头命令，如 `sim.gd`（批量模拟）、`build_theme.gd`（生成主题）
 - `assets/`：`cards/<id>.png`（没有卡图的卡，卡面上显示淡显的种族图标）、`backgrounds/`、`ui/`（主题 `theme.tres`、图标、卡牌边框和法阵、控件贴图、飘字的饰板 `ui/fx/`，都由脚本生成）、`fonts/`（子集化的字体和字体变体）
 - `tests/`：基线测试，说明见 `tests/README.md`
@@ -71,6 +71,7 @@
   - 给开发者看的报错信息可以直接写中文；
   - 改了 CSV 后要重新导入（`godot --import`），生成的 `*.translation` 一起提交。
 - 新增卡牌：在 `data/cards.json` 按序号加数据，`i18n/data.csv` 加中文名，`assets/cards/<id>.png` 放卡图（没有就先不放）；新词条还要加 `keyword.<id>` 和 `keyword_desc.<id>`，描述型特殊技能加 `effect.<id>`。测试的数据检查会核对翻译是否齐全，并列出还没有卡图的卡。
+- 存档在 `user://`（目录 `niuma_autochess`），文件和字段见 `docs/design/save-data.md`；改存档格式时按那里的规则升版本。测试和截图用各自的文件名，不读写玩家的存档。
 - 协议暂定：代码 AGPL-3.0-or-later，美术/数据/文档 CC BY-SA 4.0。
 - 开发流程：阶段性任务先在 `docs/plans/` 写计划，用户确认后开 issue，在分支上开发，通过 PR 合并；小修改直接提交到 main。
 - 每次开 PR 之前检查文档：`AGENTS.md`、`PROCESS.md` 和 `docs/` 下的活文档，删掉过时内容，同步代码改动，更新进度。

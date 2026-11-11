@@ -14,8 +14,6 @@ const COLUMNS := 3
 const MAX_LIST_WIDTH := 1700.0
 const HINT := Color(1, 0.94, 0.84, 0.75)
 
-## 已通关的关卡 id（进度存档以后再做，现在一直是空的）
-var cleared := {}
 var _open := ""  # 展开详情的关卡
 
 @onready var _rows: VBoxContainer = %Rows
@@ -88,7 +86,7 @@ func _rebuild() -> void:
 			tile.number = i + 1
 			tile.title = tr("level." + ids[i])
 			tile.open = ids[i] == _open
-			tile.cleared = cleared.has(ids[i])
+			tile.cleared = SaveData.is_cleared(ids[i])
 			tile.enter_requested.connect(enter_level.bind(ids[i]))
 			tile.detail_requested.connect(toggle_level.bind(ids[i]))
 			row.add_child(tile)

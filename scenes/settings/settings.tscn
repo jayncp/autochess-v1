@@ -1,0 +1,70 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scenes/settings/settings.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/menu.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/back.png" id="3_back"]
+[ext_resource type="Shader" path="res://scenes/components/ui/gold_text.gdshader" id="4_gold"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gold"]
+shader = ExtResource("4_gold")
+shader_parameter/height = 60.0
+
+[node name="SettingsScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Shade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.024, 0.031, 0.078, 0.72)
+
+[node name="Head" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 16.0
+theme_override_constants/separation = 22
+
+[node name="BackButton" type="Button" parent="Head"]
+custom_minimum_size = Vector2(66, 66)
+layout_mode = 2
+theme_type_variation = &"IconButton"
+icon = ExtResource("3_back")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Title" type="Label" parent="Head"]
+material = SubResource("ShaderMaterial_gold")
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 42
+text = "ui.settings.title"
+vertical_alignment = 1
+
+[node name="Content" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+theme_override_constants/separation = 0
+
+[connection signal="pressed" from="Head/BackButton" to="." method="_on_back_button_pressed"]

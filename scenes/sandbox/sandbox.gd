@@ -129,6 +129,7 @@ func _on_start_battle_pressed() -> void:
 	global_var.battle_equip_list_1 = battle_lineup(1).map(func(u): return u[1])
 	global_var.battle_card_list_2 = battle_lineup(2).map(func(u): return u[0])
 	global_var.battle_equip_list_2 = battle_lineup(2).map(func(u): return u[1])
+	global_var.battle_level = ""
 	start_battle.emit()
 
 
