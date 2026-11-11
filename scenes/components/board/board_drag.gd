@@ -1,7 +1,8 @@
 class_name BoardDrag
 extends Node2D
 ## 布阵界面的拖放（构筑阶段、科研模式共用），卡牌是这个节点的子节点：
-## - 按下卡牌开始拖动：卡牌抬起、发光，原位置留下半透明的影子；动了之后跟着指针走，经过的卡位高亮；
+## - 按下卡牌开始拖动：卡牌抬起、发光，原位置留下半透明的影子（科研模式从选卡区拖出的卡没有影子，原卡还在选卡区里）；
+##   动了之后跟着指针走，经过的卡位高亮；
 ## - 松开时交给子类按规则处理（drop_card）；按下后几乎没动就松开算"点一下"（tap_card），不改变布阵；
 ## - PC 悬停、手机长按（按住不动）时显示放大的卡（preview）。
 ## 卡牌和卡位用物理拾取：卡牌的 Area2D 在层 1，卡位在层 2。界面上的按钮先拿到输入，所以按下用 _unhandled_input。
@@ -111,7 +112,8 @@ func return_card(_card) -> void:
 
 # ---------- 拖动过程 ----------
 
-func start_drag(card) -> void:
+## ghost 为假时原位置不留影子
+func start_drag(card, ghost := true) -> void:
 	card_being_dragged = card
 	card.stop_moving()
 	_moved = false
@@ -124,15 +126,15 @@ func start_drag(card) -> void:
 	card.face.glow = true
 	if preview:
 		preview.hide_card()
-	# 原位置的影子
-	_ghost = CardFace.new()
-	_ghost.show_cards(card.card_id, card.equip_id)
-	_ghost.display_scale = card.face.display_scale
-	_ghost.compact = card.face.compact
-	_ghost.position = card.position
-	_ghost.modulate.a = 0.25
-	_ghost.z_index = card.old_z_index if card.old_z_index != null else 0
-	add_child(_ghost)
+	if ghost:
+		_ghost = CardFace.new()
+		_ghost.show_cards(card.card_id, card.equip_id)
+		_ghost.display_scale = card.face.display_scale
+		_ghost.compact = card.face.compact
+		_ghost.position = card.position
+		_ghost.modulate.a = 0.25
+		_ghost.z_index = card.old_z_index if card.old_z_index != null else 0
+		add_child(_ghost)
 	# 从卡位拿起：记下来源卡位（互换时要把对方移过去），并清空卡位
 	drag_origin_slot = card.card_slot_card_is_in
 	if drag_origin_slot != null:

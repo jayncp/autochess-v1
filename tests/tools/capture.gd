@@ -2,7 +2,7 @@ extends SceneTree
 ## 界面截图：把各界面截到指定目录，用来对照样稿、给用户看。需要窗口（不能 --headless）。
 ## 用法：just shots <输出目录> [宽度] [高度]，默认 1920 × 1080，手机用 2376；更高的屏幕比如 1920 × 1200（16:10）、1920 × 1440（4:3）
 ## 截图：主菜单、主题控件、对话框；卡牌一览（cards_*，缩放 1，和样稿 cards.html 的几页对应）；用到卡牌的各界面；设置
-## 设置和存档用截图专用的文件，不读写玩家的存档；紧凑模式默认关闭（紧凑的样子单独截）
+## 设置和存档用截图专用的文件，不读写玩家的存档
 
 var out: String
 ## 截图画在这个固定大小的视口里（宽 × 高），和窗口、屏幕大小无关
@@ -247,7 +247,6 @@ func _screens() -> void:
 	var manager: Node = load("res://scenes/app/scene_manager.tscn").instantiate()
 	_view.add_child(manager)
 	await _frames(3)
-	GameSettings.compact = false
 	manager.get_node("MenuScene")._on_book_mode_pressed()
 	await _frames(5)
 	await _shot("book")
@@ -338,7 +337,7 @@ func _screens() -> void:
 	manager.free()
 
 
-## 闯关布阵：摆上几张卡；拖动中（停在第 4 个卡位上方）；紧凑模式；手牌很多时叠压
+## 闯关布阵：摆上几张卡；拖动中（停在第 4 个卡位上方）；紧凑模式；手牌很多时叠压（也看紧凑模式下手牌不压住右列）
 func _build_stage(setup: Node) -> void:
 	var cards: Node = setup.get_node("advanced_card_manager")
 	var slots: Array = setup.get_node("player_card_slots").get_children()
@@ -378,6 +377,10 @@ func _build_stage(setup: Node) -> void:
 		cards.add_card_to_hand_by_id(id)
 	await create_timer(0.4).timeout
 	await _shot("level_many")
+	setup.get_node("%Compact").button_pressed = true
+	await create_timer(0.4).timeout
+	await _shot("level_many_compact")
+	setup.get_node("%Compact").button_pressed = false
 
 
 ## 关卡多、阵容长时的样子：临时加几个示例关卡（第 5 关是 7 人阵容），第 1、4 关标成已通关

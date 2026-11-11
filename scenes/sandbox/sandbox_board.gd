@@ -33,14 +33,14 @@ func render(slots: Dictionary) -> void:
 			add_child(card)
 
 
-## 从选卡区拖出一张卡：在指针处生成，接着拖
+## 从选卡区拖出一张卡：在指针处生成，接着拖（原卡还在选卡区，不留影子）
 func start_drag_new(id: String) -> void:
 	var card = load_card.generate_single_card(id)
 	card.set_meta("picked", id)
 	card.set_look(picker_look[0], picker_look[1])
 	card.position = get_global_mouse_position()
 	add_child(card)
-	start_drag(card)
+	start_drag(card, false)
 	_moved = true
 
 

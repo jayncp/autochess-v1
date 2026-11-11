@@ -11,6 +11,8 @@ const ENEMY_SCALE := 0.6
 const MARGIN := 14.0
 const GAP_ENEMY_ALLY := 30.0
 const GAP_ALLY_HAND := 24.0
+## 右列和手牌之间至少空这么多
+const GAP_COLUMN_HAND := 16.0
 ## 手牌最大缩放；紧凑模式下队列的缩放要保证手牌至少能按 HAND_MIN 显示
 const HAND_MAX := 1.0
 const HAND_MIN := 0.87
@@ -94,7 +96,8 @@ func _update_count() -> void:
 
 
 ## 对方、我方、手牌三行上下居中排开；我方一排的缩放受宽度和高度限制；
-## 多出来的高度给手牌（最大 1），再给对方一排（最大和我方一样大）。紧凑模式下队列是紧凑卡，手牌更大
+## 多出来的高度给手牌（最大 1），再给对方一排（最大和我方一样大）。紧凑模式下队列是紧凑卡，手牌更大；
+## 这时我方一排比右列矮，手牌往下让，不压住右列的按钮
 func _layout() -> void:
 	var compact: bool = global_var.compact_mode
 	var full := BoardLayout.card_height(1, false)
@@ -109,23 +112,26 @@ func _layout() -> void:
 	var row_height := BoardLayout.card_height(card_scale, compact)
 	var enemy_scale := card_scale if compact else minf(ENEMY_SCALE, card_scale)
 	var enemy_height := BoardLayout.card_height(enemy_scale, compact)
+	# 右列和我方一排居中对齐；右列比这一排高时，伸出的部分下面才放手牌
+	var column_height: float = $RightColumn.get_combined_minimum_size().y
+	var hand_gap := maxf(GAP_ALLY_HAND, (column_height - row_height) / 2 + GAP_COLUMN_HAND)
 	# 多出来的高度先给手牌（最大 HAND_MAX），再给对方一排（最大和我方一样大），剩下的上下平分
-	var room := size.y - 2 * MARGIN - enemy_height - GAP_ENEMY_ALLY - row_height - GAP_ALLY_HAND
+	var room := size.y - 2 * MARGIN - enemy_height - GAP_ENEMY_ALLY - row_height - hand_gap
 	var hand_scale := minf(HAND_MAX, room / full)
 	if not compact:
 		enemy_scale = minf(card_scale, enemy_scale + (room - full * hand_scale) / full)
 		enemy_height = BoardLayout.card_height(enemy_scale, compact)
-	var used := enemy_height + GAP_ENEMY_ALLY + row_height + GAP_ALLY_HAND + full * hand_scale
+	var used := enemy_height + GAP_ENEMY_ALLY + row_height + hand_gap + full * hand_scale
 	var enemy_y := (size.y - used) / 2
 	var ally_y := enemy_y + enemy_height + GAP_ENEMY_ALLY
-	var hand_y := ally_y + row_height + GAP_ALLY_HAND
+	var hand_y := ally_y + row_height + hand_gap
 
 	var enemy: Array = _cards.enemy_cards
 	for i in enemy.size():
 		enemy[i].set_look(enemy_scale, compact)
 		enemy[i].position = Vector2(columns.center.call(i), enemy_y + enemy_height / 2)
 	_cards.lineup_look = [card_scale, compact]
-	_cards.lineup_band = Vector2(ally_y - GAP_ENEMY_ALLY, ally_y + row_height + GAP_ALLY_HAND / 2)
+	_cards.lineup_band = Vector2(ally_y - GAP_ENEMY_ALLY, ally_y + row_height + hand_gap / 2)
 	var slots := $player_card_slots.get_children()
 	for i in slots.size():
 		var slot: CardSlot = slots[i]

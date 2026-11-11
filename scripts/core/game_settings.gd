@@ -8,12 +8,12 @@ const SPEEDS: Array[float] = [1.0, 2.0, 5.0, 20.0]
 ## 文件路径；测试里改成测试专用的文件
 static var path := "user://settings.cfg"
 static var speed := 1.0
-static var compact := true
+static var compact := false
 
 
 static func load() -> void:
 	speed = 1.0
-	compact = true
+	compact = false
 	var file := ConfigFile.new()
 	if file.load(path) != OK:
 		return

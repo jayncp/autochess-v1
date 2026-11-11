@@ -291,14 +291,14 @@ func _run_replay_checks() -> void:
 func _run_save_tests() -> void:
 	var fail := func(label: String, message: String) -> void: _failures.append("[save-%s] %s" % [label, message])
 	GameSettings.speed = 5.0
-	GameSettings.compact = false
+	GameSettings.compact = true
 	GameSettings.save()
 	GameSettings.load()
-	if GameSettings.speed != 5.0 or GameSettings.compact:
-		fail.call("settings", "读写往返应是 5× 和关闭，实际 %s×、%s" % [GameSettings.speed, GameSettings.compact])
+	if GameSettings.speed != 5.0 or not GameSettings.compact:
+		fail.call("settings", "读写往返应是 5× 和打开，实际 %s×、%s" % [GameSettings.speed, GameSettings.compact])
 	_write(GameSettings.path, "[battle]\nspeed=3\n[board]\ncompact=\"yes\"\n")
 	GameSettings.load()
-	if GameSettings.speed != 1.0 or not GameSettings.compact:
+	if GameSettings.speed != 1.0 or GameSettings.compact:
 		fail.call("settings", "不合法的值应该用默认值，实际 %s×、%s" % [GameSettings.speed, GameSettings.compact])
 
 	var path := SaveData.path
@@ -432,26 +432,26 @@ func _run_smoke() -> void:
 	await _frames(2)
 	var settings: Node = manager.current_scene
 	settings.set_speed(2.0)
-	settings.set_compact(false)
+	settings.set_compact(true)
 	GameSettings.load()
-	if GameSettings.speed != 2.0 or GameSettings.compact or not settings._speed_buttons[2.0].button_pressed:
+	if GameSettings.speed != 2.0 or not GameSettings.compact or not settings._speed_buttons[2.0].button_pressed:
 		_failures.append("[smoke-settings] 改了设置应立刻保存，实际 %s×、%s" % [GameSettings.speed, GameSettings.compact])
 	settings._on_back_button_pressed()
 	await _frames(2)
 
 	# 科研模式：选卡、拖放规则；设置阵容 → 开始战斗 → 跳过 → 返回 → 主菜单
-	# 紧凑模式进入时是默认值；临时打开，打完一场回来还开着
+	# 紧凑模式进入时是默认值（上面改成了打开）；临时关掉，打完一场回来还关着
 	manager.get_node("MenuScene")._on_test_mode_pressed()
 	await _frames(2)
 	var sandbox: Node = manager.current_scene
-	_expect_compact(sandbox, false, "进入科研模式")
+	_expect_compact(sandbox, true, "进入科研模式")
 	await _check_sandbox(sandbox)
 	for slot in [[1, 0, "tiger_man", "lionheart"], [2, 0, "porcupine", "holy_shield"], [2, 1, "fairy", ""]]:
 		sandbox.set_unit(slot[0], slot[1], slot[2], slot[3])
-	sandbox.get_node("%Compact").button_pressed = true
+	sandbox.get_node("%Compact").button_pressed = false
 	sandbox._on_start_battle_pressed()
 	await _play_battle_and_return(manager)
-	_expect_compact(sandbox, true, "从战斗回到科研模式")
+	_expect_compact(sandbox, false, "从战斗回到科研模式")
 	sandbox._on_back_button_pressed()
 	await _frames(2)
 
@@ -470,6 +470,9 @@ func _run_smoke() -> void:
 		await create_timer(0.3).timeout
 		var setup: Node = manager.current_scene
 		_expect_compact(setup, GameSettings.compact, "进入构筑阶段")
+		var column: Rect2 = setup.get_node("RightColumn").get_rect()
+		if setup.get_node("player_hand")._top < column.end.y:
+			_failures.append("[smoke-layout] 紧凑模式下手牌（顶边 %d）压住了右列（底边 %d）" % [setup.get_node("player_hand")._top, column.end.y])
 		var slots: Array = setup.get_node("player_card_slots").get_children()
 		if WINNING.has(level_id):
 			for i in WINNING[level_id].size():
@@ -545,6 +548,11 @@ func _check_sandbox(sandbox: Node) -> void:
 	sandbox.pick("holy_shield")
 	expect.call("空卡位不能选装备", 2, 1, [])
 	var board: Node = sandbox.get_node("board")
+	# 从选卡区拖出的卡不留影子（原卡还在选卡区）
+	board.start_drag_new("soldier")
+	if board._ghost != null:
+		_failures.append("[smoke-sandbox] 从选卡区拖出的卡不应留下影子")
+	board.drop_card(null)
 	var slots: Dictionary = sandbox._slots
 	board.start_drag(slots[2][0].card_in_slot)
 	board.drop_card(slots[1][3])

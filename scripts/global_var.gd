@@ -12,4 +12,4 @@ static var battle_equip_list_2 = []
 static var battle_level := ""
 
 ## 紧凑模式（构筑阶段、科研模式的开关）：进入时设成默认值（GameSettings.compact），当次可以临时切换
-static var compact_mode := true
+static var compact_mode := false
