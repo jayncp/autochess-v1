@@ -3,7 +3,8 @@ class_name GameSettings
 ## 静态类，启动时 load() 一次。缺的项用默认值，不认识的项和不合法的值忽略。
 ## 默认值只在进入时读：构筑阶段、科研模式读紧凑模式，每场开战读速度；当次临时改的不写回。
 
-const SPEEDS: Array[float] = [1.0, 2.0, 5.0, 20.0]
+## 战斗速度：战斗中的速度按钮按这个顺序循环，设置里的默认速度也从这里选
+const SPEEDS: Array[float] = [0.5, 1.0, 2.0, 5.0, 20.0]
 
 ## 文件路径；测试里改成测试专用的文件
 static var path := "user://settings.cfg"

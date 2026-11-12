@@ -290,12 +290,12 @@ func _run_replay_checks() -> void:
 ## 设置和进度存档：读写往返、不合法的值、备份恢复、新版本只读
 func _run_save_tests() -> void:
 	var fail := func(label: String, message: String) -> void: _failures.append("[save-%s] %s" % [label, message])
-	GameSettings.speed = 5.0
+	GameSettings.speed = 0.5
 	GameSettings.compact = true
 	GameSettings.save()
 	GameSettings.load()
-	if GameSettings.speed != 5.0 or not GameSettings.compact:
-		fail.call("settings", "读写往返应是 5× 和打开，实际 %s×、%s" % [GameSettings.speed, GameSettings.compact])
+	if GameSettings.speed != 0.5 or not GameSettings.compact:
+		fail.call("settings", "读写往返应是 0.5× 和打开，实际 %s×、%s" % [GameSettings.speed, GameSettings.compact])
 	_write(GameSettings.path, "[battle]\nspeed=3\n[board]\ncompact=\"yes\"\n")
 	GameSettings.load()
 	if GameSettings.speed != 1.0 or GameSettings.compact:
@@ -431,10 +431,10 @@ func _run_smoke() -> void:
 	manager.get_node("MenuScene")._on_settings_pressed()
 	await _frames(2)
 	var settings: Node = manager.current_scene
-	settings.set_speed(2.0)
+	settings.set_speed(0.5)
 	settings.set_compact(true)
 	GameSettings.load()
-	if GameSettings.speed != 2.0 or not GameSettings.compact or not settings._speed_buttons[2.0].button_pressed:
+	if GameSettings.speed != 0.5 or not GameSettings.compact or not settings._speed_buttons[0.5].button_pressed:
 		_failures.append("[smoke-settings] 改了设置应立刻保存，实际 %s×、%s" % [GameSettings.speed, GameSettings.compact])
 	settings._on_back_button_pressed()
 	await _frames(2)
@@ -704,12 +704,20 @@ func _hand_card(setup: Node, id: String) -> Node:
 	return null
 
 
-## 模拟玩家点击：开始战斗 → 跳过 → 等结束 → 返回；开战速度是默认值。返回胜负
+## 模拟玩家点击：开始战斗 → 跳过 → 等结束 → 返回；开战速度是默认值，速度按钮按顺序循环。返回胜负
 func _play_battle_and_return(manager: Node) -> int:
 	await _frames(2)
 	var battle_manager: Node = manager.get_node("main/battle_manager")
 	if battle_manager.battle_speed != GameSettings.speed:
 		_failures.append("[smoke-battle] 开战速度应是默认的 %s×，实际 %s×" % [GameSettings.speed, battle_manager.battle_speed])
+	# 默认速度在上面的设置里改成了 0.5×；按一圈速度按钮回到 0.5×
+	var speed_button: Button = manager.get_node("main/Controls/SpeedButton")
+	var shown: Array[String] = []
+	for i in GameSettings.SPEEDS.size():
+		battle_manager._on_speed_button_pressed()
+		shown.append(speed_button.text)
+	if shown != ["1×", "2×", "5×", "20×", "0.5×"] or battle_manager.battle_speed != 0.5:
+		_failures.append("[smoke-battle] 速度按钮应按 1×、2×、5×、20×、0.5× 循环，实际 %s" % [shown])
 	battle_manager._on_start_battle_pressed_battle()
 	await _frames(2)
 	battle_manager._on_skip_button_pressed()

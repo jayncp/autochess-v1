@@ -89,7 +89,7 @@ func _build() -> void:
 		button.toggle_mode = true
 		button.button_group = group
 		button.focus_mode = FOCUS_NONE
-		button.text = tr("ui.battle.speed") % str(int(speed))
+		button.text = tr("ui.battle.speed") % str(speed).trim_suffix(".0")
 		button.custom_minimum_size = Vector2(104, 60)
 		button.add_theme_font_override("font", BOLD)
 		button.add_theme_font_size_override("font_size", 26)

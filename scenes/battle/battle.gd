@@ -109,4 +109,4 @@ func _set_controls(speed: bool, skip: bool) -> void:
 
 
 func set_speed_text(speed: float) -> void:
-	%SpeedButton.text = tr("ui.battle.speed") % str(int(speed))
+	%SpeedButton.text = tr("ui.battle.speed") % str(speed).trim_suffix(".0")

@@ -177,7 +177,7 @@ theme_override_constants/separation = 16
 
 [node name="SpeedButton" type="Button" parent="Controls"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(66, 66)
+custom_minimum_size = Vector2(92, 66)
 layout_mode = 2
 theme_type_variation = &"IconButton"
 theme_override_fonts/font = ExtResource("11_medium")

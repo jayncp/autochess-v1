@@ -133,14 +133,8 @@ func show_battle_speed():
 	_fx.speed = battle_speed
 
 func cycle_battle_speed():
-	if battle_speed == 1.0:
-		battle_speed = 2.0
-	elif battle_speed == 2.0:
-		battle_speed = 5.0
-	elif battle_speed == 5.0:
-		battle_speed = 20.0
-	else:
-		battle_speed = 1.0
+	var speeds := GameSettings.SPEEDS
+	battle_speed = speeds[(speeds.find(battle_speed) + 1) % speeds.size()]
 	return battle_speed
 
 ### "跳过战斗"按钮：停止播放，直接显示最终局面
@@ -668,7 +662,7 @@ func _fly_time(skill: String, casters: Array) -> float:
 	return PACE.fly
 
 
-## 演出的详细程度：1×、2× 完整；5× 不飞光球、不连线（直接在目标上生效）；20× 也不弹飘字、不加特效
+## 演出的详细程度：0.5×、1×、2× 完整；5× 不飞光球、不连线（直接在目标上生效）；20× 也不弹飘字、不加特效
 func _detail() -> int:
 	if battle_speed <= 2:
 		return 2
