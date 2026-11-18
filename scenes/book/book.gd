@@ -10,7 +10,7 @@ const GAP := 26.0
 const HEAD := 68.0
 const SORTS := ["no", "star", "strength"]
 const TYPES := ["character", "equipment"]
-const STARS := [1, 2, 3, 4]
+const STARS := [1, 2, 3, 4, 5]
 
 ## 各组勾选的值：types、stars、races、timings、base（基础技能）、special（特殊技能，只有词条）
 var filters := {}
@@ -86,7 +86,7 @@ func open_zoom(id: String) -> void:
 
 func _build_filters() -> void:
 	_add_group("ui.book.type", 3, "types", TYPES.map(func(t): return [t, {"text": tr("ui.book." + t)}]))
-	_add_group("ui.book.star", 4, "stars", STARS.map(func(n): return [n, {"stars": n}]))
+	_add_group("ui.book.star", 5, "stars", STARS.map(func(n): return [n, {"stars": n}]))
 	_add_group("ui.book.race", 3, "races", CardDB.RACES.map(func(r): return [r, {"text": tr("race." + r), "icon": r, "tint": CardFace.RACE_COLORS[r]}]))
 	_add_group("ui.book.timing", 3, "timings", CardDB.TIMINGS.map(func(t): return [t, {"text": tr("timing." + t), "icon": t, "tint": CardFace.TIMING_COLORS[t]}]))
 	var used := _used_skills()

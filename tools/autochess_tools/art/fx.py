@@ -161,6 +161,18 @@ KEYWORDS = {
         "color": "#f28c28",
         "icon": '<path fill-rule="evenodd" d="M5 44V14h6V7h7v7h12V7h7v7h6v30zM9 22v2.4h30V22zm0 9v2.4h30V31zm14-17v8h2.4v-8zm-8 10.4v6.6h2.4v-6.6zm16 0v6.6h2.4v-6.6zm-8 9v10.6h2.4V33.4z"/>',
     },
+    # 协战：两把交叉的短刀
+    "assist": {
+        "color": "#f28c28",
+        "icon": '<path d="M7 37L33 11l5-2-2 5L10 40zM8 31l9 9-2.2 2.2-9-9zM5 41l2 2-3 3-2-2z"/>'
+        '<path d="M41 37L15 11l-5-2 2 5L38 40zM40 31l-9 9 2.2 2.2 9-9zM43 41l-2 2 3 3 2-2z"/>',
+    },
+    # 免疫致命：禁止符压着毒液
+    "immune_lethal": {
+        "color": "#f28c28",
+        "icon": '<path fill-rule="evenodd" d="M24 4a20 20 0 1 0 0 40a20 20 0 1 0 0-40zm0 4a16 16 0 1 1 0 32a16 16 0 1 1 0-32z"/>'
+        '<path d="M24 14c0 5-6 9-6 14a6 6 0 0 0 12 0c0-5-6-9-6-14z" fill-opacity=".75"/><path d="M11.5 14.3l2.8-2.8 22.2 22.2-2.8 2.8z"/>',
+    },
     "awaken": {
         "color": "#29c4d6",
         "icon": '<path fill-rule="evenodd" d="M2 27c8-12 36-12 44 0-8 12-36 12-44 0zm22-8a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm0 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/>'
@@ -169,6 +181,12 @@ KEYWORDS = {
     "shelter": {
         "color": "#f2c94c",
         "icon": '<path fill-rule="evenodd" d="M24 3c7 4 13 5 18 5 0 18-6 29-18 36C12 37 6 26 6 8c5 0 11-1 18-5zm-2.5 10v7h-7v5h7v11h5V25h7v-5h-7v-7z"/>',
+    },
+    # 神佑：光环罩着一面小盾
+    "bless": {
+        "color": "#f2c94c",
+        "icon": '<path fill-rule="evenodd" d="M11 9a13 5 0 1 0 26 0a13 5 0 1 0-26 0zm4 0a9 2.6 0 1 0 18 0a9 2.6 0 1 0-18 0z"/>'
+        '<path d="M24 17c5 3 10 4 14 4 0 13-5 21-14 25C15 42 10 34 10 21c4 0 9-1 14-4z"/>',
     },
     "lethal": {
         "color": "#5dbb46",

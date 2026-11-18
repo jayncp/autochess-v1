@@ -55,7 +55,8 @@ func _ready() -> void:
 		button.pressed.connect(set_tab.bind(type))
 		head.add_child(button)
 		_tabs[type] = button
-	var all := FilterOption.new({"text": tr("ui.sandbox.all_stars")}, 44)
+	# 星级、种族的勾选块不画勾选框（星级到 5★ 以后一行放不下），勾上时是金框
+	var all := FilterOption.new({"text": tr("ui.sandbox.all_stars")}, 44, false)
 	all.pressed.connect(_clear_stars)
 	head.add_child(all)
 	_stars[0] = all
@@ -64,12 +65,12 @@ func _ready() -> void:
 		star_values[data.star] = true
 	for star in range(1, 6):
 		if star_values.has(star):
-			var option := FilterOption.new({"stars": star}, 44)
+			var option := FilterOption.new({"stars": star}, 44, false)
 			option.pressed.connect(_toggle_star.bind(star))
 			head.add_child(option)
 			_stars[star] = option
 	for race in CardDB.RACES:
-		var option := FilterOption.new({"icon": race, "tint": CardFace.RACE_COLORS[race]}, 44)
+		var option := FilterOption.new({"icon": race, "tint": CardFace.RACE_COLORS[race]}, 44, false)
 		option.pressed.connect(_toggle_race.bind(race))
 		head.add_child(option)
 		_races[race] = option

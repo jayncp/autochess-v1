@@ -26,6 +26,49 @@ card.captain,队长
 card.golden_elf,金色精灵
 card.fortune_god,小财神
 card.toad,蟾蜍
+card.minotaur,牛头人
+card.spirit_deer,灵鹿
+card.holy_lion,圣狮
+card.scorpion,毒蝎
+card.bard,吟游诗人
+card.celestial_soldier,天兵
+card.assassin,刺客
+card.elf_priestess,精灵祭司
+card.forest_archer,密林射手
+card.temple_guard,神庙守卫
+card.mammoth,猛犸
+card.ninja,忍者
+card.elf_princess,精灵公主
+card.envoy,神使
+card.vanguard,先锋官
+card.wind_sprite,风精灵
+card.archangel,大天使
+card.holy_monk,圣僧
+card.griffin_knight,狮鹫骑士
+card.nine_tailed_fox,九尾灵狐
+card.snow_yak,雪域神牛
+card.king_cobra,眼镜王蛇
+card.phantom_blade,幻灵刀客
+card.holy_elf,神圣精灵
+card.jungle_temple,丛林神庙
+card.white_wolf_king,白狼王
+card.general,大将军
+card.moon_envoy,月光使者
+card.high_priest,神官
+card.panda_hero,熊猫大侠
+card.pure_sage,纯净尊者
+card.erlang,二郎真君
+card.phoenix,九天玄凤
+card.hydra,海德拉
+card.yao_bikuni,八百比丘尼
+card.monkey_king,齐天大圣
+card.vajra_arhat,金刚罗汉
+card.archdruid,大德鲁伊
+card.tiger_king,金甲虎王
+card.knight_king,骑士王
+card.elf_empress,精灵女皇
+card.seraph,六翼天使
+card.dream_mushroom,幻梦菇
 card.lionheart,狮心
 card.war_horn,号角
 card.butterfly_wings,蝶翼
@@ -45,6 +88,41 @@ card.hollow,空心
 card.holy_water,圣水
 card.necklace,项链
 card.clover,四叶草
+card.wolf_fang_necklace,狼牙项链
+card.war_drum,冲锋战鼓
+card.lyre,里拉琴
+card.angel_wings,天使翅膀
+card.scorpion_stinger,蝎尾毒钩
+card.heart_potion,噬心药剂
+card.horned_helmet,牛角头盔
+card.kunai,苦无
+card.prayer_beads,念珠
+card.lute,鲁特琴
+card.oracle_book,神谕之书
+card.silver_sword,银剑
+card.dust_boots,踏尘靴
+card.berserker_axe,狂战斧
+card.treasure_bowl,聚宝盆
+card.white_wolf_totem,白狼图腾
+card.general_token,将军令牌
+card.holy_hymn,神圣乐章
+card.rafflesia_bud,大王花苞
+card.omniscient_robe,全知法袍
+card.moon_dial,月相轮盘
+card.cross_emblem,十字纹章
+card.temple_core,神庙核心
+card.golden_sword,金剑
+card.elf_veil,精灵头纱
+card.tiger_tally,虎符
+card.berserk_serum,狂化血清
+card.ruyi_staff,如意金箍棒
+card.tiger_tail_whip,虎尾神鞭
+card.holy_grail,圣杯
+card.golden_bell,金钟罩
+card.elf_scepter,精灵神杖
+card.holy_sword,圣剑
+card.void_heart,虚无之心
+card.golden_serpent_head,金色蛇首
 race.beast,动物
 race.human,人族
 race.elf,精灵
@@ -69,6 +147,9 @@ keyword.sturdy,坚固
 keyword.awaken,唤醒
 keyword.shelter,庇护
 keyword.lethal,致命
+keyword.assist,协战
+keyword.immune_lethal,免疫致命
+keyword.bless,神佑
 keyword_desc.rage,自身战斗力 +N
 keyword_desc.rally,自身战斗力 + 己方全体的集结值之和（没有时机的也算）
 keyword_desc.support,下一位角色战斗力 +N
@@ -81,7 +162,15 @@ keyword_desc.sturdy,每次受到的伤害 −N（最低为 0）
 keyword_desc.awaken,触发下一位角色的基础技能
 keyword_desc.shelter,抵挡 N 次伤害，每次消耗一层（先于坚固）
 keyword_desc.lethal,交战时攻击视为无穷大，可被庇护抵挡
+keyword_desc.assist,己方其他角色交战时，对撞之后，对方交战位受到等于自身战斗力的伤害
+keyword_desc.immune_lethal,对方的致命无效，按普通对撞算
+keyword_desc.bless,下一位角色获得 N 层庇护
 effect.on_trigger_gain,己方角色触发{skill}时，自身战斗力 +{amount}
 effect.on_resolve_bonus,己方角色结算{skill}时，伤害 +{amount}
+effect.extra_resolve,{scope}{skill}多结算一次
+effect.extra_round,{scope}{timing}多触发一轮
+scope.self,自身
+scope.allies,己方
+scope.first,开战时位于己方第 1 位的角色，
 level.boar_rush,猪突猛进
 level.tiger_gale,虎虎生风

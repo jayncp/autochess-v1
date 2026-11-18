@@ -11,43 +11,47 @@ extends RefCounted
 ## - enter：units 为执行入场的交战位
 ## - engage：units 为双方交战位，actors 为其中在交战时触发的单位
 ##   （"触发"指时机是它，或者带这个时机的特殊技能）
-## - special：特殊技能的一步里的一个技能（如唤醒）。skill 为技能，effects 为效果
+## - round：多一轮，这个时点的第 round 轮（从 2 起）开始。units 为这一轮重走的单位，sources 为各自这一轮来自哪个单位的特殊技能
+## - special：特殊技能的一步里的一个技能（如神佑、唤醒）。skill 为技能，effects 为效果
 ## - beat：一拍。skill 为技能，effects 为这一拍的全部效果（含被动的效果）；woken 为真表示是被唤醒那一组的拍
 ## - clash：attacks 为双方攻击值（致命为 LETHAL_ATTACK），effects 为双方受到的伤害
+## - assist：协战，同一位置的双方持有者一个事件，从第 2 位往后。effects 为伤害
 ## - backlash：effects 为反噬伤害
 ## - death：units 为阵亡单位
 ## - end：winner（1/2 = 该方胜，3 = 平局），reason（wipe = 全灭，no_death = 连续无人阵亡）
 ## 效果：buff {source, unit, skill（基础技能，或被动的 id，如 on_trigger_gain）, amount, strength}；
 ##       damage {unit, by（造成伤害的单位：腐蚀、湮灭是发动者，交战是对方交战位，反噬是自己）,
-##              source（clash/corrode/annihilate/backlash）, amount, sturdy, shelter（是否被庇护挡下）, dealt, strength,
+##              source（clash/corrode/annihilate/assist/backlash）, amount, sturdy, shelter（是否被庇护挡下）, dealt, strength,
 ##              有结算加成（on_resolve_bonus）时还有 boosts（加成来自哪些单位）}；
-##       wealth {source, unit, amount}（只做特效，不改战力）；awaken {source, unit}（unit 是被唤醒的单位）。
-##       strength 是结算后的战力。
+##       wealth {source, unit, amount}（只做特效，不改战力）；awaken {source, unit}（unit 是被唤醒的单位）；
+##       grant {source, unit, skill, amount, value}（获得词条，value 是获得后的数值，如神佑给的庇护层数）。
+##       strength 是结算后的战力。多一次多出来的结算，效果上带 again（第几次多结算，从 1 起）和 again_by（来自哪个单位）
 
 ## 事件日志的版本，规则或事件格式变化时加一，供以后的重播判断版本是否一致
-const VERSION := 5
+const VERSION := 6
 ## 致命的攻击值
 const LETHAL_ATTACK := 10000
 ## 平局：连续多少次交战无人阵亡
 const NO_DEATH_ENGAGES := 20
 ## 一个时点里特殊技能的步骤（battle-rules.md 4.1）：记 → 增 → 删 → 改 → 加 → 减 → 醒，之后才是基础技能。
-## 每一步列出属于它的带时机的特殊技能，双方同时结算；被动不占步骤，挂在事件上（_on_trigger、_hit）
+## 每一步列出属于它的带时机的特殊技能，双方同时结算；被动不占步骤，挂在事件上（_on_trigger、_hit、resolve_beats 里的多一次、resolve_timing 里的多一轮）
 const STEPS := {
 	"record": [],
-	"grant": [],
+	"grant": ["bless"],
 	"clear": [],
 	"raise": [],
 	"gain": [],
 	"damage": [],
 	"awaken": ["awaken"],
 }
-## 被动：不带时机的描述型特殊技能，挂在事件上
-const PASSIVES := ["on_trigger_gain", "on_resolve_bonus"]
+## 按方记下持有者的特殊技能：被动（不带时机的描述型特殊技能，挂在事件上）和协战
+const INDEXED := ["on_trigger_gain", "on_resolve_bonus", "extra_resolve", "extra_round", "assist"]
 
 
 class Unit:
 	var uid: String  ## 座位-初始序号，如 "1-0"
 	var side: int
+	var index: int  ## 初始序号：开战时在第几位（从 0 数）
 	var card_id: String
 	var equip_id: String
 	var strength: int
@@ -62,9 +66,10 @@ class Unit:
 	var done_pre_battle := false
 	var done_entering := false
 
-	func _init(side_: int, index: int, card_id_: String, equip_id_: String) -> void:
-		uid = "%d-%d" % [side_, index]
+	func _init(side_: int, index_: int, card_id_: String, equip_id_: String) -> void:
+		uid = "%d-%d" % [side_, index_]
 		side = side_
+		index = index_
 		card_id = card_id_
 		equip_id = equip_id_
 		var stats := CardDB.combine(card_id, equip_id)
@@ -93,7 +98,7 @@ var events: Array = []
 ## 0 = 未结束，1/2 = 该方胜，3 = 平局
 var winner := 0
 var _no_death_engages := 0
-## 双方被动的持有者：side -> {被动 id: [Unit]}，按队列顺序；判死后更新
+## 双方被动和协战的持有者：side -> {特殊技能 id: [Unit]}，按队列顺序；判死后更新
 var _holders := {1: {}, 2: {}}
 
 
@@ -102,7 +107,7 @@ func _init(p1: Array, p2: Array) -> void:
 		var lineup: Array = p1 if side == 1 else p2
 		for i in lineup.size():
 			fields[side].append(Unit.new(side, i, lineup[i][0], lineup[i][1]))
-		_index_passives(side)
+		_index_holders(side)
 
 
 ## 算完整场战斗，返回 {winner, p1, p2, events}；p1/p2 是双方幸存单位的战力
@@ -183,9 +188,15 @@ func engage_step() -> void:
 	resolve_timing(actors, "on_engage")
 	if fronts[0].strength <= 0 or fronts[1].strength <= 0:
 		return
-	var attacks := fronts.map(func(u): return LETHAL_ATTACK if u.special_skills.has("lethal") else u.strength)
+	# 致命：攻击视为无穷大；对方免疫致命时按普通对撞算
+	var attacks := []
+	for k in 2:
+		var lethal: bool = fronts[k].special_skills.has("lethal") and not fronts[1 - k].special_skills.has("immune_lethal")
+		attacks.append(LETHAL_ATTACK if lethal else fronts[k].strength)
 	events.append({"type": "clash", "attacks": attacks,
 		"effects": [damage(fronts[0], attacks[1], "clash", fronts[1]), damage(fronts[1], attacks[0], "clash", fronts[0])]})
+	if _holders[1].has("assist") or _holders[2].has("assist"):
+		assist(fronts)
 	var backlash := []
 	for u in fronts:
 		if u.special_skills.has("backlash"):
@@ -194,30 +205,96 @@ func engage_step() -> void:
 		events.append({"type": "backlash", "effects": backlash})
 
 
-## 一个时间节点的一轮（docs/design/battle-rules.md 4.1），从上到下：
+## 协战：对撞之后，双方第 2 位起从前往后，同一位置上双方同时；对方交战位受到等于持有者战斗力的伤害
+## （持有者战斗力 ≤0 也照常，伤害不大于 0 就是 0）。持有者在交战位时不生效
+func assist(fronts: Array) -> void:
+	for k in range(1, maxi(fields[1].size(), fields[2].size())):
+		var effects := []
+		for side in [1, 2]:
+			var line: Array = fields[side]
+			if k < line.size() and line[k].special_skills.has("assist"):
+				effects.append(damage(fronts[2 - side], maxi(0, line[k].strength), "assist", line[k]))
+		if not effects.is_empty():
+			events.append({"type": "assist", "effects": effects})
+
+
+## 一个时间节点（docs/design/battle-rules.md 4.1）：一轮从上到下是
 ## 特殊技能的各步 → 被唤醒的单位结算基础技能 → 原本在这个时机触发的单位结算基础技能。
-## 每组都按拍结算，每拍双方同时，拍的顺序就是 CardDB.BASE_SKILLS。中途不判死
+## 每组都按拍结算，每拍双方同时，拍的顺序就是 CardDB.BASE_SKILLS。中途不判死。
+## 多一轮：有多一轮的单位把整轮再走一遍（来源相加），别的单位等着；第 2 轮起先记一个 round 事件
 func resolve_timing(actors: Array, timing: String) -> void:
-	resolve_beats(special_steps(actors, timing), true)
-	resolve_beats(actors.filter(func(u): return timing in u.timings), false)
+	var extra := {}  # 单位 -> 多出来的每一轮来自哪个持有者
+	var rounds := 1
+	if _holders[1].has("extra_round") or _holders[2].has("extra_round"):
+		for u in actors:
+			extra[u] = _extra_rounds(u, timing)
+			rounds = maxi(rounds, extra[u].size() + 1)
+	for r in rounds:
+		var group := actors
+		if r > 0:
+			group = actors.filter(func(u): return extra[u].size() >= r)
+			events.append({"type": "round", "round": r + 1, "units": group.map(func(u): return u.uid),
+				"sources": group.map(func(u): return extra[u][r - 1].uid)})
+		resolve_beats(special_steps(group, timing), true)
+		resolve_beats(group.filter(func(u): return timing in u.timings), false)
+
+
+## 被动：〈范围〉〈时机〉多触发一轮（extra_round），返回给 u 带来多一轮的持有者（每个一轮）。
+## 范围：self 自身；allies 己方全体；first 开战时位于己方第 1 位的角色（只在战前，持有者自己在第 1 位时没有效果）
+func _extra_rounds(u: Unit, timing: String) -> Array:
+	var sources := []
+	for holder in _holders[u.side].get("extra_round", []):
+		var params: Dictionary = holder.special_skills.extra_round
+		if params.timing != timing:
+			continue
+		match params.scope:
+			"self":
+				if holder == u:
+					sources.append(holder)
+			"allies":
+				sources.append(holder)
+			"first":
+				if u.index == 0 and holder != u:
+					sources.append(holder)
+	return sources
 
 
 ## 一组单位按拍结算基础技能；woken 标记被唤醒的那一组，回放据此让它们出列。
-## 每个单位结算完一个技能，就是"触发了这个技能"，接着结算挂在触发上的被动
+## 每个单位结算完一个技能，就是"触发了这个技能"，接着结算挂在触发上的被动（一轮只算一次）；
+## 多一次：同一拍里接着再结算，每一下分开走伤害流程，数值每次重新读
 func resolve_beats(units: Array, woken: bool) -> void:
 	for skill in CardDB.BASE_SKILLS:
 		var effects := []
 		for u in units:
 			if u.base_skills.has(skill):
 				effects.append_array(apply_skill(u, skill, u.base_skills[skill]))
-				if _holders[u.side].has("on_trigger_gain"):
+				var holders: Dictionary = _holders[u.side]
+				if holders.has("on_trigger_gain"):
 					effects.append_array(_on_trigger(u, skill))
+				if holders.has("extra_resolve"):
+					var sources := _extra_resolves(u, skill)
+					for k in sources.size():
+						var again := apply_skill(u, skill, u.base_skills.get(skill, 0))
+						for f in again:
+							f.again = k + 1
+							f.again_by = sources[k].uid
+						effects.append_array(again)
 		if effects.is_empty():
 			continue
 		var beat := {"type": "beat", "skill": skill, "effects": effects}
 		if woken:
 			beat.woken = true
 		events.append(beat)
+
+
+## 被动：〈范围〉〈技能〉多结算一次（extra_resolve），返回给 u 带来多一次的持有者（每个一次）。范围：self 自身；allies 己方全体
+func _extra_resolves(u: Unit, skill: String) -> Array:
+	var sources := []
+	for holder in _holders[u.side].extra_resolve:
+		var params: Dictionary = holder.special_skills.extra_resolve
+		if params.skill == skill and (params.scope == "allies" or holder == u):
+			sources.append(holder)
+	return sources
 
 
 ## 特殊技能的各步：双方带这个时机的特殊技能按 STEPS 的顺序结算，每一步里的每个技能记一个 special 事件。
@@ -235,15 +312,19 @@ func special_steps(actors: Array, timing: String) -> Array:
 			for u in actors:
 				var params = u.special_skills.get(skill)
 				if params is Dictionary and timing in params.timings:
-					effects.append_array(apply_special(u, skill, woken))
+					effects.append_array(apply_special(u, skill, params, woken))
 			if not effects.is_empty():
 				events.append({"type": "special", "skill": skill, "effects": effects})
 	return woken
 
 
 ## 结算一个带时机的特殊技能，返回产生的效果；被唤醒的单位加进 woken
-func apply_special(u: Unit, skill: String, woken: Array) -> Array:
+func apply_special(u: Unit, skill: String, params: Dictionary, woken: Array) -> Array:
 	match skill:
+		"bless":
+			# 神佑：下一位获得 N 层庇护（层数叠加）
+			var next := next_unit(u)
+			return [grant(u, next, "shelter", params.amount)] if next else []
 		"awaken":
 			var next := next_unit(u)
 			if next == null:
@@ -254,12 +335,12 @@ func apply_special(u: Unit, skill: String, woken: Array) -> Array:
 	return []
 
 
-## 记下一方被动的持有者。被动在持有者还在队列中时生效，同名的各自生效
-func _index_passives(side: int) -> void:
+## 记下一方被动和协战的持有者。被动在持有者还在队列中时生效，同名的各自生效
+func _index_holders(side: int) -> void:
 	var holders := {}
 	for u in fields[side]:
 		for id in u.special_skills:
-			if id in PASSIVES:
+			if id in INDEXED:
 				if not holders.has(id):
 					holders[id] = []
 				holders[id].append(u)
@@ -328,6 +409,13 @@ func _hit(u: Unit, target: Unit, value: int, skill: String) -> Dictionary:
 	return hit
 
 
+## 获得词条：没有的加上，已有的数值相加（battle-rules.md 6.4）
+func grant(source: Unit, target: Unit, skill: String, amount: int) -> Dictionary:
+	target.special_skills[skill] = target.special_skills.get(skill, 0) + amount
+	return {"kind": "grant", "source": source.uid, "unit": target.uid, "skill": skill, "amount": amount,
+		"value": target.special_skills[skill]}
+
+
 func buff(source: Unit, target: Unit, amount: int, skill: String) -> Dictionary:
 	target.strength += amount
 	return {"kind": "buff", "source": source.uid, "unit": target.uid, "skill": skill, "amount": amount, "strength": target.strength}
@@ -360,7 +448,7 @@ func settle_death() -> bool:
 				dead.append(u.uid)
 		if dead.size() > count:
 			fields[side] = fields[side].filter(func(u): return u.strength > 0)
-			_index_passives(side)
+			_index_holders(side)
 	if dead.is_empty():
 		return false
 	events.append({"type": "death", "units": dead})

@@ -9,17 +9,24 @@ const RACES := ["beast", "human", "elf", "divine", "nature", "treasure"]
 const TIMINGS := ["pre_battle", "on_enter", "on_engage"]
 ## 基础技能，也是结算顺序：作用对象由近及远，先加后减，财富最后。BattleSim 按它分拍
 const BASE_SKILLS := ["rage", "rally", "support", "inspire", "corrode", "annihilate", "wealth"]
-## 特殊技能按所属种族排，同族里词条在前
-const SPECIAL_SKILLS := ["backlash", "sturdy", "on_trigger_gain", "awaken", "shelter", "lethal", "on_resolve_bonus"]
+## 特殊技能按所属种族排，同族里词条在前；不属于某个种族的描述型效果（多一次、多一轮）在最后
+const SPECIAL_SKILLS := ["backlash", "sturdy", "assist", "immune_lethal", "on_trigger_gain", "awaken", "shelter", "bless",
+	"lethal", "on_resolve_bonus", "extra_resolve", "extra_round"]
 ## 描述型特殊技能：一种效果一个 id 加参数，不起词条名，卡面写整句（翻译 key 是 effect.<id>，{参数名} 换成参数）
-const DESCRIPTIVE_SPECIALS := ["on_trigger_gain", "on_resolve_bonus"]
+const DESCRIPTIVE_SPECIALS := ["on_trigger_gain", "on_resolve_bonus", "extra_resolve", "extra_round"]
 ## 写成参数字典的特殊技能和它们的参数；不在这里的词条写数值（如庇护的层数）或 null（如致命）。
-## timings：带时机的特殊技能在哪些时机生效（属于特殊技能本身，和卡牌的时机无关）；skill：基础技能；amount：数值
+## timings：带时机的特殊技能在哪些时机生效（属于特殊技能本身，和卡牌的时机无关）；skill：基础技能；amount：数值；
+## scope：范围（SCOPES）；timing：作用于哪个时机（多一轮）
 const SPECIAL_PARAMS := {
 	"awaken": ["timings"],
+	"bless": ["timings", "amount"],
 	"on_trigger_gain": ["skill", "amount"],
 	"on_resolve_bonus": ["skill", "amount"],
+	"extra_resolve": ["scope", "skill"],
+	"extra_round": ["scope", "timing"],
 }
+## 范围：自身、己方全体、开战时位于己方第 1 位的角色（翻译 key 是 scope.<id>）
+const SCOPES := ["self", "allies", "first"]
 ## 格子：时机、基础技能各两格（通常角色填 1、装备填 2），特殊技能一格。时机格写时机的列表
 const TIMING_SLOTS := ["timing_1", "timing_2"]
 const SKILL_SLOTS := ["skills_1", "skills_2"]
@@ -195,6 +202,10 @@ static func _check_params(params, keys: Array) -> String:
 				ok = params[key] in BASE_SKILLS
 			"amount":
 				ok = params[key] is int
+			"scope":
+				ok = params[key] in SCOPES
+			"timing":
+				ok = params[key] in TIMINGS
 		if not ok:
 			return " %s 不对：%s" % [key, params[key]]
 	return ""
