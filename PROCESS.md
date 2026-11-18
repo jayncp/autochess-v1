@@ -15,14 +15,10 @@
 - 战斗特效和回放节奏（issue #20，PR #21 飘字和卡面反馈、#22 动作和节奏，计划和执行记录 `docs/plans/effects-pacing.md`）。协战、神佑的规则和表现已定，等有卡用到时实现。
 - 设置和存档（issue #23，PR #24，计划和执行记录 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）：设置页面、存档目录 `niuma_autochess`、闯关通关记录、清除记录。
 - 阶段 3 第二轮的设计（2026-11-18 定版）：3★/4★/5★ 共 60 张角色、38 件装备，结算顺序和卡面写法的规范，记录在 `docs/plans/stage-3-high-stars.md`。
+- 阶段 3 第二轮开发（issue #25，PR #26–#29，计划和执行记录 `docs/plans/stage-3-high-stars-dev.md`）：结算结构改造（时点内七步、被动挂在事件上、用例迁到 `tests/cases/`），神佑、协战、免疫致命、多一次、多一轮，全部描述型特殊技能，98 张新卡（现在共 87 张角色、57 件装备），回放表现和节奏，回放时长工具 `just replay-time`。
 
 ## 待办
 
-- [ ] 阶段 3 第二轮开发：按 `docs/plans/stage-3-high-stars-dev.md` 分四批实现机制和卡牌（issue #25）
-  - [x] 第 1 批：结算结构改造、一格多个时机、用例迁到 `tests/cases/`（PR #26）
-  - [x] 第 2 批：词条类机制和 43 张角色、35 件装备（PR #27）
-  - [x] 第 3 批：描述型特殊技能和剩下的卡（PR #28）
-  - [ ] 第 4 批：表现和收尾（分支 `high-stars-4`，待审）
 - [ ] Rust 版结算和对拍；强度测试、迭代数值
 - [ ] 卡图
 - 之后再定：构筑阶段的拖放反馈、音效；Android 的存档导入导出；正式发布前定 Android 包名（现在是占位的 `com.example.autochess`，改了存档会丢）
