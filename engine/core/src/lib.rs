@@ -17,5 +17,5 @@ pub mod battle;
 pub mod cards;
 pub mod ids;
 
-pub use battle::{Battle, MAX_UNITS, Outcome, Reason, Survivor, VERSION, simulate};
+pub use battle::{Battle, MAX_UNITS, Outcome, Reason, Survivor, TraceStep, VERSION, simulate, simulate_traced};
 pub use cards::{CardIdx, Deck, Pick};

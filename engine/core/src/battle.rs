@@ -26,12 +26,7 @@ pub const MAX_UNITS: usize = 7;
 const STEPS: [(Step, &[Special]); 7] = [
     (
         Step::Record,
-        &[
-            Special::CopySkills,
-            Special::GainHalfSkillSum,
-            Special::GainIfOutnumbered,
-            Special::DamageHalfStrength,
-        ],
+        &[Special::CopySkills, Special::GainHalfSkillSum, Special::GainIfOutnumbered, Special::DamageHalfStrength],
     ),
     (Step::Grant, &[Special::Bless, Special::Grant, Special::CopySkills]),
     (Step::Clear, &[Special::ClearSkills]),
@@ -263,6 +258,22 @@ pub fn simulate(deck: &Deck, p1: &[Pick], p2: &[Pick]) -> Outcome {
     battle.outcome()
 }
 
+/// 算一场，同时记下简要轨迹（只用于和 GDScript 版对拍时定位第一处不同，不追求速度）
+pub fn simulate_traced(deck: &Deck, p1: &[Pick], p2: &[Pick]) -> (Outcome, Vec<TraceStep>) {
+    let mut battle = Battle::new(deck, p1, p2);
+    battle.trace = Some(Vec::new());
+    battle.run();
+    (battle.outcome(), battle.trace.take().unwrap_or_default())
+}
+
+/// 简要轨迹的一步：哪一步（pre_battle / enter / engage，同事件日志的类型），判死之后双方队列里每个角色的战斗力。
+/// GDScript 版由事件日志算出同样的东西（`cli/sim.gd --trace`）
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct TraceStep {
+    pub step: &'static str,
+    pub strengths: [Vec<i32>; 2],
+}
+
 /// 一场战斗的状态（`BattleSim`）
 #[derive(Clone, Debug)]
 pub struct Battle {
@@ -274,6 +285,8 @@ pub struct Battle {
     pub reason: Reason,
     no_death_engages: u32,
     holders: [Holders; 2],
+    /// 简要轨迹，打开时才记（`simulate_traced`）
+    trace: Option<Vec<TraceStep>>,
 }
 
 impl Battle {
@@ -286,13 +299,10 @@ impl Battle {
             reason: Reason::Wipe,
             no_death_engages: 0,
             holders: [Holders::default(); 2],
+            trace: None,
         };
         for (side, lineup) in [p1, p2].into_iter().enumerate() {
-            assert!(
-                lineup.len() <= MAX_UNITS,
-                "一方最多 {MAX_UNITS} 个单位，实际 {}",
-                lineup.len()
-            );
+            assert!(lineup.len() <= MAX_UNITS, "一方最多 {MAX_UNITS} 个单位，实际 {}", lineup.len());
             for (index, &pick) in lineup.iter().enumerate() {
                 let u = (side * MAX_UNITS + index) as UnitId;
                 battle.units[u as usize] = Unit::new(deck, side, index, pick);
@@ -313,10 +323,7 @@ impl Battle {
         for side in 0..2 {
             for (k, u) in self.fields[side].into_iter().enumerate() {
                 let unit = &self.units[u as usize];
-                outcome.survivors[side][k] = Survivor {
-                    card: unit.card,
-                    strength: unit.strength,
-                };
+                outcome.survivors[side][k] = Survivor { card: unit.card, strength: unit.strength };
             }
             outcome.counts[side] = self.fields[side].len;
         }
@@ -369,6 +376,7 @@ impl Battle {
             }
             self.resolve_timing(actors, Timing::PreBattle);
             self.settle_death();
+            self.record_trace("pre_battle");
         }
     }
 
@@ -381,11 +389,24 @@ impl Battle {
                 self.engage_step();
                 engaged = true;
             }
-            if self.settle_death() {
+            let died = self.settle_death();
+            self.record_trace(if engaged { "engage" } else { "enter" });
+            if died {
                 self.no_death_engages = 0;
             } else if engaged {
                 self.no_death_engages += 1;
             }
+        }
+    }
+
+    /// 简要轨迹：判死之后记下这一步和双方每个角色的战斗力（只在 trace 打开时）
+    fn record_trace(&mut self, step: &'static str) {
+        if self.trace.is_none() {
+            return;
+        }
+        let strengths = [0, 1].map(|side| self.fields[side].into_iter().map(|u| self.unit(u).strength).collect());
+        if let Some(trace) = &mut self.trace {
+            trace.push(TraceStep { step, strengths });
         }
     }
 
@@ -433,11 +454,7 @@ impl Battle {
         }
         for u in fronts {
             if self.unit(u).special_skills.has(Special::Backlash) {
-                let amount = self
-                    .unit(u)
-                    .special_skills
-                    .value(Special::Backlash)
-                    .expect("校验过：反噬是正整数");
+                let amount = self.unit(u).special_skills.value(Special::Backlash).expect("校验过：反噬是正整数");
                 self.damage(u, amount);
             }
         }
@@ -602,10 +619,7 @@ impl Battle {
             }
             Special::GainHalfSkillSum => {
                 // 炼药师：己方全体基础技能数值之和（含财富）的一半，四舍五入
-                let total: i32 = self.fields[side]
-                    .into_iter()
-                    .map(|p| self.unit(p).base_skills.sum())
-                    .sum();
+                let total: i32 = self.fields[side].into_iter().map(|p| self.unit(p).base_skills.sum()).sum();
                 records.half_skill_sum = round_half(total);
             }
             Special::GainIfOutnumbered => {
@@ -715,10 +729,7 @@ impl Battle {
 
     /// 被动的参数（持有者一定有这个被动）
     fn passive(&self, holder: UnitId, skill: Special) -> Params {
-        self.unit(holder)
-            .special_skills
-            .params(skill)
-            .expect("持有者有这个被动")
+        self.unit(holder).special_skills.params(skill).expect("持有者有这个被动")
     }
 
     /// 被动：己方角色触发〈技能〉时，自身战斗力 +N（on_trigger_gain，如队长）。
@@ -848,16 +859,11 @@ impl Battle {
         let sheltered = amount > 0 && t.special_skills.has(Special::Shelter);
         let mut dealt = 0;
         if sheltered {
-            let layers = t
-                .special_skills
-                .value(Special::Shelter)
-                .expect("校验过：庇护的层数是正整数")
-                - 1;
+            let layers = t.special_skills.value(Special::Shelter).expect("校验过：庇护的层数是正整数") - 1;
             if layers <= 0 {
                 t.special_skills.remove(Special::Shelter);
             } else {
-                t.special_skills
-                    .set(Special::Shelter, SpecialValue::Value(Some(layers)));
+                t.special_skills.set(Special::Shelter, SpecialValue::Value(Some(layers)));
             }
         } else {
             let sturdy = t.special_skills.value(Special::Sturdy).unwrap_or(0); // 没有坚固是 0

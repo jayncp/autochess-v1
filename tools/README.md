@@ -1,6 +1,6 @@
 # Python 工具
 
-分析和平衡实验。战斗规则只有 GDScript 一份实现（`scripts/core/battle_sim.gd`），这里通过 `cli/sim.gd` 批量调用它，自己不重写规则。
+分析和平衡实验。这里不实现战斗规则：规则的基准实现是 GDScript 版（`scripts/core/battle_sim.gd`，通过 `cli/sim.gd` 批量调用），另有逐场一致的 Rust 版（`engine/`，命令行 `engine-cli`），用于对拍和测速，第 3 批起也是批量模拟的默认后端。
 
 ## 使用
 
@@ -14,7 +14,10 @@
 | 模块 | 内容 |
 |---|---|
 | `data.py` | 读 `data/cards.json` 和 `i18n/data.csv` |
-| `sim.py` | `simulate(对局列表, extra_cards)`：调用 `cli/sim.gd`，大批量时拆给多个 Godot 进程并行。`extra_cards` 是只在本次模拟有效的额外卡牌，比如白板单位、某张卡的不同数值版本 |
+| `sim.py` | `simulate(对局列表, extra_cards)`：调用 `cli/sim.gd`，大批量时拆给多个 Godot 进程并行。`extra_cards` 是只在本次模拟有效的额外卡牌，比如白板单位、某张卡的不同数值版本。`run_godot`、`run_engine` 分别用 Godot 版、Rust 版的命令行跑一批对局，返回原样的结果行（可带 `--trace` 等参数） |
+| `lineups.py` | 随机对局（固定种子）：每方 1–7 人、各星级的正式卡、允许同名卡；机制密集的对局多从带特殊机制的卡里抽 |
+| `diff_sim.py` | 对拍（`just diff-sim`）：同一批随机对局分别用两个版本跑，逐场比较，不一致时用简要轨迹找出第一处不同 |
+| `bench.py` | 测速（`just bench`）：Rust 版单线程、多线程和 Godot 版单进程的场/秒 |
 | `effective.py` | 有效战力：与被测卡（或装备）表现相同的白板战力 |
 | `art/` | 美术素材生成（依赖组 `art`：fonttools、resvg-py）：`fonts.py` 字体子集，`icons.py` 图标，`ornaments.py` 卡牌边框和法阵，`ui.py` 控件和卡面面板贴图，`fx.py` 战斗飘字的饰板。用 `just fonts`、`just art` 运行，规范见 `docs/design/art-direction.md` |
 

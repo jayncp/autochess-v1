@@ -16,19 +16,8 @@ use crate::ids::{BaseSkill, CardType, Param, RACES, Scope, SkillRef, Special, Ta
 pub type CardIdx = u16;
 
 /// 卡牌的字段（`CardDB.FIELDS`）
-const FIELDS: [&str; 11] = [
-    "id",
-    "no",
-    "type",
-    "star",
-    "races",
-    "strength",
-    "timing_1",
-    "timing_2",
-    "skills_1",
-    "skills_2",
-    "special_skills",
-];
+const FIELDS: [&str; 11] =
+    ["id", "no", "type", "star", "races", "strength", "timing_1", "timing_2", "skills_1", "skills_2", "special_skills"];
 const TIMING_SLOTS: [&str; 2] = ["timing_1", "timing_2"];
 const SKILL_SLOTS: [&str; 2] = ["skills_1", "skills_2"];
 /// 装备的格子里写"空"表示清空角色的那一格（`CardDB.CLEAR`）
@@ -216,18 +205,13 @@ impl Deck {
                 Err(error) => errors.push(error),
             }
         }
-        if errors.is_empty() {
-            Ok(())
-        } else {
-            Err(errors.join("\n"))
-        }
+        if errors.is_empty() { Ok(()) } else { Err(errors.join("\n")) }
     }
 
     fn load(&mut self, path: impl AsRef<Path>, replace: bool) -> Result<(), String> {
         let path = path.as_ref();
         let text = std::fs::read_to_string(path).map_err(|e| format!("读不了 {}：{e}", path.display()))?;
-        self.add_json(&text, replace)
-            .map_err(|e| format!("{}：\n{e}", path.display()))
+        self.add_json(&text, replace).map_err(|e| format!("{}：\n{e}", path.display()))
     }
 
     pub fn find(&self, id: &str) -> Option<CardIdx> {
@@ -255,22 +239,11 @@ impl Deck {
     pub fn pick(&self, card: &str, equip: &str) -> Result<Pick, String> {
         let find = |id: &str, kind: CardType| match self.find(id) {
             Some(idx) if self.card(idx).kind == kind => Ok(idx),
-            Some(_) => Err(format!(
-                "{id} 不是{}",
-                if kind == CardType::Character {
-                    "角色"
-                } else {
-                    "装备"
-                }
-            )),
+            Some(_) => Err(format!("{id} 不是{}", if kind == CardType::Character { "角色" } else { "装备" })),
             None => Err(format!("没有这张卡：{id}")),
         };
         let card = find(card, CardType::Character)?;
-        let equip = if equip.is_empty() {
-            None
-        } else {
-            Some(find(equip, CardType::Equipment)?)
-        };
+        let equip = if equip.is_empty() { None } else { Some(find(equip, CardType::Equipment)?) };
         Ok(Pick { card, equip })
     }
 
@@ -510,9 +483,7 @@ fn parse_specials(slot: &str, value: &Value, bad: &mut Vec<String>) -> Option<Sp
 fn parse_params(value: &Value, effect: Special) -> Result<Params, String> {
     let keys = effect.params();
     let names: Vec<&str> = keys.iter().map(|k| k.id()).collect();
-    let Some(dict) = value
-        .as_object()
-        .filter(|d| d.len() == keys.len() && names.iter().all(|n| d.contains_key(*n)))
+    let Some(dict) = value.as_object().filter(|d| d.len() == keys.len() && names.iter().all(|n| d.contains_key(*n)))
     else {
         return Err(format!("应为 {names:?}"));
     };
@@ -532,21 +503,9 @@ fn parse_params(value: &Value, effect: Special) -> Result<Params, String> {
                     params.amount.is_some() || (v.is_null() && valueless)
                 }
             }
-            Param::Scope => v
-                .as_str()
-                .and_then(Scope::from_id)
-                .map(|s| params.scope = Some(s))
-                .is_some(),
-            Param::Timing => v
-                .as_str()
-                .and_then(Timing::from_id)
-                .map(|t| params.timing = Some(t))
-                .is_some(),
-            Param::Target => v
-                .as_str()
-                .and_then(Target::from_id)
-                .map(|t| params.target = Some(t))
-                .is_some(),
+            Param::Scope => v.as_str().and_then(Scope::from_id).map(|s| params.scope = Some(s)).is_some(),
+            Param::Timing => v.as_str().and_then(Timing::from_id).map(|t| params.timing = Some(t)).is_some(),
+            Param::Target => v.as_str().and_then(Target::from_id).map(|t| params.target = Some(t)).is_some(),
         };
         if !ok {
             return Err(format!(" {} 不对：{v}", key.id()));
@@ -564,9 +523,7 @@ fn parse_skill_ref(value: &Value) -> Option<SkillRef> {
     if id == "any" {
         return Some(SkillRef::Any);
     }
-    Special::from_id(id)
-        .filter(|s| s.params().is_empty())
-        .map(SkillRef::Special)
+    Special::from_id(id).filter(|s| s.params().is_empty()).map(SkillRef::Special)
 }
 
 /// 正整数（基础技能、带数值的词条、参数 amount 的数值）
@@ -640,9 +597,7 @@ mod tests {
     #[test]
     fn rejects_duplicate_ids() {
         let card = r#"{"id": "x", "type": "character", "strength": 3}"#;
-        let error = Deck::default()
-            .add_json(&format!("[{card}, {card}]"), false)
-            .unwrap_err();
+        let error = Deck::default().add_json(&format!("[{card}, {card}]"), false).unwrap_err();
         assert!(error.contains("id 重复 x"), "{error}");
     }
 
@@ -650,8 +605,7 @@ mod tests {
     fn extra_cards_replace() {
         let mut deck = deck();
         let before = deck.len();
-        deck.add_json(r#"[{"id": "t_tiger", "type": "character", "strength": 99}]"#, true)
-            .unwrap();
+        deck.add_json(r#"[{"id": "t_tiger", "type": "character", "strength": 99}]"#, true).unwrap();
         assert_eq!(deck.len(), before);
         assert_eq!(combine(&deck, "t_tiger", "").strength, 99);
     }

@@ -43,7 +43,8 @@
 
 - 运行：`just run`；测试：`just test`（Godot 的测试约 2 秒，最后跑 Rust 版的测试；说明和维护方法见 `tests/README.md`）
 - Rust 版：`just rs-test`（测试，含共用用例）、`just rs-check`（`cargo fmt --check` 和 `cargo clippy`，警告当错误）
-- 批量模拟：`just sim <输入.jsonl> <输出.jsonl> [--log] [--cards <额外卡牌.json>]`，单线程约 6600 场/秒（带事件日志约 4300）
+- 批量模拟：`just sim <输入.jsonl> <输出.jsonl> [--cards <额外卡牌.json>] [--trace] [--threads N]`（Rust 版，单线程约 57 万场/秒，默认用全部核心）；`just sim-godot`（Godot 版 `cli/sim.gd`，格式相同，单进程约 4300 场/秒，`--log` 带事件日志）
+- 对拍和测速：`just diff-sim [场数]`（同一批随机对局分别用 Godot 和 Rust 跑，逐场比较，默认 100 万场）、`just bench`；`just rs-build` 构建 Rust 版的命令行（上面几条会自动先做）
 - 关卡检查：`just level-check [关卡文件.json]`；回放时长：`just replay-time [场数] [--stars 1,2]`（1 倍速，随机对局的平均、P90、各段落和最长的时点）；平衡实验：`just experiment <名字>`；Python 检查：`just tools-check`
 - 美术素材：`just fonts`（字体子集）、`just art`（图标、卡框、法阵、控件贴图、飘字饰板，之后重建主题）、`just theme`（只重建主题）；截图：`just shots <目录> [宽度] [高度]`（需要窗口；画在固定大小的视口里，手机宽度 2376 也是原尺寸）。规范见 `docs/design/art-direction.md`
 - Godot：`/Applications/Godot.app/Contents/MacOS/Godot`（`justfile` 里可用环境变量 `GODOT` 覆盖）
@@ -81,5 +82,5 @@
 - 阶段 PR 开之前先给用户审（推分支、汇报改动和验证方法），审过再开 PR。
 - 小修改（文档、计划等）可以直接提交并推送到 main，不必逐次确认；阶段任务的 PR 合并、破坏性操作之前，先征得用户同意。
 - commit 信息用中文简述，不加 AI 署名。
-- 改战斗规则：先改 GDScript 版，`just record` 重录用例并逐条核对；规则或事件格式变了 `BattleSim.VERSION` 加一；再照着改 Rust 版的同名函数和 `VERSION`，`just rs-test` 通过（见 `engine/README.md`）。
+- 改战斗规则：先改 GDScript 版，`just record` 重录用例并逐条核对；规则或事件格式变了 `BattleSim.VERSION` 加一；再照着改 Rust 版的同名函数和 `VERSION`，`just rs-test` 通过，`just diff-sim` 零差异（见 `engine/README.md`）。
 - 结构、约定或决策变化时，同步更新本文件。

@@ -1,0 +1,18 @@
+[package]
+name = "autochess-cli"
+description = "批量模拟的命令行：输入输出同 cli/sim.gd（JSONL），多核并行"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "engine-cli"
+path = "src/main.rs"
+
+[dependencies]
+autochess-core = { path = "../core" }
+rayon.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true
