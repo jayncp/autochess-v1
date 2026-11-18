@@ -149,7 +149,8 @@ func _card_pages() -> void:
 	var equipment := ["iron_sword", "holy_shield", "war_banner", "holy_water", "necklace", "hollow"].map(func(id): return {"equip": id})
 	await _card_page("cards_build", [["构筑阶段", characters], ["装备卡", equipment]])
 
-	var high := ["parrot", "shaman", "alchemist", "yao_bikuni", "hydra", "star_mage"].map(func(id): return {"card": id})
+	var high := [{"card": "parrot"}, {"card": "shaman"}, {"card": "yao_bikuni"}, {"card": "hydra"},
+		{"card": "clockwork_witch", "equip": "ruyi_staff", "caption": "千机魔女：装备翻倍"}, {"card": "tiger_man", "equip": "clockwork_box", "caption": "千机之匣：全部翻倍"}]
 	var high_equipment := ["golden_serpent_head", "prayer_beads", "void_heart", "parrot_puppet", "petrifying_eye", "clockwork_box"].map(func(id): return {"equip": id})
 	await _card_page("cards_high", [["3★–5★ 角色：长句、多个时机、多个特殊技能", high], ["3★–5★ 装备", high_equipment]])
 
@@ -172,7 +173,7 @@ func _card_pages() -> void:
 		{"card": "porcupine", "equip": "holy_shield", "compact": true},
 		{"card": "fairy", "equip": "holy_water", "compact": true, "live": {"firing": "pre_battle"}, "caption": "紧凑卡 + 实时状态"},
 		{"card": "toad", "compact": true},
-		{"equip": "iron_sword", "compact": true},
+		{"card": "clockwork_witch", "equip": "ruyi_staff", "compact": true, "caption": "千机魔女：装备翻倍"},
 		{"card": "demo_hero", "equip": "demo_gear", "compact": true},
 	]
 	await _card_page("cards_compact", [["多种族背景", multi], ["紧凑卡", compact]])

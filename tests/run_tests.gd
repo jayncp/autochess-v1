@@ -190,11 +190,19 @@ func _test_overlay() -> void:
 			"一格多个时机；同一个时机出现两次只算一次，按显示顺序"],
 		[paladin, {"special_skills": "clear"}, "special_skills", {}, "特殊技能清空"],
 		[paladin, {"special_skills": {"lethal": null}}, "special_skills", {"lethal": null}, "特殊技能整体覆盖"],
+		[CardDB.card("t_clockwork_witch"), CardDB.card("t_ruyi_staff"), "base_skills", {"rage": 10, "rally": 2}, "千机魔女：从装备获得的基础技能翻倍"],
+		[CardDB.card("t_clockwork_witch"), CardDB.card("t_ruyi_staff"), "strength", 35, "千机魔女：从装备获得的战斗力翻倍"],
+		[CardDB.card("t_clockwork_witch"), CardDB.card("t_void_heart"), "strength", 45, "千机魔女带虚无之心：特殊技能被清空，不翻倍"],
+		[CardDB.card("t_tiger_man"), CardDB.card("t_clockwork_box"), "base_skills", {"rage": 4, "rally": 2}, "千机之匣：自身的基础技能在合并时翻倍"],
 	]
 	for c in cases:
 		var got = CardDB.combine_data(c[0], c[1])[c[2]]
 		if got != c[3]:
 			_failures.append("[unit-overlay] %s：期望 %s，实际 %s" % [c[4], c[3], got])
+	# 卡面印的数（不翻倍）：卡面据此把翻倍的标紫
+	var printed := CardDB.combine_data(CardDB.card("t_clockwork_witch"), CardDB.card("t_ruyi_staff"), true)
+	if [printed.strength, printed.base_skills] != [25, {"rage": 5, "rally": 2}]:
+		_failures.append("[unit-overlay] 千机魔女带如意金箍棒印的是 25、狂暴5、集结2，实际 %s %s" % [printed.strength, printed.base_skills])
 
 
 ## 结算加成（蟾蜍）记在腐蚀伤害上，回放据此在持有者身上弹名字
@@ -256,6 +264,10 @@ func _test_event_details() -> void:
 		func(e): return e.effects.map(func(f): return [f.unit, f.skill, f.amount, f.value]))
 	if grants != [[["1-1", "shelter", 2, 2]], [["1-1", "shelter", 2, 4]]]:
 		_failures.append("[unit-events] 神佑两轮应给骑士王 2、4 层庇护，实际 %s" % [grants])
+	# 千机之匣：获得的基础技能数值也 ×2（圣咏者给的集结1，带千机之匣的士兵 +2）
+	var gained: Array = events.call("rule-double-skills-gained").filter(func(e): return e.type == "special" and e.skill == "grant")[0].effects
+	if gained.map(func(f): return [f.unit, f.amount, f.value]) != [["1-0", 1, 1], ["1-1", 2, 6]]:
+		_failures.append("[unit-events] 带千机之匣的士兵应获得集结 2（4 → 6），实际 %s" % [gained])
 	# 美杜莎只清前两位，第 3 位的集结值还在
 	var cleared: Array = events.call("rule-clear").filter(func(e): return e.type == "special" and e.skill == "clear_skills")[0].effects
 	if cleared.map(func(f): return [f.unit, f.skills]) != [["2-0", ["rally"]], ["2-1", ["rage"]]]:
@@ -310,6 +322,14 @@ func _test_live_specials() -> void:
 	face.set_specials({})
 	if not face._special_parts().is_empty():
 		_failures.append("[unit-live-specials] 庇护用完应移除，实际 %s" % [face._special_parts()])
+	face.free()
+	# 基础技能和卡面印的比：带千机之匣的开局就标紫
+	face = CardFace.new()
+	face.show_cards("t_tiger_man", "t_clockwork_box")
+	face.start_live(BattleSim.new([["t_tiger_man", "t_clockwork_box"]], [["t_pixie", ""]]).fields[1][0].describe())
+	var chips := face._chips(face.live.base_skills, face._origin.base_skills)
+	if chips.map(func(chip): return [chip[1], chip[3]]) != [["4", true], ["2", true]]:
+		_failures.append("[unit-live-specials] 带千机之匣的虎人开局应显示紫色的狂暴4、集结2，实际 %s" % [chips])
 	face.free()
 
 

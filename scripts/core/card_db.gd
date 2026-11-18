@@ -89,17 +89,16 @@ static func combine(card_id: String, equip_id: String) -> Dictionary:
 ## 装备像一张卡盖在角色卡上（docs/design/battle-rules.md 第 2 节）：
 ## 逐格处理，装备那一格有内容就覆盖，没有就沿用角色的，写"空"就清空；
 ## 然后两格合并：时机取并集，基础技能同名相加。战斗力不分格，角色的加上装备的。
-static func combine_data(c: Dictionary, e: Dictionary) -> Dictionary:
+## 合并时生效的特殊技能（千机之匣、千机魔女）在这里把数值翻倍；printed 为真时不翻倍，得到卡面上印的数（卡面据此把不同的标紫）
+static func combine_data(c: Dictionary, e: Dictionary, printed := false) -> Dictionary:
 	var timings := []
 	for slot in TIMING_SLOTS:
 		timings.append_array(_overlay(c, e, slot, []))
 	var special: Dictionary = _overlay(c, e, "special_skills", {})
-	# 千机魔女：从装备获得的战斗力和基础技能数值翻倍（装备那一格覆盖了角色的才算从装备获得；特殊技能被装备覆盖掉就没有这个效果）
-	var times := 2 if special.has("double_equipment") else 1
 	var base_skills := {}
 	for slot in SKILL_SLOTS:
 		var skills: Dictionary = _overlay(c, e, slot, {})
-		var k := times if times > 1 and e.get(slot) is Dictionary else 1
+		var k := 1 if printed else skill_times(special, e, slot)
 		for skill in skills:
 			base_skills[skill] = base_skills.get(skill, 0) + skills[skill] * k
 	# 按结算顺序排，数值不大于 0 的去掉
@@ -109,13 +108,27 @@ static func combine_data(c: Dictionary, e: Dictionary) -> Dictionary:
 			sorted[skill] = base_skills[skill]
 	base_skills = sorted
 	return {
-		"strength": c.strength + e.get("strength", 0) * times,
+		"strength": c.strength + e.get("strength", 0) * (1 if printed else equipment_times(special)),
 		"timings": TIMINGS.filter(func(t): return t in timings),
 		"base_skills": base_skills,
 		"special_skills": special.duplicate(),
 		# 描述型特殊技能触发时，飘字显示这张卡的名字
 		"special_source": e.get("id", "") if e.has("special_skills") else c.get("id", ""),
 	}
+
+
+## 合并后一格基础技能的倍数：千机之匣（自身的基础技能数值翻倍）两格都 ×2；千机魔女（从装备获得的翻倍）装备填了的那格 ×2。
+## special 是合并后的特殊技能：被装备覆盖掉就没有这个效果
+static func skill_times(special: Dictionary, e: Dictionary, slot: String) -> int:
+	var times := 2 if special.has("double_skills") else 1
+	if e.get(slot) is Dictionary:
+		times *= equipment_times(special)
+	return times
+
+
+## 装备的战斗力的倍数（千机魔女 ×2）
+static func equipment_times(special: Dictionary) -> int:
+	return 2 if special.has("double_equipment") else 1
 
 
 ## 一格的叠放结果：装备有这格就用装备的（"空"表示清空），否则沿用角色的

@@ -30,7 +30,7 @@ extends RefCounted
 ##       strength 是结算后的战力。多一次多出来的结算，效果上带 again（第几次多结算，从 1 起）和 again_by（来自哪个单位）
 
 ## 事件日志的版本，规则或事件格式变化时加一，供以后的重播判断版本是否一致
-const VERSION := 7
+const VERSION := 8
 ## 致命的攻击值
 const LETHAL_ATTACK := 10000
 ## 平局：连续多少次交战无人阵亡
@@ -66,7 +66,7 @@ class Unit:
 	var acting_timings: Array
 	## 带时机的特殊技能的 id（没有的跳过特殊技能的各步）
 	var timed_specials := {}
-	## 千机之匣：基础技能的数值读出来 ×2
+	## 千机之匣：基础技能在合并装备时已经翻倍；战斗中获得、被加的基础技能数值也 ×2
 	var doubled := false
 	var done_pre_battle := false
 	var done_entering := false
@@ -91,10 +91,6 @@ class Unit:
 			if special_skills[skill] is Dictionary and special_skills[skill].has("timings"):
 				timed_specials[skill] = true
 		doubled = special_skills.has("double_skills")
-
-	## 结算、统计时读到的基础技能数值（千机之匣翻倍）；卡面上的面值是 base_skills
-	func value(skill: String) -> int:
-		return base_skills.get(skill, 0) * (2 if doubled else 1)
 
 	func acts_at(timing: String) -> bool:
 		return timing in acting_timings
@@ -283,7 +279,7 @@ func resolve_beats(units: Array, woken: bool) -> void:
 		for u in units:
 			if u.base_skills.has(skill):
 				var holders: Dictionary = _holders[u.side]
-				effects.append_array(apply_skill(u, skill, u.base_skills[skill] * (2 if u.doubled else 1)))
+				effects.append_array(apply_skill(u, skill, u.base_skills[skill]))
 				if holders.has("on_resolve_raise"):
 					effects.append_array(_after_resolve(u, skill))
 				if holders.has("on_trigger_gain"):
@@ -292,7 +288,7 @@ func resolve_beats(units: Array, woken: bool) -> void:
 				if holders.has("extra_resolve"):
 					var sources := _extra_resolves(u, skill)
 					for k in sources.size():
-						var again := apply_skill(u, skill, u.value(skill))
+						var again := apply_skill(u, skill, u.base_skills[skill])
 						if holders.has("on_resolve_raise"):
 							again.append_array(_after_resolve(u, skill))
 						for f in again:
@@ -349,14 +345,14 @@ func record_special(u: Unit, skill: String) -> Variant:
 	var enemies: Array = fields[3 - u.side]
 	match skill:
 		"copy_skills":
-			# 鹦鹉：对方交战位基础技能的面值
+			# 鹦鹉：对方交战位此刻的基础技能（卡面上的数，千机之匣已经翻倍）
 			return [enemies[0], enemies[0].base_skills.duplicate()] if not enemies.is_empty() else [null, {}]
 		"gain_half_skill_sum":
-			# 炼药师：己方全体基础技能数值之和（含财富，千机之匣按翻倍后的算）的一半，四舍五入
+			# 炼药师：己方全体基础技能数值之和（含财富）的一半，四舍五入
 			var total := 0
 			for partner in fields[u.side]:
 				for s in partner.base_skills:
-					total += partner.value(s)
+					total += partner.base_skills[s]
 			return roundi(total / 2.0)
 		"gain_if_outnumbered":
 			return enemies.size() > fields[u.side].size()
@@ -490,7 +486,7 @@ func apply_skill(u: Unit, skill: String, value: int) -> Array:
 		"rally":
 			var total := 0
 			for partner in fields[u.side]:
-				total += partner.base_skills.get("rally", 0) * (2 if partner.doubled else 1)
+				total += partner.base_skills.get("rally", 0)
 			return [buff(u, u, total, skill)]
 		"support":
 			var next := next_unit(u)
@@ -526,15 +522,21 @@ func _hit(u: Unit, target: Unit, value: int, skill: String) -> Dictionary:
 	return hit
 
 
-## 获得基础技能或词条：没有的加上，已有的数值相加；没有数值的词条（致命）amount 是 null（battle-rules.md 6.4）
+## 获得基础技能或词条：没有的加上，已有的数值相加；没有数值的词条（致命）amount 是 null（battle-rules.md 6.4）。
+## 带千机之匣的角色获得的基础技能数值 ×2
 func grant(source: Unit, target: Unit, skill: String, amount: Variant) -> Dictionary:
-	var skills: Dictionary = target.base_skills if skill in CardDB.BASE_SKILLS else target.special_skills
+	var base := skill in CardDB.BASE_SKILLS
+	if base and target.doubled:
+		amount *= 2
+	var skills: Dictionary = target.base_skills if base else target.special_skills
 	skills[skill] = skills.get(skill, 0) + amount if amount != null else null
 	return {"kind": "grant", "source": source.uid, "unit": target.uid, "skill": skill, "amount": amount, "value": skills[skill]}
 
 
-## 改基础技能的数值（面值），只改已经有的
+## 改基础技能的数值，只改已经有的；带千机之匣的角色 ×2
 func raise(source: Unit, target: Unit, skill: String, amount: int) -> Dictionary:
+	if target.doubled:
+		amount *= 2
 	target.base_skills[skill] += amount
 	return {"kind": "raise", "source": source.uid, "unit": target.uid, "skill": skill, "amount": amount, "value": target.base_skills[skill]}
 

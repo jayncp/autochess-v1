@@ -65,7 +65,7 @@
 {"id":"rule-grant-clear-raise","note":"增 → 删 → 改：同一次入场里先获得集结1，再被美杜莎清掉，改数值也加不回来，只有第 3 位的士兵 2+1+2=5；圣咏者之后入场再获得集结1 就照常","p1":[["t_grant_raise",""],["t_chanter",""],["t_soldier",""]],"p2":[["t_medusa",""]],"expect":{"winner":1,"reason":"wipe","p1":[["t_chanter",5],["t_soldier",3]],"p2":[]}},
 {"id":"rule-copy","note":"鹦鹉：战前变成对方交战位的基础技能（狂暴3、腐蚀2），狮心的狂暴2 被换掉","p1":[["t_parrot","t_lionheart"]],"p2":[["t_vulture",""]],"expect":{"winner":1,"reason":"wipe","p1":[["t_parrot",3]],"p2":[]}},
 {"id":"rule-copy-none","note":"鹦鹉：对方交战位没有基础技能时不变，还是狮心的狂暴2：12 打豪猪，再被反噬，同归于尽","p1":[["t_parrot","t_lionheart"]],"p2":[["t_porcupine",""]],"expect":{"winner":3,"reason":"wipe","p1":[],"p2":[]}},
-{"id":"rule-copy-face","note":"鹦鹉读的是面值：对方秃鹫带千机之匣，实际是狂暴6、腐蚀4，鹦鹉只变成狂暴3、腐蚀2","p1":[["t_parrot",""]],"p2":[["t_vulture","t_clockwork_box"]],"expect":{"winner":2,"reason":"wipe","p1":[],"p2":[["t_vulture",2]]}},
+{"id":"rule-copy-face","note":"鹦鹉复制的是对方卡面上的数：秃鹫带千机之匣，合并时已经翻倍成狂暴6、腐蚀4，鹦鹉也变成狂暴6、腐蚀4","p1":[["t_parrot",""]],"p2":[["t_vulture","t_clockwork_box"]],"expect":{"winner":1,"reason":"wipe","p1":[["t_parrot",3]],"p2":[]}},
 {"id":"rule-copy-same-round","note":"鹦鹉手偶：这一轮自己触发时就用上。小精灵（战前）变成腐蚀10，和树精同时腐蚀，同归于尽","p1":[["t_pixie","t_parrot_puppet"]],"p2":[["t_dryad",""]],"expect":{"winner":3,"reason":"wipe","p1":[],"p2":[]}},
 {"id":"rule-half-damage","note":"沼泽之王：对方交战位受到其战斗力一半的伤害，四舍五入：11 的一半是 6","p1":[["t_swamp_king",""]],"p2":[["t_pixie","t_wooden_sword"]],"expect":{"winner":1,"reason":"wipe","p1":[["t_swamp_king",5]],"p2":[]}},
 {"id":"rule-half-damage-shelter","note":"沼泽之王的伤害走伤害流程，被圣骑士的庇护挡下","p1":[["t_swamp_king",""]],"p2":[["t_paladin",""]],"expect":{"winner":1,"reason":"wipe","p1":[["t_swamp_king",2]],"p2":[]}},
