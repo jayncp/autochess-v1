@@ -36,16 +36,9 @@ impl Result {
     fn of(deck: &Deck, outcome: &Outcome) -> Result {
         let side = |s: usize| {
             let units = outcome.survivors(s).iter();
-            units
-                .map(|u| (deck.card(u.card).id.clone(), i64::from(u.strength)))
-                .collect()
+            units.map(|u| (deck.card(u.card).id.clone(), i64::from(u.strength))).collect()
         };
-        Result {
-            winner: outcome.winner.into(),
-            reason: Some(outcome.reason.id().into()),
-            p1: side(0),
-            p2: side(1),
-        }
+        Result { winner: outcome.winner.into(), reason: Some(outcome.reason.id().into()), p1: side(0), p2: side(1) }
     }
 
     /// 用例里的 expect（数可能写成小数，如 2.0）
@@ -53,10 +46,7 @@ impl Result {
         let int = |v: &Value| v.as_f64().unwrap() as i64;
         let side = |key: &str| {
             let units = value.get(key).and_then(Value::as_array).cloned().unwrap_or_default();
-            units
-                .iter()
-                .map(|u| (u[0].as_str().unwrap().to_string(), int(&u[1])))
-                .collect()
+            units.iter().map(|u| (u[0].as_str().unwrap().to_string(), int(&u[1]))).collect()
         };
         Result {
             winner: int(&value["winner"]),
@@ -73,12 +63,7 @@ impl Result {
             2 => 1,
             w => w,
         };
-        Result {
-            winner,
-            reason: self.reason.clone(),
-            p1: self.p2.clone(),
-            p2: self.p1.clone(),
-        }
+        Result { winner, reason: self.reason.clone(), p1: self.p2.clone(), p2: self.p1.clone() }
     }
 }
 
@@ -95,12 +80,7 @@ fn run(deck: &Deck, case: &Value, failures: &mut Vec<String>) -> Result {
 }
 
 fn report(kind: &str, count: usize, failures: &[String]) {
-    assert!(
-        failures.is_empty(),
-        "{kind}：{} / {count} 条不对\n{}",
-        failures.len(),
-        failures.join("\n")
-    );
+    assert!(failures.is_empty(), "{kind}：{} / {count} 条不对\n{}", failures.len(), failures.join("\n"));
     println!("{kind}：{count} 条通过");
 }
 
@@ -142,13 +122,7 @@ fn smoke_cases() {
 #[test]
 fn version_matches_gdscript() {
     let source = std::fs::read_to_string(repo().join("scripts/core/battle_sim.gd")).unwrap();
-    let line = source
-        .lines()
-        .find(|l| l.starts_with("const VERSION := "))
-        .expect("battle_sim.gd 里应有 VERSION");
+    let line = source.lines().find(|l| l.starts_with("const VERSION := ")).expect("battle_sim.gd 里应有 VERSION");
     let gdscript: i32 = line.trim_start_matches("const VERSION := ").trim().parse().unwrap();
-    assert_eq!(
-        VERSION, gdscript,
-        "Rust 版的 VERSION 和 BattleSim.VERSION 不一致，规则改了要同步"
-    );
+    assert_eq!(VERSION, gdscript, "Rust 版的 VERSION 和 BattleSim.VERSION 不一致，规则改了要同步");
 }

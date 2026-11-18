@@ -31,8 +31,12 @@ level-check *file:
 replay-time *args:
     {{limit}} {{godot}} --headless --path . --script res://cli/replay_time.gd -- {{args}}
 
-# 批量模拟：输入 JSONL 每行 {"p1": [...], "p2": [...]}，输出每行一个结果；加 --log 带事件日志，--cards <文件> 加额外卡牌
-sim input output *flags:
+# 批量模拟（Rust 版，多核）：输入 JSONL 每行 {"p1": [...], "p2": [...]}，输出每行一个结果；--cards <文件> 加额外卡牌，--trace 带简要轨迹，--threads N
+sim input output *flags: rs-build
+    engine/target/release/engine-cli {{input}} {{output}} {{flags}}
+
+# 批量模拟（Godot 版，cli/sim.gd，单进程）：格式同上；--log 带事件日志
+sim-godot input output *flags:
     {{limit}} {{godot}} --headless --path . --script res://cli/sim.gd -- {{input}} {{output}} {{flags}}
 
 # Rust 版结算（engine/）：格式和静态检查，警告当错误
@@ -42,6 +46,18 @@ rs-check: _cargo
 # Rust 版结算的测试，含 tests/cases/ 的共用用例
 rs-test: _cargo
     cd engine && cargo test --quiet
+
+# 发布构建 Rust 版的命令行 engine/target/release/engine-cli
+rs-build: _cargo
+    cd engine && cargo build --release --quiet -p autochess-cli
+
+# 对拍：同一批随机对局（一半机制密集，固定种子）分别用 Godot 和 Rust 跑，逐场比较；默认 100 万场，可加 --seed N
+diff-sim count="1000000" *flags: rs-build
+    cd tools && uv run python -m autochess_tools.diff_sim {{count}} {{flags}}
+
+# 测速：固定的一批随机对局，Rust 版单线程、多线程和 Godot 版单进程的场/秒
+bench: rs-build
+    cd tools && uv run python -m autochess_tools.bench
 
 # 检查有没有装 Rust（版本由 engine/rust-toolchain.toml 指定，第一次运行时自动安装）
 [private]

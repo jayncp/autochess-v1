@@ -175,6 +175,11 @@ impl Special {
         Special::ALL.into_iter().find(|s| s.id() == id)
     }
 
+    /// 带数值的词条（`CardDB.VALUED_KEYWORDS`，如庇护的层数）：数值是正整数；其余词条不带数值，写 null
+    pub fn valued(self) -> bool {
+        matches!(self, Special::Backlash | Special::Sturdy | Special::Shelter)
+    }
+
     /// 写成参数字典的特殊技能有哪些参数（`CardDB.SPECIAL_PARAMS`）；其余的写数值或 null，返回空
     pub fn params(self) -> &'static [Param] {
         use Param::*;

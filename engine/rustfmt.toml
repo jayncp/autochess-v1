@@ -1,2 +1,3 @@
-# 行宽和 Python 工具（ruff）一致
+# 行宽和 Python 工具（ruff）一致；短的数组、调用不拆成多行
 max_width = 120
+use_small_heuristics = "Max"

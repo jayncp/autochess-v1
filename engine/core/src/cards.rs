@@ -1,8 +1,8 @@
 //! 卡牌数据，对应 `scripts/core/card_db.gd`（`CardDB`）：读取 `data/cards.json` 并校验、按 id 查询、
 //! 装备和角色的合并（`combine`）。字段说明见 `data/README.md`。
 //!
-//! 校验和 `CardDB._check` 一致：不认识的字段、技能、参数直接报错，不静默跳过。
-//! 比 `CardDB` 严一点的地方：基础技能的数值不能写 null（`CardDB` 校验时放过，合并时会出错）。
+//! 校验和 `CardDB.problems` 一致：不认识的字段、技能、参数直接报错，不静默跳过；每个技能该不该带数值是固定的，
+//! 写错也在加载时报错。哪些写法合法见 `tests/cases/card_checks.json`（两边的测试共用）。
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -16,19 +16,8 @@ use crate::ids::{BaseSkill, CardType, Param, RACES, Scope, SkillRef, Special, Ta
 pub type CardIdx = u16;
 
 /// 卡牌的字段（`CardDB.FIELDS`）
-const FIELDS: [&str; 11] = [
-    "id",
-    "no",
-    "type",
-    "star",
-    "races",
-    "strength",
-    "timing_1",
-    "timing_2",
-    "skills_1",
-    "skills_2",
-    "special_skills",
-];
+const FIELDS: [&str; 11] =
+    ["id", "no", "type", "star", "races", "strength", "timing_1", "timing_2", "skills_1", "skills_2", "special_skills"];
 const TIMING_SLOTS: [&str; 2] = ["timing_1", "timing_2"];
 const SKILL_SLOTS: [&str; 2] = ["skills_1", "skills_2"];
 /// 装备的格子里写"空"表示清空角色的那一格（`CardDB.CLEAR`）
@@ -216,18 +205,13 @@ impl Deck {
                 Err(error) => errors.push(error),
             }
         }
-        if errors.is_empty() {
-            Ok(())
-        } else {
-            Err(errors.join("\n"))
-        }
+        if errors.is_empty() { Ok(()) } else { Err(errors.join("\n")) }
     }
 
     fn load(&mut self, path: impl AsRef<Path>, replace: bool) -> Result<(), String> {
         let path = path.as_ref();
         let text = std::fs::read_to_string(path).map_err(|e| format!("读不了 {}：{e}", path.display()))?;
-        self.add_json(&text, replace)
-            .map_err(|e| format!("{}：\n{e}", path.display()))
+        self.add_json(&text, replace).map_err(|e| format!("{}：\n{e}", path.display()))
     }
 
     pub fn find(&self, id: &str) -> Option<CardIdx> {
@@ -255,22 +239,11 @@ impl Deck {
     pub fn pick(&self, card: &str, equip: &str) -> Result<Pick, String> {
         let find = |id: &str, kind: CardType| match self.find(id) {
             Some(idx) if self.card(idx).kind == kind => Ok(idx),
-            Some(_) => Err(format!(
-                "{id} 不是{}",
-                if kind == CardType::Character {
-                    "角色"
-                } else {
-                    "装备"
-                }
-            )),
+            Some(_) => Err(format!("{id} 不是{}", if kind == CardType::Character { "角色" } else { "装备" })),
             None => Err(format!("没有这张卡：{id}")),
         };
         let card = find(card, CardType::Character)?;
-        let equip = if equip.is_empty() {
-            None
-        } else {
-            Some(find(equip, CardType::Equipment)?)
-        };
+        let equip = if equip.is_empty() { None } else { Some(find(equip, CardType::Equipment)?) };
         Ok(Pick { card, equip })
     }
 
@@ -462,9 +435,9 @@ fn parse_base_skills(slot: &str, value: &Value, bad: &mut Vec<String>) -> Option
     };
     let mut skills = BaseSkills::default();
     for (key, v) in dict {
-        match (BaseSkill::from_id(key), int(v)) {
+        match (BaseSkill::from_id(key), positive(v)) {
             (None, _) => bad.push(format!("技能 {key}")),
-            (Some(_), None) => bad.push(format!("{key} 应为数值")),
+            (Some(_), None) => bad.push(format!("{key} 应为正整数")),
             (Some(skill), Some(n)) => skills.set(skill, n),
         }
     }
@@ -483,27 +456,34 @@ fn parse_specials(slot: &str, value: &Value, bad: &mut Vec<String>) -> Option<Sp
             continue;
         };
         if !skill.params().is_empty() {
-            match parse_params(v, skill.params()) {
+            match parse_params(v, skill) {
                 Ok(params) => specials.set(skill, SpecialValue::Params(params)),
                 Err(error) => bad.push(format!("{key} 的参数{error}")),
+            }
+        } else if skill.valued() {
+            // 带数值的词条：正整数
+            match positive(v) {
+                Some(n) => specials.set(skill, SpecialValue::Value(Some(n))),
+                None => bad.push(format!("{key} 应为正整数")),
             }
         } else if v.is_null() {
             specials.set(skill, SpecialValue::Value(None));
         } else if let Some(n) = int(v) {
+            // 不带数值的词条写了数值：只看有没有（和 GDScript 版一样不报错）
             specials.set(skill, SpecialValue::Value(Some(n)));
         } else {
-            bad.push(format!("{key} 应为数值或 null"));
+            bad.push(format!("{key} 应为 null"));
         }
     }
     Some(specials)
 }
 
-/// 特殊技能的参数字典：正好是这几个参数，取值合法（`CardDB._check_params`）
-fn parse_params(value: &Value, keys: &[Param]) -> Result<Params, String> {
+/// 特殊技能的参数字典：正好是这几个参数，取值合法（`CardDB._check_params`）。
+/// amount 写 null 只用于不带数值的词条，获得（grant）不带数值的词条时必须写 null
+fn parse_params(value: &Value, effect: Special) -> Result<Params, String> {
+    let keys = effect.params();
     let names: Vec<&str> = keys.iter().map(|k| k.id()).collect();
-    let Some(dict) = value
-        .as_object()
-        .filter(|d| d.len() == keys.len() && names.iter().all(|n| d.contains_key(*n)))
+    let Some(dict) = value.as_object().filter(|d| d.len() == keys.len() && names.iter().all(|n| d.contains_key(*n)))
     else {
         return Err(format!("应为 {names:?}"));
     };
@@ -514,29 +494,18 @@ fn parse_params(value: &Value, keys: &[Param]) -> Result<Params, String> {
             Param::Timings => parse_timings(v).map(|t| params.timings = t).is_some(),
             Param::Skill => parse_skill_ref(v).map(|s| params.skill = Some(s)).is_some(),
             Param::Amount => {
-                if let Some(n) = int(v) {
-                    params.amount = Some(n);
-                    true
+                // skill 在 amount 之前校验过
+                let valueless = matches!(params.skill, Some(SkillRef::Special(s)) if !s.valued());
+                params.amount = positive(v);
+                if effect == Special::Grant && valueless {
+                    v.is_null()
                 } else {
-                    // 获得没有数值的词条时写 null（skill 在 amount 之前校验过）
-                    v.is_null() && matches!(params.skill, Some(SkillRef::Special(_)))
+                    params.amount.is_some() || (v.is_null() && valueless)
                 }
             }
-            Param::Scope => v
-                .as_str()
-                .and_then(Scope::from_id)
-                .map(|s| params.scope = Some(s))
-                .is_some(),
-            Param::Timing => v
-                .as_str()
-                .and_then(Timing::from_id)
-                .map(|t| params.timing = Some(t))
-                .is_some(),
-            Param::Target => v
-                .as_str()
-                .and_then(Target::from_id)
-                .map(|t| params.target = Some(t))
-                .is_some(),
+            Param::Scope => v.as_str().and_then(Scope::from_id).map(|s| params.scope = Some(s)).is_some(),
+            Param::Timing => v.as_str().and_then(Timing::from_id).map(|t| params.timing = Some(t)).is_some(),
+            Param::Target => v.as_str().and_then(Target::from_id).map(|t| params.target = Some(t)).is_some(),
         };
         if !ok {
             return Err(format!(" {} 不对：{v}", key.id()));
@@ -554,9 +523,12 @@ fn parse_skill_ref(value: &Value) -> Option<SkillRef> {
     if id == "any" {
         return Some(SkillRef::Any);
     }
-    Special::from_id(id)
-        .filter(|s| s.params().is_empty())
-        .map(SkillRef::Special)
+    Special::from_id(id).filter(|s| s.params().is_empty()).map(SkillRef::Special)
+}
+
+/// 正整数（基础技能、带数值的词条、参数 amount 的数值）
+fn positive(value: &Value) -> Option<i32> {
+    int(value).filter(|&n| n > 0)
 }
 
 /// JSON 的数：整数，或者写成小数的整数（Godot 写出的 JSON 里数都是小数，如 2.0）
@@ -598,11 +570,6 @@ mod tests {
         skills
     }
 
-    /// 一张卡的校验错误
-    fn error(card: &str) -> String {
-        Deck::default().add_json(&format!("[{card}]"), false).unwrap_err()
-    }
-
     #[test]
     fn formal_cards_load() {
         let deck = Deck::from_file(repo().join("data/cards.json")).unwrap();
@@ -610,72 +577,35 @@ mod tests {
         assert!(deck.find("tiger_man").is_some());
     }
 
+    /// 卡牌数据的校验（`tests/cases/card_checks.json`，和 GDScript 版共用）：ok 的要通过，其余每张都要报错
     #[test]
-    fn rejects_bad_cards() {
-        let base = r#""id": "x", "type": "character", "strength": 3"#;
-        let cases = [
-            (format!("{{{base}, \"color\": 1}}"), "未知字段 color"),
-            (r#"{"id": "x", "type": "monster", "strength": 3}"#.into(), "类型"),
-            (r#"{"id": "x", "type": "character"}"#.into(), "角色缺少战斗力"),
-            (format!("{{{base}, \"races\": [\"robot\"]}}"), "种族"),
-            (format!("{{{base}, \"skills_1\": \"clear\"}}"), "只有装备能写"),
-            (format!("{{{base}, \"timing_1\": []}}"), "timing_1 应为时机的列表"),
-            (
-                format!("{{{base}, \"timing_1\": [\"on_enter\", \"on_enter\"]}}"),
-                "timing_1 应为时机的列表",
-            ),
-            (format!("{{{base}, \"skills_1\": {{\"fly\": 1}}}}"), "技能 fly"),
-            (format!("{{{base}, \"skills_1\": {{\"rage\": null}}}}"), "rage 应为数值"),
-            (
-                format!("{{{base}, \"special_skills\": {{\"lethal\": \"yes\"}}}}"),
-                "lethal 应为数值或 null",
-            ),
-            (
-                format!("{{{base}, \"special_skills\": {{\"bless\": {{\"amount\": 1}}}}}}"),
-                "bless 的参数应为",
-            ),
-            (
-                format!(
-                    "{{{base}, \"special_skills\": {{\"extra_round\": {{\"scope\": \"me\", \"timing\": \"on_enter\"}}}}}}"
-                ),
-                "extra_round 的参数 scope 不对",
-            ),
-            (
-                format!(
-                    "{{{base}, \"special_skills\": {{\"bless\": {{\"timings\": [\"on_enter\"], \"amount\": null}}}}}}"
-                ),
-                "bless 的参数 amount 不对",
-            ),
-            (
-                format!(
-                    "{{{base}, \"special_skills\": {{\"grant\": {{\"timings\": [\"on_enter\"], \"target\": \"next\", \"skill\": \"awaken\", \"amount\": 1}}}}}}"
-                ),
-                "grant 的参数 skill 不对",
-            ),
-        ];
-        for (card, expected) in cases {
-            let message = error(&card);
-            assert!(message.contains(expected), "{card}\n应报 {expected}，实际 {message}");
+    fn card_checks() {
+        let text = std::fs::read_to_string(repo().join("tests/cases/card_checks.json")).unwrap();
+        let entries: Vec<Value> = serde_json::from_str(&text).unwrap();
+        let mut failures = Vec::new();
+        for entry in &entries {
+            let result = Deck::default().add_json(&format!("[{}]", entry["card"]), false);
+            match (entry["ok"].as_bool().unwrap(), result) {
+                (true, Err(error)) => failures.push(format!("{}：应该通过，实际报 {error}", entry["note"])),
+                (false, Ok(())) => failures.push(format!("{}：应该报错，实际通过", entry["note"])),
+                _ => {}
+            }
         }
-        let twice = Deck::default()
-            .add_json(&format!("[{{{base}}}, {{{base}}}]"), false)
-            .unwrap_err();
-        assert!(twice.contains("id 重复 x"), "{twice}");
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
     }
 
     #[test]
-    fn accepts_null_amount_for_keywords() {
-        let card = r#"[{"id": "x", "type": "character", "strength": 3, "special_skills":
-            {"grant": {"timings": ["pre_battle"], "target": "next", "skill": "lethal", "amount": null}}}]"#;
-        Deck::default().add_json(card, false).unwrap();
+    fn rejects_duplicate_ids() {
+        let card = r#"{"id": "x", "type": "character", "strength": 3}"#;
+        let error = Deck::default().add_json(&format!("[{card}, {card}]"), false).unwrap_err();
+        assert!(error.contains("id 重复 x"), "{error}");
     }
 
     #[test]
     fn extra_cards_replace() {
         let mut deck = deck();
         let before = deck.len();
-        deck.add_json(r#"[{"id": "t_tiger", "type": "character", "strength": 99}]"#, true)
-            .unwrap();
+        deck.add_json(r#"[{"id": "t_tiger", "type": "character", "strength": 99}]"#, true).unwrap();
         assert_eq!(deck.len(), before);
         assert_eq!(combine(&deck, "t_tiger", "").strength, 99);
     }

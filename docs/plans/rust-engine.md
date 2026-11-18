@@ -1,6 +1,6 @@
 # Rust 版结算
 
-> **状态**：进行中（issue #30）。第 1 批开发完成，待审；执行记录见第 7 节。
+> **状态**：进行中（issue #30）。第 1 批已合并（PR #31），第 2 批开发完成，待审；执行记录见第 7 节。
 > **依据**：规则以 [battle-rules.md](../design/battle-rules.md) 为准；基准实现是 `scripts/core/battle_sim.gd`（结算）和 `scripts/core/card_db.gd`（装备合并）；用例在 `tests/cases/`（说明见 [tests/README.md](../../tests/README.md)）。
 > 用户不熟悉 Rust：代码要好读、好对照，每个 PR 的说明里写清楚怎么验证。规则或基准实现有不清楚的地方，先问用户。
 
@@ -131,7 +131,7 @@ engine-cli <输入.jsonl> <输出.jsonl> [--cards <额外卡牌.json>] [--trace]
 
 ## 7. 执行记录
 
-### 第 1 批：核心库和用例（分支 `rust-engine-1`）
+### 第 1 批：核心库和用例（PR #31）
 
 - **环境**：Rust 1.100.0（开工时最新的稳定版），edition 2024；依赖只有 `serde_json`。`rustfmt.toml` 行宽 120，和 Python 工具一致。
 - **代码**：`engine/core/` 三个文件：`ids.rs`（各种 id）、`cards.rs`（读取和校验、装备合并）、`battle.rs`（结算）。函数和 GDScript 版一一对应，对照表见 [engine/README.md](../../engine/README.md)。
@@ -142,4 +142,27 @@ engine-cli <输入.jsonl> <输出.jsonl> [--cards <额外卡牌.json>] [--trace]
 - **临时对拍**（正式的工具在第 2 批）：20 万场随机对局（1–7 人、各星级的正式卡，一半是机制密集的阵容）分别用 Godot 和 Rust 跑，**零差异**。Rust 发布构建单线程约 60 万场/秒，约为 Godot 版的 90 倍。
 - **和 GDScript 版不同的地方**：只在 GDScript 版会出错的数据上（基础技能写 null、给值为 null 的词条加数值、阵容放错类型），见 [engine/README.md](../../engine/README.md)。
 - `just test` 最后跑 `just rs-test`；没装 Rust 时提示去装 rustup。
+
+### 第 2 批：命令行和对拍（分支 `rust-engine-2`）
+
+- **收紧卡牌数据的校验**（第 1 批审阅时定的，记在 `docs/decisions.md` 11-19）：
+  - 每个技能该不该带数值是固定的，写错在加载时就报错，不按 0 处理。基础技能、带数值的词条（庇护、坚固、反噬）、参数 `amount` 写正整数（0、负数、小数、null 都报错）；获得不带数值的词条时 `amount` 必须写 null。
+  - 不带数值的词条写了数值，GDScript 版原来就是只看有没有、不会出错，所以保持不报错。
+  - 顺带补上 `CardDB` 原来漏掉的几种：缺 id、战斗力等不是整数（原来 1.5 会被悄悄截成 1）、races 不是列表、技能格不是字典。
+  - `CardDB._check` 改成返回问题列表的 `CardDB.problems`。两边的单元测试共用 `tests/cases/card_checks.json`：10 种合法写法、34 种不合法写法，各一张卡。
+  - 正式卡和测试卡都不受影响。
+- **命令行** `engine-cli`（`engine/cli/`）：输入输出同 `cli/sim.gd`，另加 `reason`；`--cards`、`--trace`、`--threads`，用 rayon 多核并行，输出顺序和输入一致。`just sim` 改走它，Godot 版改名 `just sim-godot`；`cli/sim.gd` 的输出也加了 `reason`。
+- **简要轨迹**：Rust 版在每一步判死之后记双方的战斗力；GDScript 版在 `cli/sim.gd --trace` 里由事件日志算出同样的东西，不改 `BattleSim`。规则用例上两边的轨迹完全相同（`tools/tests/test_sim.py`）。
+- **对拍** `just diff-sim`（`tools/autochess_tools/diff_sim.py`，对局由 `lineups.py` 生成）。故意改坏 Rust 版的坚固试过：能列出不一致的对局，并指出第一处不同的那次交战。
+  - 机制密集的对局从带参数的特殊技能（描述型效果、唤醒、神佑）和协战、免疫致命、千机之匣、千机魔女的卡里抽，比计划写的"描述型和多一轮"多了几种。
+- **验收**：100 万场对拍（普通、机制密集各一半）**零差异**，换一个种子再跑 100 万场也是零差异；每次约 45 秒（Godot 多进程约 31 秒）。
+- **速度**（`just bench`，12 核 Mac，30 万场随机对局）：
+
+| | 场/秒 | 倍数 |
+|---|---:|---:|
+| Godot 版（单进程） | 约 4300 | 1 |
+| Rust 版（单线程） | 约 57 万 | 约 130 |
+| Rust 版（12 线程） | 约 520 万 | 约 1200 |
+
+  计划里的目标是单线程比 Godot 版快 50 倍以上（当时按 6600 场/秒估），已经达到。
 

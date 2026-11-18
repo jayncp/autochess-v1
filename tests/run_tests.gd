@@ -10,6 +10,8 @@ const PACE_START := 0.4
 const TIMEOUT_SEC := 300.0
 ## 能打赢的摆法（冒烟用例里关卡的解），冒烟流程用它记通关
 const WINNING := {"boar_rush": [["vulture", "war_banner"], ["maneater", ""], ["tiger_man", "spiked_gauntlet"], ["half_elf", ""]]}
+## 卡牌数据的校验用例：合法和不合法的写法各一张卡
+const CARD_CHECKS_PATH := "res://tests/cases/card_checks.json"
 const TEST_FILES := ["test_settings.cfg", "test_save.json", "test_save.json.bak", "test_save.json.tmp", "test_save.json.broken"]
 
 
@@ -152,7 +154,16 @@ func _run_unit_tests() -> void:
 	_test_event_details()
 	_test_skill_text()
 	_test_live_specials()
-	print("单元测试：7 组")
+	_test_card_checks()
+	print("单元测试：8 组")
+
+
+## 卡牌数据的校验（tests/cases/card_checks.json，和 Rust 版共用）：ok 的要通过，其余每张都要报出问题
+func _test_card_checks() -> void:
+	for entry in Harness.load_cases(CARD_CHECKS_PATH):
+		var bad := CardDB.problems(CardDB._normalize(entry.card))
+		if bad.is_empty() != entry.ok:
+			_failures.append("[unit-card-checks] %s：%s" % [entry.note, "应该通过，实际报 %s" % [bad] if entry.ok else "应该报错，实际通过"])
 
 
 ## 湮灭（目前没有卡带湮灭）：打对方全体、走伤害流程；同一时间节点先腐蚀后湮灭，所以庇护挡的是腐蚀
