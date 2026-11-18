@@ -433,8 +433,11 @@ impl Battle {
         }
         for u in fronts {
             if self.unit(u).special_skills.has(Special::Backlash) {
-                // 反噬的值是数值（写 null 的数据 GDScript 也会出错）
-                let amount = self.unit(u).special_skills.value(Special::Backlash).unwrap_or(0);
+                let amount = self
+                    .unit(u)
+                    .special_skills
+                    .value(Special::Backlash)
+                    .expect("校验过：反噬是正整数");
                 self.damage(u, amount);
             }
         }
@@ -817,7 +820,7 @@ impl Battle {
                 t.base_skills.set(s, t.base_skills.get(s).unwrap_or(0) + amount);
             }
             SkillRef::Special(s) => {
-                // 已有的是 null 而 amount 是数值时，GDScript 版会出错；这里当作 0（正式数据里没有这种情况）
+                // 带数值的词条从 0 加起；不带数值的词条 amount 是 None（校验保证获得时写 null）
                 let value = amount.map(|a| t.special_skills.value(s).unwrap_or(0) + a);
                 t.special_skills.set(s, SpecialValue::Value(value));
             }
@@ -845,7 +848,11 @@ impl Battle {
         let sheltered = amount > 0 && t.special_skills.has(Special::Shelter);
         let mut dealt = 0;
         if sheltered {
-            let layers = t.special_skills.value(Special::Shelter).unwrap_or(0) - 1;
+            let layers = t
+                .special_skills
+                .value(Special::Shelter)
+                .expect("校验过：庇护的层数是正整数")
+                - 1;
             if layers <= 0 {
                 t.special_skills.remove(Special::Shelter);
             } else {
@@ -853,7 +860,7 @@ impl Battle {
                     .set(Special::Shelter, SpecialValue::Value(Some(layers)));
             }
         } else {
-            let sturdy = t.special_skills.value(Special::Sturdy).unwrap_or(0);
+            let sturdy = t.special_skills.value(Special::Sturdy).unwrap_or(0); // 没有坚固是 0
             dealt = (amount - sturdy).max(0);
         }
         t.strength -= dealt;

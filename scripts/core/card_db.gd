@@ -43,6 +43,8 @@ const SCOPES := ["self", "allies", "first"]
 const TARGETS := ["next", "allies", "enemies", "enemy_first_two"]
 ## "任意 / 所有基础技能"（翻译 key 是 keyword.any）
 const ANY := "any"
+## 带数值的词条（庇护的层数等），数值是正整数；其余词条（如致命）不带数值，写 null
+const VALUED_KEYWORDS := ["backlash", "sturdy", "shelter"]
 ## 格子：时机、基础技能各两格（通常角色填 1、装备填 2），特殊技能一格。时机格写时机的列表
 const TIMING_SLOTS := ["timing_1", "timing_2"]
 const SKILL_SLOTS := ["skills_1", "skills_2"]
@@ -72,7 +74,7 @@ static func add_cards(raw_cards: Array) -> void:
 	all()
 	for raw in raw_cards:
 		var c := _normalize(raw)
-		_check(c)
+		_report(c)
 		_cards[c.id] = c
 
 
@@ -151,16 +153,16 @@ static func _load() -> void:
 		var c := _normalize(raw)
 		if _cards.has(c.id):
 			push_error("cards.json：id 重复 %s" % c.id)
-		_check(c)
+		_report(c)
 		_cards[c.id] = c
 
 
-## JSON 的数字都读成 float，这里转回 int（含特殊技能的参数）
+## JSON 的数字都读成 float，这里把整数转回 int（含特殊技能的参数）；不是整数的留着，校验时报错
 static func _normalize(raw: Dictionary) -> Dictionary:
 	var c := raw.duplicate(true)
 	for field in ["no", "star", "strength"]:
 		if c.has(field):
-			c[field] = int(c[field])
+			c[field] = _int(c[field])
 	for field in SKILL_SLOTS + ["special_skills"]:
 		if c.get(field) is Dictionary:
 			# {} 和省略等价：都表示沿用角色的
@@ -169,27 +171,47 @@ static func _normalize(raw: Dictionary) -> Dictionary:
 				continue
 			for skill in c[field]:
 				var value = c[field][skill]
-				if value is float:
-					c[field][skill] = int(value)
-				elif value is Dictionary:
+				if value is Dictionary:
 					for key in value:
-						if value[key] is float:
-							value[key] = int(value[key])
+						value[key] = _int(value[key])
+				else:
+					c[field][skill] = _int(value)
 	return c
 
 
-static func _check(c: Dictionary) -> void:
+static func _int(value: Variant) -> Variant:
+	return int(value) if value is float and value == floorf(value) else value
+
+
+static func _report(c: Dictionary) -> void:
+	var bad := problems(c)
+	if not bad.is_empty():
+		push_error("cards.json：%s 有误：%s" % [c.get("id"), ", ".join(bad)])
+
+
+## 一张卡（_normalize 之后）的问题，没有则为空。每个技能该不该带数值是固定的：
+## 基础技能、带数值的词条（VALUED_KEYWORDS）、参数 amount 写正整数；不带数值的词条写 null（写了数值只看有没有）；
+## 获得不带数值的词条时 amount 必须写 null
+static func problems(c: Dictionary) -> Array:
 	var bad := []
+	if not (c.get("id") is String and c.id != ""):
+		bad.append("缺少 id")
 	for field in c:
 		if field not in FIELDS:
 			bad.append("未知字段 " + field)
 	if c.get("type") not in TYPES:
 		bad.append("类型 %s" % c.get("type"))
+	for field in ["no", "star", "strength"]:
+		if c.has(field) and not c[field] is int:
+			bad.append("%s 应为整数" % field)
 	if c.get("type") == "character" and not c.has("strength"):
 		bad.append("角色缺少战斗力")
-	for race in c.get("races", []):
-		if race not in RACES:
-			bad.append("种族 " + race)
+	if not c.get("races", []) is Array:
+		bad.append("races 应为列表")
+	else:
+		for race in c.get("races", []):
+			if race not in RACES:
+				bad.append("种族 %s" % race)
 	for slot in SLOTS:
 		if c.get(slot) is String and c[slot] == CLEAR and c.get("type") != "equipment":
 			bad.append("只有装备能写\"空\"：" + slot)
@@ -198,22 +220,29 @@ static func _check(c: Dictionary) -> void:
 			bad.append("%s 应为时机的列表或 \"clear\"：%s" % [slot, c[slot]])
 	for slot in SKILL_SLOTS + ["special_skills"]:
 		var value = c.get(slot, {})
-		if value is String:
-			if value != CLEAR:
-				bad.append("%s 应为技能字典或 \"clear\"" % slot)
+		if value is String and value == CLEAR:
+			continue
+		if not value is Dictionary:
+			bad.append("%s 应为技能字典或 \"clear\"" % slot)
 			continue
 		var known: Array = SPECIAL_SKILLS if slot == "special_skills" else BASE_SKILLS
 		for skill in value:
 			if skill not in known:
 				bad.append("技能 " + skill)
 			elif skill in SPECIAL_PARAMS:
-				var error := _check_params(value[skill], SPECIAL_PARAMS[skill])
+				var error := _check_params(value[skill], SPECIAL_PARAMS[skill], skill)
 				if error:
 					bad.append("%s 的参数%s" % [skill, error])
+			elif skill in BASE_SKILLS or skill in VALUED_KEYWORDS:
+				if not _positive(value[skill]):
+					bad.append("%s 应为正整数" % skill)
 			elif not (value[skill] == null or value[skill] is int):
-				bad.append("%s 应为数值或 null" % skill)
-	if not bad.is_empty():
-		push_error("cards.json：%s 有误：%s" % [c.get("id"), ", ".join(bad)])
+				bad.append("%s 应为 null" % skill)
+	return bad
+
+
+static func _positive(value: Variant) -> bool:
+	return value is int and value > 0
 
 
 ## 时机的列表：不空、不重复，都是已知的时机
@@ -226,8 +255,9 @@ static func _valid_timings(value) -> bool:
 	return true
 
 
-## 特殊技能的参数字典：正好是这几个参数，取值合法；没问题返回空字符串
-static func _check_params(params, keys: Array) -> String:
+## 特殊技能的参数字典：正好是这几个参数，取值合法；没问题返回空字符串。
+## amount 写 null 只用于不带数值的词条，获得（grant）不带数值的词条时必须写 null
+static func _check_params(params, keys: Array, effect: String) -> String:
 	if not params is Dictionary or params.keys().size() != keys.size() or not keys.all(func(k): return params.has(k)):
 		return "应为 %s" % [keys]
 	for key in keys:
@@ -238,7 +268,12 @@ static func _check_params(params, keys: Array) -> String:
 			"skill":
 				ok = params[key] in BASE_SKILLS or params[key] == ANY or params[key] in SPECIAL_SKILLS and params[key] not in SPECIAL_PARAMS
 			"amount":
-				ok = params[key] is int or params[key] == null and params.get("skill") in SPECIAL_SKILLS
+				var skill = params.get("skill")
+				var valueless: bool = skill in SPECIAL_SKILLS and skill not in VALUED_KEYWORDS
+				if effect == "grant" and valueless:
+					ok = params[key] == null
+				else:
+					ok = _positive(params[key]) or params[key] == null and valueless
 			"target":
 				ok = params[key] in TARGETS
 			"scope":

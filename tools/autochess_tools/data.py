@@ -20,9 +20,9 @@ class Card(TypedDict):
     strength: NotRequired[int]
     timing_1: NotRequired[list[str] | str]
     timing_2: NotRequired[list[str] | str]
-    skills_1: NotRequired[dict[str, int | None] | str]
-    skills_2: NotRequired[dict[str, int | None] | str]
-    special_skills: NotRequired[dict[str, int | dict[str, str | int | list[str]] | None] | str]
+    skills_1: NotRequired[dict[str, int] | str]
+    skills_2: NotRequired[dict[str, int] | str]
+    special_skills: NotRequired[dict[str, int | dict[str, str | int | list[str] | None] | None] | str]
 
 
 @cache
