@@ -1,6 +1,6 @@
 # Rust 版结算
 
-> **状态**：计划，待用户确认后开 issue。
+> **状态**：进行中（issue #30）。第 1 批开发完成，待审；执行记录见第 7 节。
 > **依据**：规则以 [battle-rules.md](../design/battle-rules.md) 为准；基准实现是 `scripts/core/battle_sim.gd`（结算）和 `scripts/core/card_db.gd`（装备合并）；用例在 `tests/cases/`（说明见 [tests/README.md](../../tests/README.md)）。
 > 用户不熟悉 Rust：代码要好读、好对照，每个 PR 的说明里写清楚怎么验证。规则或基准实现有不清楚的地方，先问用户。
 
@@ -128,3 +128,18 @@ engine-cli <输入.jsonl> <输出.jsonl> [--cards <额外卡牌.json>] [--trace]
 - 强度测试方案和数值迭代（方向见 [stage-3-high-stars.md](stage-3-high-stars.md) 第 8 节）。
 - 训练环境（局内构筑的状态和动作），等局外规则设计之后。
 - 重新启用 CI 时，把 Rust 的检查和对拍加进去。
+
+## 7. 执行记录
+
+### 第 1 批：核心库和用例（分支 `rust-engine-1`）
+
+- **环境**：Rust 1.100.0（开工时最新的稳定版），edition 2024；依赖只有 `serde_json`。`rustfmt.toml` 行宽 120，和 Python 工具一致。
+- **代码**：`engine/core/` 三个文件：`ids.rs`（各种 id）、`cards.rs`（读取和校验、装备合并）、`battle.rs`（结算）。函数和 GDScript 版一一对应，对照表见 [engine/README.md](../../engine/README.md)。
+- **用例**：Rust 的测试读 `tests/cases/` 的规则用例和冒烟用例，都检查左右对称，另有校验、装备合并、四舍五入的单元测试。
+  - 对照 2.2 列的易错点逐条看了现有用例：四舍五入（`rule-half-damage`、`rule-half-skill-sum`）、致命和庇护、≤0 照常参与（`rule-backlash-both`、`rule-assist-zero`）、协战的顺序都有用例。
+  - 平局计数在有人阵亡时清零，原来没有用例，新增 `rule-no-death-reset`（手算后用 `just record` 录入，结果和手算一致）。
+  - 故意改坏几处规则（多一轮少走一轮、庇护一次消耗两层、阵亡不清零计数），共用用例都能发现。
+- **临时对拍**（正式的工具在第 2 批）：20 万场随机对局（1–7 人、各星级的正式卡，一半是机制密集的阵容）分别用 Godot 和 Rust 跑，**零差异**。Rust 发布构建单线程约 60 万场/秒，约为 Godot 版的 90 倍。
+- **和 GDScript 版不同的地方**：只在 GDScript 版会出错的数据上（基础技能写 null、给值为 null 的词条加数值、阵容放错类型），见 [engine/README.md](../../engine/README.md)。
+- `just test` 最后跑 `just rs-test`；没装 Rust 时提示去装 rustup。
+

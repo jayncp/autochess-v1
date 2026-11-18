@@ -1,0 +1,23 @@
+# Rust 版结算的 Cargo 工作区，说明见 README.md
+[workspace]
+resolver = "3"
+members = ["core"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+
+[workspace.dependencies]
+serde_json = "1"
+
+# 检查规则：cargo clippy 的警告一律当错误（just rs-check 用 -D warnings）
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+lto = true
+codegen-units = 1

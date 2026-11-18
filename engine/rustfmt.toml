@@ -1,0 +1,2 @@
+# 行宽和 Python 工具（ruff）一致
+max_width = 120

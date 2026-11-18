@@ -15,4 +15,4 @@
 | [takeover/](takeover/README.md) | 接手调查：Godot 现状、旧 Python 脚本、桌游资料、素材库 | 快照，不再更新 |
 | `plans/` | 各阶段的执行计划，按需创建 | — |
 
-项目根目录还有 [AGENTS.md](../AGENTS.md)（给 AI 代理的项目概览）和 [PROCESS.md](../PROCESS.md)（进度）；数据格式见 [data/README.md](../data/README.md)。
+项目根目录还有 [AGENTS.md](../AGENTS.md)（给 AI 代理的项目概览）和 [PROCESS.md](../PROCESS.md)（进度）；数据格式见 [data/README.md](../data/README.md)；Rust 版结算见 [engine/README.md](../engine/README.md)。
