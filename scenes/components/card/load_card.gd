@@ -87,14 +87,14 @@ static func one_skill_text(skill: String, value) -> String:
 	var text: String
 	if skill in CardDB.DESCRIPTIVE_SPECIALS:
 		var params := {}
-		for key in value:
+		for key in value if value is Dictionary else {}:
 			match key:
 				"skill":
 					params[key] = _t("keyword." + value[key])
-				"scope", "timing":
+				"scope", "timing", "target":
 					params[key] = _t("%s.%s" % [key, value[key]])
 				_:
-					params[key] = value[key]
+					params[key] = value[key] if value[key] != null else ""
 		text = _t("effect." + skill).format(params)
 	else:
 		var amount = value.get("amount") if value is Dictionary else value

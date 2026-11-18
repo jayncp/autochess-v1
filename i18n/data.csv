@@ -40,28 +40,45 @@ card.mammoth,猛犸
 card.ninja,忍者
 card.elf_princess,精灵公主
 card.envoy,神使
+card.swamp_tentacle,沼泽触手
+card.alpha_wolf,头狼
 card.vanguard,先锋官
 card.wind_sprite,风精灵
 card.archangel,大天使
+card.tumbleweed,风滚草
+card.parrot,鹦鹉
+card.swamp_king,沼泽之王
 card.holy_monk,圣僧
+card.alchemist,炼药师
+card.wind_envoy,神风使
 card.griffin_knight,狮鹫骑士
 card.nine_tailed_fox,九尾灵狐
 card.snow_yak,雪域神牛
 card.king_cobra,眼镜王蛇
 card.phantom_blade,幻灵刀客
+card.chanter,圣咏者
+card.shaman,萨满
 card.holy_elf,神圣精灵
+card.spider_lily,彼岸花妖
 card.jungle_temple,丛林神庙
 card.white_wolf_king,白狼王
 card.general,大将军
 card.moon_envoy,月光使者
 card.high_priest,神官
+card.rafflesia,大王花
 card.panda_hero,熊猫大侠
 card.pure_sage,纯净尊者
+card.star_mage,星辰法师
+card.arbiter,神裁者
+card.scarecrow,灾厄草人
 card.erlang,二郎真君
 card.phoenix,九天玄凤
 card.hydra,海德拉
 card.yao_bikuni,八百比丘尼
+card.yum_kaax,尤姆卡克斯
 card.monkey_king,齐天大圣
+card.medusa,美杜莎女王
+card.clockwork_witch,千机魔女
 card.vajra_arhat,金刚罗汉
 card.archdruid,大德鲁伊
 card.tiger_king,金甲虎王
@@ -99,6 +116,7 @@ card.kunai,苦无
 card.prayer_beads,念珠
 card.lute,鲁特琴
 card.oracle_book,神谕之书
+card.parrot_puppet,鹦鹉手偶
 card.silver_sword,银剑
 card.dust_boots,踏尘靴
 card.berserker_axe,狂战斧
@@ -117,7 +135,9 @@ card.tiger_tally,虎符
 card.berserk_serum,狂化血清
 card.ruyi_staff,如意金箍棒
 card.tiger_tail_whip,虎尾神鞭
+card.petrifying_eye,石化之眼
 card.holy_grail,圣杯
+card.clockwork_box,千机之匣
 card.golden_bell,金钟罩
 card.elf_scepter,精灵神杖
 card.holy_sword,圣剑
@@ -172,5 +192,20 @@ effect.extra_round,{scope}{timing}多触发一轮
 scope.self,自身
 scope.allies,己方
 scope.first,开战时位于己方第 1 位的角色，
+effect.on_resolve_raise,己方角色结算{skill}后，己方全体的{skill}值 +{amount}
+effect.double_skills,自身的基础技能数值翻倍
+effect.double_equipment,从装备获得的战斗力和基础技能数值翻倍
+effect.copy_skills,对方交战位有基础技能时，自身的基础技能变成它的基础技能
+effect.grant,{target}获得{skill}{amount}
+effect.clear_skills,清除{target}的基础技能
+effect.raise_skills,己方全体的{skill}值 +{amount}
+effect.gain_half_skill_sum,自身战斗力 + 己方全体基础技能数值之和的一半
+effect.gain_if_outnumbered,对方角色多于己方时，自身战斗力 +{amount}
+effect.damage_half_strength,对方交战位受到其战斗力一半的伤害
+target.next,下一位角色
+target.allies,己方全体
+target.enemies,对方全体
+target.enemy_first_two,对方前两位
+keyword.any,基础技能
 level.boar_rush,猪突猛进
 level.tiger_gale,虎虎生风

@@ -76,8 +76,8 @@ var have_been_skipped = false
 
 var _result: Dictionary
 var _cards := {}  # uid -> 卡牌节点
-var _base := {}  # uid -> 基础技能（集结的光点从带集结值的队友飞来）
-var _specials := {}  # uid -> 当前特殊技能（庇护会被消耗）
+var _base := {}  # uid -> 当前基础技能（集结的光点从带集结值的队友飞来；战斗中会获得、清除、改数值）
+var _specials := {}  # uid -> 当前特殊技能（庇护会被消耗，也会获得）
 var _special_sources := {}  # uid -> 特殊技能来自哪张卡（描述型效果的飘字用它的名字）
 var _tweens: Array[Tween] = []
 
@@ -119,7 +119,7 @@ func load_player_deck():
 			$"../cards".add_child(new_card)
 			player_battle_fields[side].append(new_card)
 			_cards[u.uid] = new_card
-			_base[u.uid] = u.base_skills
+			_base[u.uid] = u.base_skills.duplicate()
 			_specials[u.uid] = u.special_skills.duplicate()
 			_special_sources[u.uid] = u.special_source
 
@@ -333,8 +333,12 @@ func play_round(e: Dictionary, actors: Array, timing: String) -> void:
 
 ## 特殊技能的一步：
 ## - 唤醒：发动者弹"唤醒"、特殊技能栏亮起，一道光连到下一位，下一位出列；返回出列的卡，它们的拍播完后收回；
-## - 神佑：发动者弹"神佑"、特殊技能栏亮起，一道金光连到下一位，下一位弹"庇护"、罩上保护罩
+## - 神佑：发动者弹"神佑"、特殊技能栏亮起，一道金光连到下一位，下一位弹"庇护"、罩上保护罩；
+## - 描述型（获得、复制、清除、改数值、加战斗力、造成伤害）：见 _play_effect
 func play_special(e: Dictionary) -> Array:
+	if e.skill in CardDB.DESCRIPTIVE_SPECIALS:
+		await _play_effect(e)
+		return []
 	if e.skill == "bless":
 		for f in e.effects:
 			var source = _cards[f.source]
@@ -361,16 +365,62 @@ func play_special(e: Dictionary) -> Array:
 	return woken
 
 
-## 获得词条（如神佑给的庇护）：特殊技能栏更新（有庇护就罩上保护罩），弹这个词条
+## 描述型特殊技能：来源卡的特殊技能栏亮起、弹卡名（一张卡弹一次），白线连到作用对象（复制是从被复制的卡连过来）；
+## 作用对象上：获得弹词条或技能，技能方块和特殊技能栏更新（和开战时不同的标紫）；加战斗力弹卡名和数值；伤害弹卡名和扣的数值
+func _play_effect(e: Dictionary) -> void:
+	var named := {}
+	for f in e.effects:
+		var source: String = f.by if f.kind == "damage" else f.source
+		var target: String = f.from if f.kind == "copy" else f.unit
+		if f.kind == "buff":
+			_land(f, 0.0)
+			named[source] = true
+			continue
+		if not named.has(source):
+			_character_effect(e.skill, source, target, 0)
+			named[source] = true
+		elif _detail() == 2 and target != source:
+			_spawn(FxEffect.Kind.THREAD, 0.5, {from = _cards[source], to = _cards[target]})
+		if f.kind == "damage":
+			_land(f, PACE.awaken)
+		else:
+			_grant_later(f, PACE.awaken)
+	await wait(PACE.awaken + PACE.read)
+
+
+## 技能的变化（获得、复制、清除、改数值）写进 _base、_specials；回放和最终局面共用
+func _apply_change(f: Dictionary) -> void:
+	match f.kind:
+		"grant":
+			var skills: Dictionary = _base[f.unit] if f.skill in CardDB.BASE_SKILLS else _specials[f.unit]
+			skills[f.skill] = f.value
+		"copy":
+			_base[f.unit] = f.skills.duplicate()
+		"clear":
+			_base[f.unit] = {}
+		"raise":
+			_base[f.unit][f.skill] = f.value
+
+
+## 技能的变化在 delay 之后显示到卡面上：获得弹词条或技能（有庇护就罩上保护罩），改数值弹技能，清除时卡面闪一下
 func _grant_later(f: Dictionary, delay: float) -> void:
 	await wait(delay)
 	if have_been_skipped:
 		return
-	_specials[f.unit][f.skill] = f.value
+	_apply_change(f)
 	var card = _cards[f.unit]
+	card.face.set_base_skills(_base[f.unit])
 	card.face.set_specials(_specials[f.unit])
-	_badge(card, FloatBadge.keyword(f.skill))
-	_light_special(card)
+	match f.kind:
+		"grant":
+			var base: bool = f.skill in CardDB.BASE_SKILLS
+			_badge(card, FloatBadge.skill(f.skill) if base else FloatBadge.keyword(f.skill))
+			if not base:
+				_light_special(card)
+		"raise":
+			_badge(card, FloatBadge.skill(f.skill))
+		"clear":
+			_spawn(FxEffect.Kind.FLASH, 0.3, {to = card})
 
 
 ## 被唤醒的卡收回原位
@@ -404,6 +454,7 @@ func play_beat(e: Dictionary) -> void:
 				_spawn(FxEffect.Kind.COINS, 0.7, {to = caster})
 	var last := fly
 	var defended := false
+	var raised := {}
 	for f in e.effects:
 		var target = _cards[f.unit]
 		# 多一次：多出来的每一下依次晚一点，第一个效果出现时来源弹卡名
@@ -411,6 +462,15 @@ func play_beat(e: Dictionary) -> void:
 		var delay := fly + start
 		if start > 0 and f == e.effects.filter(func(g): return g.get("again") == f.again and g.get("again_by") == f.again_by)[0]:
 			_character_effect_later(start, "extra_resolve", f.again_by, f.by if f.kind == "damage" else f.source)
+		# 萨满这类：每一下之后改数值，来源弹一次卡名，对象的技能方块更新
+		if f.kind == "raise":
+			var key := "%s/%d" % [f.source, f.get("again", 0)]
+			if not raised.has(key):
+				raised[key] = true
+				_character_effect_later(delay + PACE.extra, "on_resolve_raise", f.source, f.unit)
+			_grant_later(f, delay + PACE.extra)
+			last = maxf(last, delay + PACE.extra)
+			continue
 		if skill in ["inspire", "annihilate"] and _detail() == 2:
 			var side_cards: Array = player_battle_fields[_side(target)]
 			# 振奋从发动者向两边扩，湮灭从对方交战位往后
@@ -619,6 +679,8 @@ func _damage_badge(f: Dictionary) -> FloatBadge:
 			return FloatBadge.clash(-INF if f.amount >= BattleSim.LETHAL_ATTACK else -f.dealt)
 		"backlash", "assist":
 			return FloatBadge.keyword(f.source, change)
+	if f.source in CardDB.DESCRIPTIVE_SPECIALS:
+		return FloatBadge.card_name(_special_sources[f.by], change)
 	return FloatBadge.skill(f.source, change)
 
 
@@ -708,7 +770,7 @@ func _casters(e: Dictionary) -> Array:
 	var cards := []
 	for f in e.effects:
 		var uid: String = f.by if f.kind == "damage" else f.source
-		if f.get("skill", "") not in CardDB.DESCRIPTIVE_SPECIALS and _cards[uid] not in cards:
+		if f.kind != "raise" and f.get("skill", "") not in CardDB.DESCRIPTIVE_SPECIALS and _cards[uid] not in cards:
 			cards.append(_cards[uid])
 	return cards
 
@@ -758,6 +820,7 @@ func show_final_state() -> void:
 		for u in _result.events[0]["p%d" % side]:
 			alive[side].append(u.uid)
 			_specials[u.uid] = u.special_skills.duplicate()
+			_base[u.uid] = u.base_skills.duplicate()
 	for e in _result.events:
 		if e.type == "death":
 			for side in [1, 2]:
@@ -765,8 +828,8 @@ func show_final_state() -> void:
 		for f in e.get("effects", []):
 			if f.kind == "damage" and f.shelter:
 				_consume_shelter(f.unit)
-			elif f.kind == "grant":
-				_specials[f.unit][f.skill] = f.value
+			else:
+				_apply_change(f)
 	for uid in _cards:
 		var card = _cards[uid]
 		var side := int(uid.split("-")[0])
@@ -776,6 +839,7 @@ func show_final_state() -> void:
 			continue
 		card.face.set_strength(_result["p%d" % side][n])
 		card.face.set_specials(_specials[uid])
+		card.face.set_base_skills(_base[uid])
 		card.face.set_firing("")
 		card.face.firing_skill = ""
 		card.face.firing_special = false

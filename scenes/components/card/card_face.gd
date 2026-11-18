@@ -197,6 +197,9 @@ func start_live(unit: Dictionary) -> void:
 		"firing": "",
 	}
 	_origin = live.duplicate(true)
+	# 基础技能和卡面印的比（千机之匣、千机魔女翻倍的开局就标紫）；特殊技能和开战时比
+	if _character:
+		_origin.base_skills = CardDB.combine_data(_character, _equipment, true).base_skills
 	queue_redraw()
 	_halo.queue_redraw()
 
@@ -213,6 +216,12 @@ func pulse_strength(up: bool, duration: float) -> void:
 		_pulse_tween.kill()
 	_pulse_tween = create_tween()
 	_pulse_tween.tween_property(self, "_pulse", 0.0, duration).from(1.0)
+
+
+## 基础技能（战斗中获得、清除、改数值、复制）；和开战时不同的方块标紫
+func set_base_skills(skills: Dictionary) -> void:
+	live.base_skills = skills.duplicate()
+	queue_redraw()
 
 
 ## 特殊技能（庇护被消耗、用完时移除）；保护罩跟着庇护有没有
@@ -468,17 +477,22 @@ func _draw_panels(layout: Dictionary, tier: int) -> void:
 	mid = rect.get_center()
 	_panel(rect, tier, [Vector2(mid.x, rect.position.y), Vector2(mid.x, rect.end.y)])
 	var strength := ""
+	var color := Color.WHITE
 	if live:
 		strength = str(live.strength)
 	elif _character:
-		strength = str(_character.strength + _equipment.get("strength", 0))
+		# 构筑阶段：合并后的战斗力，和卡面印的（角色加装备）不同时标紫（如千机魔女带剑）；战斗中一直在变，不标
+		var value: int = CardDB.combine_data(_character, _equipment).strength
+		strength = str(value)
+		if value != _character.strength + _equipment.get("strength", 0):
+			color = CHANGED_SPECIAL
 	elif _equipment.has("strength"):
 		strength = "+%d" % _equipment.strength
 	# 战斗力跳动：先放大、带绿光或红光，再回到原样
 	var grow := 1 + 0.28 * _pulse * _pulse
 	var tint := Color("b9ffc6") if _pulse_up else Color("ffc0b8")
 	var glow_color := Color(Color("3dff6a") if _pulse_up else Color("ff4a3a"), 0.7 * _pulse)
-	_text(strength, SANS_BOLD, mid, (46 if _character else 36) * grow, Color.WHITE.lerp(tint, _pulse), 4, (rect.size.x - 4) * grow, false, glow_color)
+	_text(strength, SANS_BOLD, mid, (46 if _character else 36) * grow, color.lerp(tint, _pulse), 4, (rect.size.x - 4) * grow, false, glow_color)
 
 
 ## 亮起的框（像素坐标画，细线不随缩放变粗）：白框加外发光；rect 是缩放 1 的坐标
@@ -503,8 +517,10 @@ func _panel(rect: Rect2, tier: int, diamonds: Array, alpha := 1.0) -> void:
 		draw_texture_rect(DIAMOND, Rect2(point - Vector2(5, 5), Vector2(10, 10)), false, Color(TIER_LINE[tier], alpha))
 
 
-## 构筑阶段：时机、基础技能各两格；装备卡直接显示它填在哪一格（"空"表示清空）
+## 构筑阶段：时机、基础技能各两格；装备卡直接显示它填在哪一格（"空"表示清空）。
+## 基础技能按合并后的倍数显示（千机之匣两格都 ×2，千机魔女装备那格 ×2），翻倍的标紫
 func _draw_table(area: Rect2, tier: int) -> void:
+	var special: Dictionary = CardDB.combine_data(_character, _equipment).special_skills if _character else {}
 	var line := Color(TIER_LINE[tier], 0.4)
 	var column := area.position.x + 52
 	var middle := area.get_center().y
@@ -524,7 +540,11 @@ func _draw_table(area: Rect2, tier: int) -> void:
 		if skills is String:
 			_text(tr("ui.card.clear"), SANS_BOLD, cell.get_center(), 19, Color(1, 1, 1, 0.6))
 		elif skills:
-			_draw_chips(_chips(skills, skills), cell, false)
+			var times := CardDB.skill_times(special, _equipment, CardDB.SKILL_SLOTS[row])
+			var shown := {}
+			for skill in skills:
+				shown[skill] = skills[skill] * times
+			_draw_chips(_chips(shown, skills), cell, false)
 
 
 ## 一格里的时机：一个时机一行，多个时机时缩小字号竖排
@@ -545,10 +565,11 @@ func _draw_merged(area: Rect2, tier: int) -> void:
 		skills = live.base_skills
 		origin = _origin.base_skills
 	else:
-		var merged := CardDB.combine_data(_character if _character else {"strength": 0}, _equipment)
+		var character: Dictionary = _character if _character else {"strength": 0}
+		var merged := CardDB.combine_data(character, _equipment)
 		timings = merged.timings
 		skills = merged.base_skills
-		origin = skills
+		origin = CardDB.combine_data(character, _equipment, true).base_skills
 	var column := Rect2(area.position, Vector2(36, area.size.y))
 	draw_line(Vector2(column.end.x, area.position.y), Vector2(column.end.x, area.end.y), Color(TIER_LINE[tier], 0.4), 1)
 	_draw_timing_icons(timings, column)

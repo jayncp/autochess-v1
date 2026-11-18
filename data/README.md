@@ -25,7 +25,10 @@
 - 带参数的写成字典，参数见 `CardDB.SPECIAL_PARAMS`：
   - `timings`：带时机的特殊技能在哪些时机生效，如 `{"awaken": {"timings": ["pre_battle"]}}`；
   - `skill`、`amount`：作用于哪个基础技能、数值，如队长 `{"on_trigger_gain": {"skill": "rally", "amount": 2}}`；神佑的层数也是 `amount`：`{"bless": {"timings": ["on_enter"], "amount": 2}}`；
-  - `scope`：范围，`self`（自身）、`allies`（己方全体）、`first`（开战时位于己方第 1 位的角色）；`timing`：作用于哪个时机。如精灵公主 `{"extra_round": {"scope": "first", "timing": "pre_battle"}}`。
+  - `scope`：范围，`self`（自身）、`allies`（己方全体）、`first`（开战时位于己方第 1 位的角色）；`timing`：作用于哪个时机。如精灵公主 `{"extra_round": {"scope": "first", "timing": "pre_battle"}}`；
+  - `target`：对象，`next`（下一位）、`allies`（己方全体）、`enemies`（对方全体）、`enemy_first_two`（对方前两位）。获得的 `skill` 可以是基础技能或词条，没有数值的词条 `amount` 写 `null`，如彼岸花妖 `{"grant": {"timings": ["pre_battle"], "target": "next", "skill": "lethal", "amount": null}}`；
+  - `skill` 写 `"any"` 表示任意 / 所有基础技能（星辰法师、尤姆卡克斯）。
+- 没有参数的描述型效果写 `null`，如千机之匣 `{"double_skills": null}`。
 - 描述型特殊技能一种效果一个 id，卡牌之间只是参数不同；卡面文字在翻译表 `effect.<id>`，模板里的 `{参数名}` 换成参数（`{skill}` 显示技能名）。有哪些效果、各属于时点里的哪一步，见 [battle-rules.md 6.3](../docs/design/battle-rules.md#63-特殊技能描述型)。
 
 **格子**：时机、基础技能各两格，特殊技能一格。角色和装备都可以填任意格，通常角色填 1、装备填 2。
