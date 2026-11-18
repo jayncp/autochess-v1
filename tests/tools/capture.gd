@@ -149,8 +149,8 @@ func _card_pages() -> void:
 	var equipment := ["iron_sword", "holy_shield", "war_banner", "holy_water", "necklace", "hollow"].map(func(id): return {"equip": id})
 	await _card_page("cards_build", [["构筑阶段", characters], ["装备卡", equipment]])
 
-	var high := ["elf_princess", "yao_bikuni", "hydra", "griffin_knight", "vajra_arhat", "knight_king"].map(func(id): return {"card": id})
-	var high_equipment := ["golden_serpent_head", "prayer_beads", "void_heart", "moon_dial", "holy_grail", "heart_potion"].map(func(id): return {"equip": id})
+	var high := ["parrot", "shaman", "alchemist", "yao_bikuni", "hydra", "star_mage"].map(func(id): return {"card": id})
+	var high_equipment := ["golden_serpent_head", "prayer_beads", "void_heart", "parrot_puppet", "petrifying_eye", "clockwork_box"].map(func(id): return {"equip": id})
 	await _card_page("cards_high", [["3★–5★ 角色：长句、多个时机、多个特殊技能", high], ["3★–5★ 装备", high_equipment]])
 
 	var pairs := [["tiger_man", "war_banner"], ["porcupine", "holy_shield"], ["fairy", "holy_water"], ["soldier", "necklace"], ["maneater", "hollow"], ["demo_hero", "demo_gear"]]

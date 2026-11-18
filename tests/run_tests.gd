@@ -72,6 +72,9 @@ func _check_data() -> void:
 					_failures.append("[data] 缺少飘字贴图：%s%s.png" % [part, skill])
 	for scope in CardDB.SCOPES:
 		keys.append("scope." + scope)
+	for target in CardDB.TARGETS:
+		keys.append("target." + target)
+	keys.append("keyword." + CardDB.ANY)
 	for level_id in LevelDB.all():
 		keys.append("level." + level_id)
 	var locale := TranslationServer.get_locale()
@@ -210,10 +213,14 @@ func _event_marks(events: Array) -> Array:
 	for e in events:
 		marks[e.type] = true
 		for f in e.get("effects", []):
-			if f.kind == "grant":
-				marks["grant"] = true
+			if f.kind in ["grant", "copy", "clear", "raise"]:
+				marks[f.kind if e.type == "special" else f.kind + "@" + e.type] = true
 			if f.has("again"):
 				marks["again"] = true
+			if f.kind == "damage" and f.source == "damage_half_strength":
+				marks["half"] = true
+			if f.kind == "buff" and f.skill in ["gain_half_skill_sum", "gain_if_outnumbered"]:
+				marks[f.skill] = true
 		if e.type == "clash":
 			for k in 2:
 				var attacker: Dictionary = _unit_info(events, e.effects[1 - k].by)
@@ -249,6 +256,20 @@ func _test_event_details() -> void:
 		func(e): return e.effects.map(func(f): return [f.unit, f.skill, f.amount, f.value]))
 	if grants != [[["1-1", "shelter", 2, 2]], [["1-1", "shelter", 2, 4]]]:
 		_failures.append("[unit-events] 神佑两轮应给骑士王 2、4 层庇护，实际 %s" % [grants])
+	# 美杜莎只清前两位，第 3 位的集结值还在
+	var cleared: Array = events.call("rule-clear").filter(func(e): return e.type == "special" and e.skill == "clear_skills")[0].effects
+	if cleared.map(func(f): return [f.unit, f.skills]) != [["2-0", ["rally"]], ["2-1", ["rage"]]]:
+		_failures.append("[unit-events] 美杜莎入场应清除 2-0 的集结、2-1 的狂暴，实际 %s" % [cleared])
+	# 尤姆卡克斯：财富也加，没有技能的不加
+	var raised: Array = events.call("rule-raise-all").filter(func(e): return e.type == "special").map(
+		func(e): return e.effects.map(func(f): return [f.unit, f.skill, f.value]))
+	if raised != [[["1-0", "rally", 3], ["1-0", "inspire", 4], ["1-1", "wealth", 3]]]:
+		_failures.append("[unit-events] 尤姆卡克斯应加集结、振奋、财富，实际 %s" % [raised])
+	# 萨满：每一下腐蚀之后马上加，第二下用新数值；士兵没有腐蚀，不加
+	var beat: Array = events.call("rule-raise-after-resolve").filter(func(e): return e.type == "beat" and e.skill == "corrode")[0].effects
+	var order := beat.map(func(f): return [f.kind, f.unit, f.get("value", f.get("amount"))])
+	if order != [["damage", "2-0", 7], ["raise", "1-0", 8], ["raise", "1-1", 7], ["damage", "2-0", 8], ["raise", "1-0", 9], ["raise", "1-1", 8]]:
+		_failures.append("[unit-events] 萨满的腐蚀加成顺序不对：%s" % [order])
 
 
 ## 卡面文字：带时机的特殊技能、描述型特殊技能、按结算顺序排列
@@ -263,6 +284,12 @@ func _test_skill_text() -> void:
 		[load_card.special_skill_text({"extra_resolve": {"scope": "self", "skill": "corrode"}}), "自身腐蚀多结算一次"],
 		[load_card.special_skill_text({"extra_round": {"scope": "allies", "timing": "on_enter"}}), "己方入场多触发一轮"],
 		[load_card.special_skill_text({"extra_round": {"scope": "first", "timing": "pre_battle"}}), "开战时位于己方第 1 位的角色，战前多触发一轮"],
+		[load_card.special_skill_text({"grant": {"timings": ["pre_battle"], "target": "next", "skill": "lethal", "amount": null}}), "战前：下一位角色获得致命"],
+		[load_card.special_skill_text({"grant": {"timings": ["on_enter"], "target": "allies", "skill": "rally", "amount": 1}}), "入场：己方全体获得集结1"],
+		[load_card.special_skill_text({"clear_skills": {"timings": ["on_enter", "on_engage"], "target": "enemy_first_two"}}), "入场、交战：清除对方前两位的基础技能"],
+		[load_card.special_skill_text({"raise_skills": {"timings": ["on_enter"], "skill": "any", "amount": 2}}), "入场：己方全体的基础技能值 +2"],
+		[load_card.special_skill_text({"on_trigger_gain": {"skill": "any", "amount": 2}}), "己方角色触发基础技能时，自身战斗力 +2"],
+		[load_card.special_skill_text({"double_skills": null}), "自身的基础技能数值翻倍"],
 		[load_card.base_skill_text({"wealth": 1, "support": 3, "rage": 2}), "狂暴2、支援3、财富1"],
 		[load_card.special_skill_text({"shelter": 1, "sturdy": 4}), "坚固4；庇护1"],
 	]
@@ -295,16 +322,20 @@ func _run_replay_checks() -> void:
 		["skip-midway", [["soldier", ""], ["soldier", ""], ["tiger", "holy_water"]], [["sludge", "thorns"], ["shield_guard", ""]], 30],
 		["mechanics", [["wisp", ""], ["fey_tiger", ""], ["mimic", ""], ["butterfly", ""], ["pixie", "hollow"]],
 			[["captain", ""], ["toad", ""], ["soldier", ""], ["tiger", "flash_orb"], ["paladin", ""]], -1],
-		# 神佑、协战、免疫致命、多一次、多一轮都要出现（正式卡调数值后可能不再出现，届时换阵容）
+		# 下面两条要出现列出的机制（正式卡调数值后可能不再出现，届时换阵容）
 		["mechanics-2", [["pure_sage", ""], ["high_priest", ""], ["knight_king", ""], ["ninja", ""], ["forest_archer", ""]],
-			[["king_cobra", "golden_sword"], ["panda_hero", ""], ["envoy", ""], ["dream_mushroom", ""]], -1],
+			[["king_cobra", "golden_sword"], ["panda_hero", ""], ["envoy", ""], ["dream_mushroom", ""]], -1,
+			["round", "assist", "grant", "again", "immune"]],
+		["mechanics-3", [["shaman", ""], ["chanter", ""], ["alchemist", ""], ["arbiter", ""]],
+			[["vulture", ""], ["parrot", ""], ["medusa", ""], ["swamp_king", ""], ["tumbleweed", ""], ["soldier", ""]], -1,
+			["copy", "clear", "raise", "raise@beat", "grant", "half", "gain_half_skill_sum", "gain_if_outnumbered"]],
 	]
-	var needed := ["round", "assist", "grant", "again", "immune"]
-	var events: Array = BattleSim.simulate(cases[-1][1], cases[-1][2]).events
-	var seen := _event_marks(events)
-	for mark in needed:
-		if mark not in seen:
-			_failures.append("[replay-mechanics-2] 阵容里没有出现 %s，换一个阵容" % mark)
+	for c in cases:
+		if c.size() > 4:
+			var seen := _event_marks(BattleSim.simulate(c[1], c[2]).events)
+			for mark in c[4]:
+				if mark not in seen:
+					_failures.append("[replay-%s] 阵容里没有出现 %s，换一个阵容" % [c[0], mark])
 	for c in cases:
 		global_var.battle_card_list_1 = c[1].map(func(u): return u[0])
 		global_var.battle_equip_list_1 = c[1].map(func(u): return u[1])
@@ -446,6 +477,17 @@ func _check_replay(battle_manager: Node, label: String) -> void:
 		shown["p%d" % side] = battle_manager.player_battle_fields[side].map(func(card): return [card.card_id, card.face.live.strength])
 	if not Harness.same(shown, expected):
 		_failures.append("[%s] 场景显示 %s，BattleSim 结果 %s" % [label, shown, Harness.outcome(expected)])
+	# 技能在战斗中会变（获得、清除、改数值、复制、庇护消耗）：幸存的卡显示的技能和 BattleSim 结束时一样
+	var sim := BattleSim.new(lineups[1], lineups[2])
+	sim.run()
+	for side in [1, 2]:
+		var cards: Array = battle_manager.player_battle_fields[side]
+		for n in mini(cards.size(), sim.fields[side].size()):
+			var live: Dictionary = cards[n].face.live
+			var unit = sim.fields[side][n]
+			if live.base_skills != unit.base_skills or live.special_skills != unit.special_skills:
+				_failures.append("[%s] %s 显示的技能 %s %s，BattleSim 是 %s %s" % [label, unit.uid, live.base_skills, live.special_skills,
+					unit.base_skills, unit.special_skills])
 	# 中间一带显示胜负（我方是下面一排，即 p2）
 	var result: String = battle_manager.get_parent().get_node("%Result").text
 	var word: String = tr({1: "ui.battle.lose", 2: "ui.battle.win", 3: "ui.battle.draw"}[expected.winner])

@@ -215,6 +215,12 @@ func pulse_strength(up: bool, duration: float) -> void:
 	_pulse_tween.tween_property(self, "_pulse", 0.0, duration).from(1.0)
 
 
+## 基础技能（战斗中获得、清除、改数值、复制）；和开战时不同的方块标紫
+func set_base_skills(skills: Dictionary) -> void:
+	live.base_skills = skills.duplicate()
+	queue_redraw()
+
+
 ## 特殊技能（庇护被消耗、用完时移除）；保护罩跟着庇护有没有
 func set_specials(specials: Dictionary) -> void:
 	live.special_skills = specials.duplicate()

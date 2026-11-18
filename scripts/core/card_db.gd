@@ -9,24 +9,40 @@ const RACES := ["beast", "human", "elf", "divine", "nature", "treasure"]
 const TIMINGS := ["pre_battle", "on_enter", "on_engage"]
 ## 基础技能，也是结算顺序：作用对象由近及远，先加后减，财富最后。BattleSim 按它分拍
 const BASE_SKILLS := ["rage", "rally", "support", "inspire", "corrode", "annihilate", "wealth"]
-## 特殊技能按所属种族排，同族里词条在前；不属于某个种族的描述型效果（多一次、多一轮）在最后
+## 特殊技能按所属种族排，同族里词条在前；不属于某个种族的描述型效果在最后，按时点里的步骤排（被动在前）
 const SPECIAL_SKILLS := ["backlash", "sturdy", "assist", "immune_lethal", "on_trigger_gain", "awaken", "shelter", "bless",
-	"lethal", "on_resolve_bonus", "extra_resolve", "extra_round"]
+	"lethal", "on_resolve_bonus", "on_resolve_raise", "extra_resolve", "extra_round", "double_skills", "double_equipment",
+	"copy_skills", "grant", "clear_skills", "raise_skills", "gain_half_skill_sum", "gain_if_outnumbered", "damage_half_strength"]
 ## 描述型特殊技能：一种效果一个 id 加参数，不起词条名，卡面写整句（翻译 key 是 effect.<id>，{参数名} 换成参数）
-const DESCRIPTIVE_SPECIALS := ["on_trigger_gain", "on_resolve_bonus", "extra_resolve", "extra_round"]
-## 写成参数字典的特殊技能和它们的参数；不在这里的词条写数值（如庇护的层数）或 null（如致命）。
-## timings：带时机的特殊技能在哪些时机生效（属于特殊技能本身，和卡牌的时机无关）；skill：基础技能；amount：数值；
-## scope：范围（SCOPES）；timing：作用于哪个时机（多一轮）
+const DESCRIPTIVE_SPECIALS := ["on_trigger_gain", "on_resolve_bonus", "on_resolve_raise", "extra_resolve", "extra_round",
+	"double_skills", "double_equipment", "copy_skills", "grant", "clear_skills", "raise_skills", "gain_half_skill_sum",
+	"gain_if_outnumbered", "damage_half_strength"]
+## 写成参数字典的特殊技能和它们的参数；不在这里的写数值（如庇护的层数）或 null（如致命、千机之匣）。
+## timings：带时机的特殊技能在哪些时机生效（属于特殊技能本身，和卡牌的时机无关）；
+## skill：基础技能（"any" 是任意 / 所有基础技能；获得的可以是词条）；amount：数值（获得没有数值的词条时是 null）；
+## scope：被动的范围（SCOPES）；timing：作用于哪个时机（多一轮）；target：对象（TARGETS）
 const SPECIAL_PARAMS := {
 	"awaken": ["timings"],
 	"bless": ["timings", "amount"],
 	"on_trigger_gain": ["skill", "amount"],
 	"on_resolve_bonus": ["skill", "amount"],
+	"on_resolve_raise": ["skill", "amount"],
 	"extra_resolve": ["scope", "skill"],
 	"extra_round": ["scope", "timing"],
+	"copy_skills": ["timings"],
+	"grant": ["timings", "target", "skill", "amount"],
+	"clear_skills": ["timings", "target"],
+	"raise_skills": ["timings", "skill", "amount"],
+	"gain_half_skill_sum": ["timings"],
+	"gain_if_outnumbered": ["timings", "amount"],
+	"damage_half_strength": ["timings"],
 }
-## 范围：自身、己方全体、开战时位于己方第 1 位的角色（翻译 key 是 scope.<id>）
+## 被动的范围：自身、己方全体、开战时位于己方第 1 位的角色（翻译 key 是 scope.<id>）
 const SCOPES := ["self", "allies", "first"]
+## 对象：下一位、己方全体、对方全体、对方前两位（翻译 key 是 target.<id>）
+const TARGETS := ["next", "allies", "enemies", "enemy_first_two"]
+## "任意 / 所有基础技能"（翻译 key 是 keyword.any）
+const ANY := "any"
 ## 格子：时机、基础技能各两格（通常角色填 1、装备填 2），特殊技能一格。时机格写时机的列表
 const TIMING_SLOTS := ["timing_1", "timing_2"]
 const SKILL_SLOTS := ["skills_1", "skills_2"]
@@ -77,15 +93,23 @@ static func combine_data(c: Dictionary, e: Dictionary) -> Dictionary:
 	var timings := []
 	for slot in TIMING_SLOTS:
 		timings.append_array(_overlay(c, e, slot, []))
-	var skills := SKILL_SLOTS.map(func(slot): return _overlay(c, e, slot, {}))
-	var base_skills := {}
-	for skill in BASE_SKILLS:
-		var power: int = skills[0].get(skill, 0) + skills[1].get(skill, 0)
-		if power > 0:
-			base_skills[skill] = power
 	var special: Dictionary = _overlay(c, e, "special_skills", {})
+	# 千机魔女：从装备获得的战斗力和基础技能数值翻倍（装备那一格覆盖了角色的才算从装备获得；特殊技能被装备覆盖掉就没有这个效果）
+	var times := 2 if special.has("double_equipment") else 1
+	var base_skills := {}
+	for slot in SKILL_SLOTS:
+		var skills: Dictionary = _overlay(c, e, slot, {})
+		var k := times if times > 1 and e.get(slot) is Dictionary else 1
+		for skill in skills:
+			base_skills[skill] = base_skills.get(skill, 0) + skills[skill] * k
+	# 按结算顺序排，数值不大于 0 的去掉
+	var sorted := {}
+	for skill in BASE_SKILLS:
+		if base_skills.get(skill, 0) > 0:
+			sorted[skill] = base_skills[skill]
+	base_skills = sorted
 	return {
-		"strength": c.strength + e.get("strength", 0),
+		"strength": c.strength + e.get("strength", 0) * times,
 		"timings": TIMINGS.filter(func(t): return t in timings),
 		"base_skills": base_skills,
 		"special_skills": special.duplicate(),
@@ -199,9 +223,11 @@ static func _check_params(params, keys: Array) -> String:
 			"timings":
 				ok = _valid_timings(params[key])
 			"skill":
-				ok = params[key] in BASE_SKILLS
+				ok = params[key] in BASE_SKILLS or params[key] == ANY or params[key] in SPECIAL_SKILLS and params[key] not in SPECIAL_PARAMS
 			"amount":
-				ok = params[key] is int
+				ok = params[key] is int or params[key] == null and params.get("skill") in SPECIAL_SKILLS
+			"target":
+				ok = params[key] in TARGETS
 			"scope":
 				ok = params[key] in SCOPES
 			"timing":
