@@ -39,17 +39,18 @@ sim input output *flags: rs-build
 sim-godot input output *flags:
     {{limit}} {{godot}} --headless --path . --script res://cli/sim.gd -- {{input}} {{output}} {{flags}}
 
-# Rust 版结算（engine/）：格式和静态检查，警告当错误
+# Rust 版结算（engine/，含 Python 绑定）：格式和静态检查，警告当错误
 rs-check: _cargo
-    cd engine && cargo fmt --check && cargo clippy --all-targets --quiet -- -D warnings
+    cd engine && cargo fmt --all --check && cargo clippy --workspace --all-targets --quiet -- -D warnings
 
 # Rust 版结算的测试，含 tests/cases/ 的共用用例
 rs-test: _cargo
     cd engine && cargo test --quiet
 
-# 发布构建 Rust 版的命令行 engine/target/release/engine-cli
+# 发布构建 Rust 版：命令行 engine/target/release/engine-cli，以及 Python 绑定（装进 tools/.venv；tools 的命令运行时也会自动重新编译）
 rs-build: _cargo
     cd engine && cargo build --release --quiet -p autochess-cli
+    cd tools && uv sync --inexact --quiet
 
 # 对拍：同一批随机对局（一半机制密集，固定种子）分别用 Godot 和 Rust 跑，逐场比较；默认 100 万场，可加 --seed N
 diff-sim count="1000000" *flags: rs-build
@@ -64,7 +65,7 @@ bench: rs-build
 _cargo:
     @command -v cargo > /dev/null || { echo "没找到 cargo：Rust 版结算需要先装 rustup（https://rustup.rs），装好后重开终端"; exit 1; }
 
-# Python 工具：代码检查和测试
+# Python 工具：代码检查和测试（含 Rust 版的 Python 绑定，源码变了 uv 会先重新编译）
 tools-check:
     cd tools && uv run ruff check && uv run ruff format --check && uv run ty check && uv run pytest -q
 

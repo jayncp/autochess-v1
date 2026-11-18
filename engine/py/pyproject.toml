@@ -1,0 +1,26 @@
+# Python 绑定的包（autochess-engine，模块 autochess_engine）：由 maturin 构建，tools/ 把它作为本地路径依赖，uv sync 时自动编译
+[build-system]
+requires = ["maturin>=1.16,<2"]
+build-backend = "maturin"
+
+[project]
+name = "autochess-engine"
+version = "0.1.0"
+description = "牛马自走棋的 Rust 版结算（Python 绑定）"
+requires-python = ">=3.12"
+dependencies = ["numpy>=2"]
+
+[tool.maturin]
+module-name = "autochess_engine"
+
+[tool.uv]
+# 这些文件变了，uv 才重新编译（Rust 的源文件在 py/ 和 core/ 里）
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "Cargo.toml" },
+    { file = "src/**/*.rs" },
+    { file = "../Cargo.toml" },
+    { file = "../Cargo.lock" },
+    { file = "../core/Cargo.toml" },
+    { file = "../core/src/**/*.rs" },
+]

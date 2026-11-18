@@ -1,9 +1,13 @@
 [project]
 name = "autochess-tools"
 version = "0.1.0"
-description = "牛马自走棋的分析和平衡实验工具：通过 cli/sim.gd 批量模拟，自己不实现战斗规则"
+description = "牛马自走棋的分析和平衡实验工具：通过 Rust 版结算（engine/）批量模拟，自己不实现战斗规则"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["autochess-engine", "numpy>=2"]
+
+[tool.uv.sources]
+# Rust 版结算的 Python 绑定：本地路径，uv sync 时用 maturin 编译（需要 Rust，见 engine/README.md）
+autochess-engine = { path = "../engine/py" }
 
 [dependency-groups]
 art = [

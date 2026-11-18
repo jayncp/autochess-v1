@@ -1,0 +1,22 @@
+[package]
+name = "autochess-py"
+description = "Python 绑定（PyO3）：在 Python 里批量模拟，tools/ 通过它调用 Rust 版结算"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "autochess_engine"
+crate-type = ["cdylib"]
+# Rust 这边没有测试，绑定由 tools/tests 测
+test = false
+doctest = false
+
+[dependencies]
+autochess-core = { path = "../core" }
+numpy.workspace = true
+pyo3 = { workspace = true, features = ["extension-module", "abi3-py312"] }
+rayon.workspace = true
+
+[lints]
+workspace = true

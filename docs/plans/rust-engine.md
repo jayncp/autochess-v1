@@ -1,6 +1,6 @@
 # Rust 版结算
 
-> **状态**：进行中（issue #30）。第 1 批已合并（PR #31），第 2 批开发完成，待审；执行记录见第 7 节。
+> **状态**：已完成（2026-11-19，issue #30，PR #31–#33）。执行记录见第 7 节。
 > **依据**：规则以 [battle-rules.md](../design/battle-rules.md) 为准；基准实现是 `scripts/core/battle_sim.gd`（结算）和 `scripts/core/card_db.gd`（装备合并）；用例在 `tests/cases/`（说明见 [tests/README.md](../../tests/README.md)）。
 > 用户不熟悉 Rust：代码要好读、好对照，每个 PR 的说明里写清楚怎么验证。规则或基准实现有不清楚的地方，先问用户。
 
@@ -143,7 +143,7 @@ engine-cli <输入.jsonl> <输出.jsonl> [--cards <额外卡牌.json>] [--trace]
 - **和 GDScript 版不同的地方**：只在 GDScript 版会出错的数据上（基础技能写 null、给值为 null 的词条加数值、阵容放错类型），见 [engine/README.md](../../engine/README.md)。
 - `just test` 最后跑 `just rs-test`；没装 Rust 时提示去装 rustup。
 
-### 第 2 批：命令行和对拍（分支 `rust-engine-2`）
+### 第 2 批：命令行和对拍（PR #32）
 
 - **收紧卡牌数据的校验**（第 1 批审阅时定的，记在 `docs/decisions.md` 11-19）：
   - 每个技能该不该带数值是固定的，写错在加载时就报错，不按 0 处理。基础技能、带数值的词条（庇护、坚固、反噬）、参数 `amount` 写正整数（0、负数、小数、null 都报错）；获得不带数值的词条时 `amount` 必须写 null。
@@ -165,4 +165,38 @@ engine-cli <输入.jsonl> <输出.jsonl> [--cards <额外卡牌.json>] [--trace]
 | Rust 版（12 线程） | 约 520 万 | 约 1200 |
 
   计划里的目标是单线程比 Godot 版快 50 倍以上（当时按 6600 场/秒估），已经达到。
+
+### 第 3 批：Python 绑定（PR #33）
+
+- **绑定** `engine/py/`（PyO3 0.30、numpy 0.30，abi3，Python ≥3.12）：模块 `autochess_engine`，一个 `Engine` 对象（创建时读入卡牌和额外卡牌）。
+  - `simulate`：字符串 id 传阵容。
+  - `simulate_ids`：按编号传 numpy 数组，-1 表示空。
+  - 两个接口都在结算时释放 GIL、多核并行，顺序和输入一致。
+  - 接口说明在 `autochess_engine.pyi`，供 `ty` 检查。
+- **构建**：maturin 作为构建后端，`tools/pyproject.toml` 里作为本地路径依赖，uv 第一次运行时自动编译，不用手动装 maturin。
+  - Rust 源码变了自动重新编译：`cache-keys` 包括 `py/` 和 `core/` 的源码。
+  - 工作区的 `default-members` 只有 `core`、`cli`，`cargo test` 不需要 Python；`just rs-check` 用 `--workspace` 连绑定一起检查。
+- **`sim.py`**：`simulate()` 签名不变，默认后端换成 Rust。
+  - 加了 `backend` 参数和环境变量 `AUTOCHESS_BACKEND=godot`，Godot 后端只用于对拍。
+  - `engine(extra_cards)` 返回引擎，同样的额外卡牌复用同一个。
+  - 现有实验不用改。
+- **验收**：
+  - `just experiment effective_strength` 两个后端的输出**逐字相同**（183 行）：Rust 后端 12 秒，Godot 后端（12 个进程）86 秒。Rust 那 12 秒大部分是 Python 组装对局列表的时间。
+  - `just tools-check` 通过（21 个测试）：
+    - 规则用例、额外卡牌、坏数据报错，两个后端都测；
+    - `simulate_ids` 和 `simulate` 结果一致；
+    - 命令行和 Godot 的轨迹一致。
+  - **Linux（x86-64）**：在 OrbStack 的 linux/amd64 容器里（Debian bookworm、Python 3.13，从零装 rustup）全部通过：
+    - Rust 的测试和 clippy；
+    - 命令行的发布构建，`uv sync` 编译绑定；
+    - ruff、ty，pytest 17 个通过（另 4 个需要 Godot，跳过）；
+    - 2 万场随机对局，命令行和绑定的结果一致。
+- **从 Python 调用的速度**（`just bench`）：
+
+| 调用方式 | 单线程 | 12 线程 |
+|---|---:|---:|
+| `simulate`（字符串 id，含转换） | 约 34 万场/秒 | 约 75 万 |
+| `simulate_ids`（编号数组） | 约 53 万 | 约 420 万 |
+
+  `simulate` 多线程上不去，瓶颈是 Python 对象的转换（要持有 GIL）。大批量用 `simulate_ids`。
 

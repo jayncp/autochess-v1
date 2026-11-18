@@ -247,6 +247,20 @@ impl Deck {
         Ok(Pick { card, equip })
     }
 
+    /// 按编号找到角色和装备（编号是加载顺序，同 `cards()`），装备为负数表示不带
+    pub fn pick_at(&self, card: i64, equip: i64) -> Result<Pick, String> {
+        let find = |idx: i64, kind: CardType| match usize::try_from(idx).ok().and_then(|i| self.cards.get(i)) {
+            Some(c) if c.kind == kind => Ok(idx as CardIdx),
+            Some(c) => {
+                Err(format!("编号 {idx}（{}）不是{}", c.id, if kind == CardType::Character { "角色" } else { "装备" }))
+            }
+            None => Err(format!("没有编号 {idx} 的卡（共 {} 张）", self.cards.len())),
+        };
+        let card = find(card, CardType::Character)?;
+        let equip = if equip < 0 { None } else { Some(find(equip, CardType::Equipment)?) };
+        Ok(Pick { card, equip })
+    }
+
     /// 读一方的阵容：JSON 数组 `[[角色 id, 装备 id], ...]`，最多 `MAX_UNITS` 个
     pub fn lineup(&self, value: &Value) -> Result<Vec<Pick>, String> {
         let units = value.as_array().ok_or_else(|| format!("阵容应为数组：{value}"))?;
