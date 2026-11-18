@@ -18,9 +18,9 @@
 ## 阶段 3：卡牌补全
 
 1. **第一轮：1★/2★ 打底**（已完成，[plans/stage-3-cards.md](plans/stage-3-cards.md)）：统一规范（术语、显示顺序、格子模型）→ 新机制（支援、唤醒、条件触发、财富只做特效）→ 新卡（卡图先用占位图）。
-2. 3★/4★：用户设计新的角色和装备，按[有效战力目标均值](design/card-design.md#1-星级档位与有效战力)逐张定位，包括完整词条版圣水、覆盖型装备。规则里标"待实现"的多一次、多一轮、获得庇护优先，随第一张需要的卡实现。
+2. **3★/4★/5★**：设计已定（[plans/stage-3-high-stars.md](plans/stage-3-high-stars.md)，60 张角色、38 件装备）。接下来按 [plans/stage-3-high-stars-dev.md](plans/stage-3-high-stars-dev.md) 分批实现机制和卡牌。
 3. 卡图：先讨论形象，再 codex 生图、抠图、导出（流程见 [takeover/06-assets.md](takeover/06-assets.md#6-后续-ai-生图建议codex-cli)）。没有卡图的卡、剧毒之牙待画。
-4. 强度测试：分档环境、宿主适配、经济卡怎么评估，到时再规划。
+4. **高性能版和强度测试**：机制实现后做 Rust 版结算（和 GDScript 版用同一份卡牌数据和对拍用例保持一致，Python 通过绑定调用）；再做强度测试、迭代数值。方向见 [plans/stage-3-high-stars.md](plans/stage-3-high-stars.md) 第 8 节，到时再写计划。
 
 ## 阶段 4：闯关模式
 

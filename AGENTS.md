@@ -5,7 +5,7 @@
 
 ## 现状
 
-- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；接下来 3★/4★、卡图和强度测试。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；3★/4★/5★ 的设计已定（60 张角色、38 件装备，记录 `docs/plans/stage-3-high-stars.md`），接下来按 `docs/plans/stage-3-high-stars-dev.md` 分批开发，之后是 Rust 版结算、强度测试和卡图。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
 - 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关，记录通关）、图鉴、战斗演出（速度/跳过）、设置。冒险、线下对战未实现。
 - 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并和各种显示顺序在 `CardDB`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。
 - 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
@@ -15,11 +15,11 @@
 - 卡牌数值以 `data/cards.json` 为准，中文名以 `i18n/data.csv` 为准；旧表格只作参考。
 - 核心理念"大毒盾"：大克盾、盾克毒、毒克大。致命+庇护叠加是天花板级机制。
 - 战斗是确定性的：只有交战位互相攻击。
-- 一个时间节点从上到下：特殊技能 → 被唤醒的一组 → 原本的一组；每组按 狂暴 → 集结 → 支援 → 振奋 → 腐蚀 → 湮灭 → 财富 分拍（作用对象由近及远，先加后减），双方同一拍同时生效。时点中途不判死。
+- 一个时间节点从上到下：特殊技能（记 → 增 → 删 → 改 → 加 → 减 → 醒）→ 被唤醒的一组 → 原本的一组；每组按 狂暴 → 集结 → 支援 → 振奋 → 腐蚀 → 湮灭 → 财富 分拍（作用对象由近及远，先加后减），双方同一拍同时生效。时点中途不判死。
 - 伤害流程：庇护（带层数，每次消耗一层）→ 坚固 → 扣战斗力。
 - 平局：连续 20 次交战无人阵亡。
 - 格子模型：装备像一张卡盖在角色卡上，时机、基础技能各两格，特殊技能一格；逐格覆盖（数据里用 `"clear"` 表示清空），再把两格合并。通常角色填 1、装备填 2，就是叠加。战斗力不分格，直接相加。
-- 术语、显示顺序、分隔符见 `docs/design/battle-rules.md` 第 1 节：用"基础技能"不用"普通技能"，卡面不说"在场"。
+- 术语见 `docs/design/battle-rules.md` 第 1 节，卡面写法、显示顺序、分隔符见第 7 节：用"基础技能"不用"普通技能"，卡面不说"在场"。
 - 规则的现行规范和待实现项见 `docs/design/battle-rules.md`。
 - 平衡：角色和装备各自平衡；角色各档有效战力均值 6/13/21/30/40。
 - 羁绊和升星暂不做。
