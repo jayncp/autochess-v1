@@ -255,6 +255,11 @@ func _screens() -> void:
 	await _frames(5)
 	await _shot("book")
 	var book: Node = manager.current_scene
+	# 滚动一段：看网格上边的截断和顶栏对不对齐
+	book.get_node("Scroll").scroll_vertical = 200
+	await _frames(3)
+	await _shot("book_scrolled")
+	book.get_node("Scroll").scroll_vertical = 0
 	book.toggle_filter("stars", 2)
 	book.toggle_filter("special", "shelter")
 	book.toggle_filter("special", "lethal")

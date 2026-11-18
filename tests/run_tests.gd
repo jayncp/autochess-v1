@@ -641,6 +641,14 @@ func _check_level_select(select: Node) -> void:
 
 ## 图鉴的筛选：组内满足任一，组间同时满足；排序；点卡放大
 func _check_book(book: Node) -> void:
+	# 布局：侧栏不被内容撑宽、不压住顶栏和网格；排序、重置筛选在网格的截断线以上
+	var rail: Control = book.get_node("Rail")
+	var scroll: Control = book.get_node("Scroll")
+	if rail.get_rect().end.x > book.get_node("Head").position.x or rail.get_rect().end.x > scroll.position.x:
+		_failures.append("[smoke-book] 侧栏宽 %d，压住了顶栏或网格" % rail.size.x)
+	for button in [book.get_node("%Sort"), book.get_node("Head/Reset")]:
+		if button.get_global_rect().end.y > scroll.global_position.y:
+			_failures.append("[smoke-book] %s 的下边 %d 低于网格的截断线 %d" % [button.name, button.get_global_rect().end.y, scroll.global_position.y])
 	var cards: Array = CardDB.all().values()
 	var expect := func(label: String, filter: Callable) -> void:
 		var count := cards.filter(filter).size()

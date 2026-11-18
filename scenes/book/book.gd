@@ -7,7 +7,8 @@ signal back_to_menu
 
 const WIDE := 2200.0
 const GAP := 26.0
-const HEAD := 68.0
+## 网格的上边：顶栏（排序、重置筛选）下面留一点空，滚动时卡牌在这里截断
+const HEAD := 72.0
 const SORTS := ["no", "star", "strength"]
 const TYPES := ["character", "equipment"]
 const STARS := [1, 2, 3, 4, 5]
@@ -86,7 +87,7 @@ func open_zoom(id: String) -> void:
 
 func _build_filters() -> void:
 	_add_group("ui.book.type", 3, "types", TYPES.map(func(t): return [t, {"text": tr("ui.book." + t)}]))
-	_add_group("ui.book.star", 5, "stars", STARS.map(func(n): return [n, {"stars": n}]))
+	_add_group("ui.book.star", 3, "stars", STARS.map(func(n): return [n, {"stars": n}]))
 	_add_group("ui.book.race", 3, "races", CardDB.RACES.map(func(r): return [r, {"text": tr("race." + r), "icon": r, "tint": CardFace.RACE_COLORS[r]}]))
 	_add_group("ui.book.timing", 3, "timings", CardDB.TIMINGS.map(func(t): return [t, {"text": tr("timing." + t), "icon": t, "tint": CardFace.TIMING_COLORS[t]}]))
 	var used := _used_skills()
@@ -291,7 +292,7 @@ func _layout() -> void:
 	var card_scale := (right - left - (columns - 1) * GAP) / columns / CardFace.WIDTH
 	$Rail.position = Vector2.ZERO
 	$Rail.size = Vector2(rail, size.y)
-	$Head.position = Vector2(left, 8)
+	$Head.position = Vector2(left, 3)
 	$Head.size = Vector2(right - left, 70)
 	$Scroll.position = Vector2(left, HEAD)
 	$Scroll.size = Vector2(size.x - 20 - left, size.y - HEAD)
