@@ -515,16 +515,24 @@ func _draw_table(area: Rect2, tier: int) -> void:
 		var top := area.position.y + row * area.size.y / 2
 		var timing = _slot(CardDB.TIMING_SLOTS[row])
 		var center := Vector2(area.position.x + 26, top + area.size.y / 4)
-		if timing == CardDB.CLEAR:
+		if timing is String:
 			_text(tr("ui.card.clear"), SANS_BOLD, center, 19, Color(1, 1, 1, 0.6))
 		elif timing:
-			_text(tr("timing." + timing), SANS_BOLD, center, 19, TIMING_COLORS[timing], 2)
+			_draw_slot_timings(CardDB.TIMINGS.filter(func(t): return t in timing), center)
 		var skills = _slot(CardDB.SKILL_SLOTS[row])
 		var cell := Rect2(column + 4, top, area.end.x - column - 8, area.size.y / 2)
 		if skills is String:
 			_text(tr("ui.card.clear"), SANS_BOLD, cell.get_center(), 19, Color(1, 1, 1, 0.6))
 		elif skills:
 			_draw_chips(_chips(skills, skills), cell, false)
+
+
+## 一格里的时机：一个时机一行，多个时机时缩小字号竖排
+func _draw_slot_timings(timings: Array, center: Vector2) -> void:
+	var size: float = [19.0, 15.0, 12.0][timings.size() - 1]
+	for i in timings.size():
+		var y := center.y + (i - (timings.size() - 1) / 2.0) * size * 1.1
+		_text(tr("timing." + timings[i]), SANS_BOLD, Vector2(center.x, y), size, TIMING_COLORS[timings[i]], 2)
 
 
 ## 紧凑卡、战斗中：左边竖排这张卡有的时机图标，右边是合并后的基础技能，都按数量居中

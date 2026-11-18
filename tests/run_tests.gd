@@ -5,16 +5,8 @@ extends SceneTree
 ## 用法：just test
 
 const Harness := preload("res://tests/battle_harness.gd")
-const CASES_PATH := "res://tests/golden/battles.jsonl"
 const TIMEOUT_SEC := 300.0
-## 测试专用卡：正式卡覆盖不到的规则才用，单元测试和回放检查之后移除，不影响数据检查和冒烟流程
-const TEST_CARDS := [
-	{"id": "test_general", "no": 0, "type": "character", "star": 3, "races": ["human"], "strength": 15, "skills_1": {"rally": 5}},
-	{"id": "test_shelter_sturdy", "no": 0, "type": "character", "star": 3, "races": ["divine"], "strength": 6, "timing_1": "on_enter", "special_skills": {"shelter": 1, "sturdy": 4}},
-	{"id": "test_shelter_2", "no": 0, "type": "character", "star": 3, "races": ["divine"], "strength": 8, "timing_1": "on_enter", "special_skills": {"shelter": 2}},
-	{"id": "test_shelter_3", "no": 0, "type": "character", "star": 3, "races": ["divine"], "strength": 8, "timing_1": "on_enter", "special_skills": {"shelter": 3}},
-]
-## 能打赢的摆法（golden 用例的 level 组），冒烟流程用它记通关
+## 能打赢的摆法（冒烟用例里关卡的解），冒烟流程用它记通关
 const WINNING := {"boar_rush": [["vulture", "war_banner"], ["maneater", ""], ["tiger_man", "spiked_gauntlet"], ["half_elf", ""]]}
 const TEST_FILES := ["test_settings.cfg", "test_save.json", "test_save.json.bak", "test_save.json.tmp", "test_save.json.broken"]
 
@@ -39,12 +31,13 @@ func _initialize() -> void:
 	_remove_test_files()
 	await process_frame
 	_check_data()
-	await _run_battle_cases()
-	await _run_unit_tests()
+	# 测试卡（tests/cases/cards.json）只在规则用例、单元测试、回放检查里用，之后移除，不影响数据检查和冒烟流程
+	Harness.add_test_cards()
+	_run_battle_cases()
+	_run_unit_tests()
 	_run_save_tests()
 	await _run_replay_checks()
-	for c in TEST_CARDS:
-		CardDB.all().erase(c.id)
+	Harness.remove_test_cards()
 	await _run_smoke()
 	await _frames(3)  # 让 queue_free 的节点真正释放，避免退出时报泄漏
 	_remove_test_files()
@@ -107,27 +100,40 @@ func _check_font_coverage() -> void:
 		_failures.append("[data] 字体缺字（运行 just fonts 重新子集化）：%s" % "".join(missing.keys()))
 
 
-## 每条用例：结果符合期望、交换左右后对称、事件日志自洽
+## 规则用例（只用测试卡）：结果符合期望；冒烟用例（正式卡）：关卡的解要赢。都检查交换左右后对称、事件日志自洽
 func _run_battle_cases() -> void:
-	var cases := Harness.load_cases(CASES_PATH)
+	var test_ids := Harness.test_cards().map(func(c): return c.id)
+	var cases := Harness.load_cases(Harness.CASES_PATH)
 	for c in cases:
-		var result := BattleSim.simulate(c.p1, c.p2)
-		if not Harness.same(result, c.expect):
-			_failures.append("[%s] 期望 %s，实际 %s" % [c.id, c.expect, Harness.run(c.p1, c.p2)])
-		var inconsistency := Harness.check_events(result)
-		if inconsistency != "":
-			_failures.append("[%s] 事件日志不自洽：%s" % [c.id, inconsistency])
-		if not c.get("asymmetric", false):
-			var mirrored := Harness.run(c.p2, c.p1)
-			if not Harness.same(mirrored, Harness.mirror(result)):
-				_failures.append("[%s] 交换左右后结果不对称：%s" % [c.id, mirrored])
-	print("战斗用例：%d 条" % cases.size())
+		for unit in c.p1 + c.p2:
+			for id in unit:
+				if id and id not in test_ids:
+					_failures.append("[%s] 规则用例只用测试卡，%s 是正式卡" % [c.id, id])
+		_check_case(c, Harness.run(c.p1, c.p2), c.expect)
+	var smoke := Harness.load_cases(Harness.SMOKE_PATH)
+	for c in smoke:
+		var result := Harness.run(c.p1, c.p2)
+		_check_case(c, result, null)
+		if c.has("expect") and result.winner != int(c.expect.winner):
+			_failures.append("[%s] 应该是 P%d 胜，实际 %s" % [c.id, c.expect.winner, Harness.outcome(result)])
+	print("战斗用例：规则 %d 条，冒烟 %d 条" % [cases.size(), smoke.size()])
 
 
-## 只测对战用例触发不到的情况
+func _check_case(c: Dictionary, result: Dictionary, expect) -> void:
+	if expect != null and not Harness.same(result, expect):
+		_failures.append("[%s] 期望 %s，实际 %s" % [c.id, expect, Harness.outcome(result)])
+	var inconsistency := Harness.check_events(result)
+	if inconsistency != "":
+		_failures.append("[%s] 事件日志不自洽：%s" % [c.id, inconsistency])
+	var mirrored := Harness.run(c.p2, c.p1)
+	if not Harness.same(mirrored, Harness.mirror(result)):
+		_failures.append("[%s] 交换左右后结果不对称：%s" % [c.id, Harness.outcome(mirrored)])
+
+
+## 只测对战用例触发不到的情况；都用测试卡
 func _run_unit_tests() -> void:
 	# 相邻两个单位同时阵亡时都要移除（B6；现有卡牌只有交战位会阵亡，对战中触发不到，湮灭会触发）
-	var sim := BattleSim.new([["soldier", ""], ["soldier", ""], ["soldier", ""]], [["pixie", ""]])
+	var sim := BattleSim.new([["t_soldier", ""], ["t_soldier", ""], ["t_soldier", ""]], [["t_pixie", ""]])
 	sim.fields[1][0].strength = 0
 	sim.fields[1][1].strength = -1
 	sim.settle_death()
@@ -135,8 +141,7 @@ func _run_unit_tests() -> void:
 		_failures.append("[unit-death-adjacent] 相邻两个阵亡单位应一起移除，实际剩余 %s" % [sim.fields[1].map(func(u): return u.uid)])
 	_test_annihilate()
 	_test_overlay()
-	CardDB.add_cards(TEST_CARDS)
-	_test_rules_without_cards()
+	_test_bonus_sources()
 	_test_skill_text()
 	_test_live_specials()
 	print("单元测试：6 组")
@@ -144,7 +149,7 @@ func _run_unit_tests() -> void:
 
 ## 湮灭（目前没有卡带湮灭）：打对方全体、走伤害流程；同一时间节点先腐蚀后湮灭，所以庇护挡的是腐蚀
 func _test_annihilate() -> void:
-	var sim := BattleSim.new([["soldier", ""]], [["paladin", ""], ["soldier", ""], ["shield_guard", ""], ["soldier", ""]])
+	var sim := BattleSim.new([["t_soldier", ""]], [["t_paladin", ""], ["t_soldier", ""], ["t_shield_guard", ""], ["t_soldier", ""]])
 	var actor = sim.fields[1][0]
 	actor.base_skills = {"corrode": 2, "annihilate": 3}
 	sim.resolve_timing([actor], "on_enter")
@@ -162,19 +167,21 @@ func _test_annihilate() -> void:
 
 ## 格子模型：逐格覆盖（有就覆盖，"clear" 清空，{} 和省略等价都沿用），再把两格合并
 func _test_overlay() -> void:
-	var vulture := CardDB.card("vulture")  # 秃鹫：交战，狂暴3、腐蚀2
-	var paladin := CardDB.card("paladin")  # 圣骑士：入场，庇护
-	var guard := CardDB.card("shield_guard")  # 盾卫：坚固4
+	var vulture := CardDB.card("t_vulture")  # 秃鹫：7，交战，狂暴3、腐蚀2
+	var paladin := CardDB.card("t_paladin")  # 圣骑士：入场，庇护
+	var guard := CardDB.card("t_shield_guard")  # 盾卫：坚固4
 	var cases := [
-		[guard, CardDB.card("holy_shield"), "special_source", "holy_shield", "特殊技能来自装备"],
-		[guard, CardDB.card("lionheart"), "special_source", "shield_guard", "装备没有特殊技能，来源是角色"],
+		[guard, CardDB.card("t_holy_shield"), "special_source", "t_holy_shield", "特殊技能来自装备"],
+		[guard, CardDB.card("t_lionheart"), "special_source", "t_shield_guard", "装备没有特殊技能，来源是角色"],
 		[vulture, {"skills_1": {"corrode": 15}}, "base_skills", {"corrode": 15}, "基础技能-1 覆盖"],
 		[vulture, {"strength": 12, "skills_1": "clear"}, "base_skills", {}, "基础技能-1 清空（空心）"],
 		[vulture, {"strength": 12, "skills_1": "clear"}, "strength", 19, "战斗力相加"],
 		[vulture, {"skills_2": {"rage": 2}}, "base_skills", {"rage": 5, "corrode": 2}, "两格同名相加"],
-		[vulture, {"timing_1": "clear", "timing_2": "pre_battle"}, "timings", ["pre_battle"], "时机-1 清空，时机-2 保留"],
-		[{"strength": 1, "timing_2": "on_enter", "skills_2": {"rage": 1}}, {"skills_2": {"rally": 1}}, "base_skills", {"rally": 1}, "装备填 2 也是覆盖角色的 2"],
-		[{"strength": 1, "timing_2": "on_enter"}, {"timing_1": "pre_battle"}, "timings", ["pre_battle", "on_enter"], "时机两格取并集"],
+		[vulture, {"timing_1": "clear", "timing_2": ["pre_battle"]}, "timings", ["pre_battle"], "时机-1 清空，时机-2 保留"],
+		[{"strength": 1, "timing_2": ["on_enter"], "skills_2": {"rage": 1}}, {"skills_2": {"rally": 1}}, "base_skills", {"rally": 1}, "装备填 2 也是覆盖角色的 2"],
+		[{"strength": 1, "timing_2": ["on_enter"]}, {"timing_1": ["pre_battle"]}, "timings", ["pre_battle", "on_enter"], "时机两格取并集"],
+		[{"strength": 1, "timing_1": ["on_engage", "pre_battle"]}, {"timing_2": ["on_enter", "on_engage"]}, "timings", ["pre_battle", "on_enter", "on_engage"],
+			"一格多个时机；同一个时机出现两次只算一次，按显示顺序"],
 		[paladin, {"special_skills": "clear"}, "special_skills", {}, "特殊技能清空"],
 		[paladin, {"special_skills": {"lethal": null}}, "special_skills", {"lethal": null}, "特殊技能整体覆盖"],
 	]
@@ -184,47 +191,23 @@ func _test_overlay() -> void:
 			_failures.append("[unit-overlay] %s：期望 %s，实际 %s" % [c[4], c[3], got])
 
 
-## 正式卡覆盖不到的规则（用测试专用卡）；能用正式卡表达的都在基线用例的 rule 组。
-## 每条：[说明, P1, P2, 跑到哪一步（pre_battle / all）, 期望]。
-## pre_battle 比较战前阶段之后双方的战斗力；all 比较整场结果，并做镜像和事件自洽检查
-func _test_rules_without_cards() -> void:
-	var cases := [
-		["唤醒：没有时机的也能被唤醒（集结5）", [["wisp", ""], ["test_general", ""]], [["pixie", ""]], "pre_battle", [[8, 20], [6]]],
-		["庇护先于坚固：坚固能挡掉的腐蚀3 也消耗庇护，之后虎人的 12 只被坚固减 4", [["sludge", ""], ["tiger_man", ""]], [["test_shelter_sturdy", ""]], "all",
-			{"winner": 1, "p1": [6], "p2": []}],
-		["庇护2：腐蚀和交战各消耗一层", [["sludge", ""]], [["test_shelter_2", ""]], "all", {"winner": 2, "p1": [], "p2": [8]}],
-	]
-	for c in cases:
-		if c[3] == "all":
-			var result := BattleSim.simulate(c[1], c[2])
-			var got := {"winner": result.winner, "p1": result.p1, "p2": result.p2}
-			var inconsistency := Harness.check_events(result)
-			if inconsistency != "":
-				_failures.append("[unit-rules] %s：事件日志不自洽：%s" % [c[0], inconsistency])
-			if not Harness.same(Harness.run(c[2], c[1]), Harness.mirror(got)):
-				_failures.append("[unit-rules] %s：交换左右后结果不对称" % c[0])
-			if not Harness.same(got, c[4]):
-				_failures.append("[unit-rules] %s：期望 %s，实际 %s" % [c[0], c[4], got])
-			continue
-		var sim := BattleSim.new(c[1], c[2])
-		sim.pre_battle_phase()
-		var strengths := [sim.fields[1].map(func(u): return u.strength), sim.fields[2].map(func(u): return u.strength)]
-		if strengths != c[4]:
-			_failures.append("[unit-rules] %s：期望 %s，实际 %s" % [c[0], c[4], strengths])
-	# 蟾蜍的加成记在腐蚀伤害上，回放据此在蟾蜍身上弹名字；伤害记下发动者（后面那只蟾蜍在第 2 位，腐蚀是第 1 位发动的）
-	var hits: Array = BattleSim.simulate([["toad", ""], ["toad", ""]], [["pixie", ""]]).events.filter(func(e): return e.type == "beat" and e.skill == "corrode")
+## 结算加成（蟾蜍）记在腐蚀伤害上，回放据此在持有者身上弹名字
+func _test_bonus_sources() -> void:
+	# 伤害记下发动者（后面那只蟾蜍在第 2 位，腐蚀是第 1 位发动的）
+	var hits: Array = BattleSim.simulate([["t_toad", ""], ["t_toad", ""]], [["t_pixie", ""]]).events.filter(func(e): return e.type == "beat" and e.skill == "corrode")
 	if hits.is_empty() or hits[0].effects[0].get("boosts") != ["1-0", "1-1"]:
-		_failures.append("[unit-rules] 蟾蜍的腐蚀应记下加成来源 1-0、1-1")
+		_failures.append("[unit-bonus] 蟾蜍的腐蚀应记下加成来源 1-0、1-1")
 	elif hits[0].effects[0].by != "1-0":
-		_failures.append("[unit-rules] 腐蚀伤害的 by 应是发动者 1-0，实际 %s" % hits[0].effects[0].by)
+		_failures.append("[unit-bonus] 腐蚀伤害的 by 应是发动者 1-0，实际 %s" % hits[0].effects[0].by)
 
 
 ## 卡面文字：带时机的特殊技能、描述型特殊技能、按结算顺序排列
 func _test_skill_text() -> void:
 	var cases := [
-		[load_card.special_skill_text({"lethal": null, "awaken": {"timing": "pre_battle"}}), "战前：唤醒；致命"],
-		[load_card.special_skill_text({"rally_gain": 2}), "己方角色触发集结时，自身战斗力 +2"],
-		[load_card.special_skill_text({"corrode_boost": 2, "sturdy": 4}), "坚固4；己方角色结算腐蚀时，伤害 +2"],
+		[load_card.special_skill_text({"lethal": null, "awaken": {"timings": ["pre_battle"]}}), "战前：唤醒；致命"],
+		[load_card.special_skill_text({"awaken": {"timings": ["pre_battle", "on_enter"]}}), "战前、入场：唤醒"],
+		[load_card.special_skill_text({"on_trigger_gain": {"skill": "rally", "amount": 2}}), "己方角色触发集结时，自身战斗力 +2"],
+		[load_card.special_skill_text({"on_resolve_bonus": {"skill": "corrode", "amount": 2}, "sturdy": 4}), "坚固4；己方角色结算腐蚀时，伤害 +2"],
 		[load_card.base_skill_text({"wealth": 1, "support": 3, "rage": 2}), "狂暴2、支援3、财富1"],
 		[load_card.special_skill_text({"shelter": 1, "sturdy": 4}), "坚固4；庇护1"],
 	]
@@ -236,8 +219,8 @@ func _test_skill_text() -> void:
 ## 战斗中的特殊技能栏：庇护被消耗还有剩余时显示新的层数（标紫），用完就移除，不显示"庇护0"
 func _test_live_specials() -> void:
 	var face := CardFace.new()
-	face.show_cards("test_shelter_3", "")
-	face.start_live(BattleSim.new([["test_shelter_3", ""]], [["pixie", ""]]).fields[1][0].describe())
+	face.show_cards("t_shelter_3", "")
+	face.start_live(BattleSim.new([["t_shelter_3", ""]], [["t_pixie", ""]]).fields[1][0].describe())
 	face.set_specials({"shelter": 1})
 	var parts := face._special_parts()
 	if parts.size() != 1 or parts[0][0] != "庇护1" or parts[0][2] != CardFace.CHANGED_SPECIAL:
@@ -365,9 +348,9 @@ func _remove_test_files() -> void:
 ## 播放途中跳过：已经播放过的庇护消耗不能在最终局面里重复扣。
 ## 淤泥怪的腐蚀和交战各消耗一层，庇护3 最后剩 1
 func _check_skip_keeps_shelter() -> void:
-	global_var.battle_card_list_1 = ["sludge"]
+	global_var.battle_card_list_1 = ["t_sludge"]
 	global_var.battle_equip_list_1 = [""]
-	global_var.battle_card_list_2 = ["test_shelter_3"]
+	global_var.battle_card_list_2 = ["t_shelter_3"]
 	global_var.battle_equip_list_2 = [""]
 	var scene: Node = load("res://scenes/battle/battle.tscn").instantiate()
 	root.add_child(scene)
@@ -396,9 +379,9 @@ func _check_replay(battle_manager: Node, label: String) -> void:
 	var expected := Harness.run(lineups[1], lineups[2])
 	var shown := {"winner": battle_manager.winner}
 	for side in [1, 2]:
-		shown["p%d" % side] = battle_manager.player_battle_fields[side].map(func(card): return card.face.live.strength)
+		shown["p%d" % side] = battle_manager.player_battle_fields[side].map(func(card): return [card.card_id, card.face.live.strength])
 	if not Harness.same(shown, expected):
-		_failures.append("[%s] 场景显示 %s，BattleSim 结果 %s" % [label, shown, expected])
+		_failures.append("[%s] 场景显示 %s，BattleSim 结果 %s" % [label, shown, Harness.outcome(expected)])
 	# 中间一带显示胜负（我方是下面一排，即 p2）
 	var result: String = battle_manager.get_parent().get_node("%Result").text
 	var word: String = tr({1: "ui.battle.lose", 2: "ui.battle.win", 3: "ui.battle.draw"}[expected.winner])

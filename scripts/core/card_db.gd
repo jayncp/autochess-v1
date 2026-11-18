@@ -9,13 +9,18 @@ const RACES := ["beast", "human", "elf", "divine", "nature", "treasure"]
 const TIMINGS := ["pre_battle", "on_enter", "on_engage"]
 ## 基础技能，也是结算顺序：作用对象由近及远，先加后减，财富最后。BattleSim 按它分拍
 const BASE_SKILLS := ["rage", "rally", "support", "inspire", "corrode", "annihilate", "wealth"]
-## 特殊技能按所属种族排，同族里基础特殊技能在前
-const SPECIAL_SKILLS := ["backlash", "sturdy", "rally_gain", "awaken", "shelter", "lethal", "corrode_boost"]
-## 带时机的特殊技能，数据里写 {"timing": 时机}；时机属于特殊技能本身，和卡牌的时机无关
-const TIMED_SPECIALS := ["awaken"]
-## 描述型特殊技能：不起词条名，卡面写整句（翻译 key 是 effect.<id>，%d 是数值）
-const DESCRIPTIVE_SPECIALS := ["rally_gain", "corrode_boost"]
-## 格子：时机、基础技能各两格（通常角色填 1、装备填 2），特殊技能一格
+## 特殊技能按所属种族排，同族里词条在前
+const SPECIAL_SKILLS := ["backlash", "sturdy", "on_trigger_gain", "awaken", "shelter", "lethal", "on_resolve_bonus"]
+## 描述型特殊技能：一种效果一个 id 加参数，不起词条名，卡面写整句（翻译 key 是 effect.<id>，{参数名} 换成参数）
+const DESCRIPTIVE_SPECIALS := ["on_trigger_gain", "on_resolve_bonus"]
+## 写成参数字典的特殊技能和它们的参数；不在这里的词条写数值（如庇护的层数）或 null（如致命）。
+## timings：带时机的特殊技能在哪些时机生效（属于特殊技能本身，和卡牌的时机无关）；skill：基础技能；amount：数值
+const SPECIAL_PARAMS := {
+	"awaken": ["timings"],
+	"on_trigger_gain": ["skill", "amount"],
+	"on_resolve_bonus": ["skill", "amount"],
+}
+## 格子：时机、基础技能各两格（通常角色填 1、装备填 2），特殊技能一格。时机格写时机的列表
 const TIMING_SLOTS := ["timing_1", "timing_2"]
 const SKILL_SLOTS := ["skills_1", "skills_2"]
 const SLOTS := ["timing_1", "timing_2", "skills_1", "skills_2", "special_skills"]
@@ -58,11 +63,13 @@ static func combine(card_id: String, equip_id: String) -> Dictionary:
 	return combine_data(card(card_id), card(equip_id) if equip_id else {})
 
 
-## 装备像一张卡盖在角色卡上（docs/design/battle-rules.md 第 6 节）：
+## 装备像一张卡盖在角色卡上（docs/design/battle-rules.md 第 2 节）：
 ## 逐格处理，装备那一格有内容就覆盖，没有就沿用角色的，写"空"就清空；
 ## 然后两格合并：时机取并集，基础技能同名相加。战斗力不分格，角色的加上装备的。
 static func combine_data(c: Dictionary, e: Dictionary) -> Dictionary:
-	var timings := TIMING_SLOTS.map(func(slot): return _overlay(c, e, slot))
+	var timings := []
+	for slot in TIMING_SLOTS:
+		timings.append_array(_overlay(c, e, slot, []))
 	var skills := SKILL_SLOTS.map(func(slot): return _overlay(c, e, slot, {}))
 	var base_skills := {}
 	for skill in BASE_SKILLS:
@@ -104,7 +111,7 @@ static func _load() -> void:
 		_cards[c.id] = c
 
 
-## JSON 的数字都读成 float，这里转回 int
+## JSON 的数字都读成 float，这里转回 int（含特殊技能的参数）
 static func _normalize(raw: Dictionary) -> Dictionary:
 	var c := raw.duplicate(true)
 	for field in ["no", "star", "strength"]:
@@ -117,8 +124,13 @@ static func _normalize(raw: Dictionary) -> Dictionary:
 				c.erase(field)
 				continue
 			for skill in c[field]:
-				if c[field][skill] is float:
-					c[field][skill] = int(c[field][skill])
+				var value = c[field][skill]
+				if value is float:
+					c[field][skill] = int(value)
+				elif value is Dictionary:
+					for key in value:
+						if value[key] is float:
+							value[key] = int(value[key])
 	return c
 
 
@@ -138,8 +150,8 @@ static func _check(c: Dictionary) -> void:
 		if c.get(slot) is String and c[slot] == CLEAR and c.get("type") != "equipment":
 			bad.append("只有装备能写\"空\"：" + slot)
 	for slot in TIMING_SLOTS:
-		if c.has(slot) and c[slot] not in TIMINGS and c[slot] != CLEAR:
-			bad.append("时机 " + c[slot])
+		if c.has(slot) and not (c[slot] is String and c[slot] == CLEAR or _valid_timings(c[slot])):
+			bad.append("%s 应为时机的列表或 \"clear\"：%s" % [slot, c[slot]])
 	for slot in SKILL_SLOTS + ["special_skills"]:
 		var value = c.get(slot, {})
 		if value is String:
@@ -150,10 +162,39 @@ static func _check(c: Dictionary) -> void:
 		for skill in value:
 			if skill not in known:
 				bad.append("技能 " + skill)
-			elif skill in TIMED_SPECIALS:
-				if not (value[skill] is Dictionary and value[skill].get("timing") in TIMINGS):
-					bad.append("%s 要写成 {\"timing\": 时机}" % skill)
-			elif value[skill] is Dictionary:
-				bad.append("%s 不带时机" % skill)
+			elif skill in SPECIAL_PARAMS:
+				var error := _check_params(value[skill], SPECIAL_PARAMS[skill])
+				if error:
+					bad.append("%s 的参数%s" % [skill, error])
+			elif not (value[skill] == null or value[skill] is int):
+				bad.append("%s 应为数值或 null" % skill)
 	if not bad.is_empty():
 		push_error("cards.json：%s 有误：%s" % [c.get("id"), ", ".join(bad)])
+
+
+## 时机的列表：不空、不重复，都是已知的时机
+static func _valid_timings(value) -> bool:
+	if not value is Array or value.is_empty():
+		return false
+	for i in value.size():
+		if value[i] not in TIMINGS or value.find(value[i]) != i:
+			return false
+	return true
+
+
+## 特殊技能的参数字典：正好是这几个参数，取值合法；没问题返回空字符串
+static func _check_params(params, keys: Array) -> String:
+	if not params is Dictionary or params.keys().size() != keys.size() or not keys.all(func(k): return params.has(k)):
+		return "应为 %s" % [keys]
+	for key in keys:
+		var ok: bool
+		match key:
+			"timings":
+				ok = _valid_timings(params[key])
+			"skill":
+				ok = params[key] in BASE_SKILLS
+			"amount":
+				ok = params[key] is int
+		if not ok:
+			return " %s 不对：%s" % [key, params[key]]
+	return ""

@@ -41,8 +41,8 @@ static func matches_search(data: Dictionary, text: String) -> bool:
 	for race in data.get("races", []):
 		names.append(_t("race." + race))
 	for slot in CardDB.TIMING_SLOTS:
-		if data.get(slot, CardDB.CLEAR) != CardDB.CLEAR:
-			names.append(_t("timing." + data[slot]))
+		if data.get(slot) is Array:
+			names.append_array(data[slot].map(func(t): return _t("timing." + t)))
 	var texts := CardDB.SKILL_SLOTS.map(func(slot): return base_skill_text(data.get(slot)))
 	texts.append(special_skill_text(data.get("special_skills")))
 	names.append_array(texts.filter(func(t): return t != null))
@@ -82,13 +82,20 @@ static func _skill_text(skills, separator: String):
 	return separator.join(parts)
 
 
-## 一个技能的显示文字，如"狂暴3"、"战前：唤醒"；描述型的写整句
+## 一个技能的显示文字，如"狂暴3"、"战前、入场：唤醒"；描述型的写整句（翻译模板里的 {参数名} 换成参数）
 static func one_skill_text(skill: String, value) -> String:
+	var text: String
 	if skill in CardDB.DESCRIPTIVE_SPECIALS:
-		return _t("effect." + skill) % value
-	if value is Dictionary:
-		return _t("ui.card.timed_special") % [_t("timing." + value.timing), _t("keyword." + skill)]
-	return _t("keyword." + skill) + (str(value) if value != null else "")
+		var params := {}
+		for key in value:
+			params[key] = _t("keyword." + value[key]) if key == "skill" else value[key]
+		text = _t("effect." + skill).format(params)
+	else:
+		var amount = value.get("amount") if value is Dictionary else value
+		text = _t("keyword." + skill) + (str(amount) if amount != null else "")
+	if value is Dictionary and value.has("timings"):
+		return _t("ui.card.timed_special") % [timing_name(value.timings), text]
+	return text
 
 
 static func _t(key: String) -> String:

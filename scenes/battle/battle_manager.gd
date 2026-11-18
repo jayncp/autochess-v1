@@ -366,9 +366,9 @@ func play_beat(e: Dictionary) -> void:
 			# 振奋从发动者向两边扩，湮灭从对方交战位往后
 			var origin: int = side_cards.find(_cards[f.source]) if skill == "inspire" else 0
 			delay += PACE.spread * absi(side_cards.find(target) - origin)
-		if f.get("skill", "") == "rally_gain":
+		if f.get("skill", "") == "on_trigger_gain":
 			delay += PACE.extra
-			# 队长：触发集结的是别的卡时，从那张卡连一道白线过来
+			# 队长这类：触发技能的是别的卡时，从那张卡连一道白线过来
 			var trigger = casters.filter(func(c): return _side(c) == _side(target) and c != target)
 			_land(f, delay, trigger[0] if not trigger.is_empty() else null)
 			last = maxf(last, delay)
@@ -383,9 +383,9 @@ func play_beat(e: Dictionary) -> void:
 					_spawn(FxEffect.Kind.VENOM, delay, {from = caster, to = target})
 				"annihilate":
 					_spawn(FxEffect.Kind.ORB, delay, {from = caster, to = target, color = ANNIHILATE_ORB, big = true})
-		# 蟾蜍：出手时特殊技能栏亮起、弹卡名，白线连到被加成的那一下
+		# 蟾蜍这类：出手时特殊技能栏亮起、弹卡名，白线连到被加成的那一下
 		for uid in f.get("boosts", []):
-			_character_effect("corrode_boost", uid, f.unit, 0, "", delay + 0.45)
+			_character_effect("on_resolve_bonus", uid, f.unit, 0, "", delay + 0.45)
 		if f.kind == "damage" and (f.shelter or f.sturdy > 0):
 			defended = true
 		_land(f, delay)
