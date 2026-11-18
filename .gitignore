@@ -7,3 +7,6 @@
 
 # Office 打开文件时生成的锁文件
 ~$*
+
+# Rust 版结算的构建产物
+/engine/target/

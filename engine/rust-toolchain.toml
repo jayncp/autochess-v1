@@ -1,0 +1,4 @@
+# 固定 Rust 版本：换机器时 rustup 自动安装同一版和这些组件
+[toolchain]
+channel = "1.100.0"
+components = ["rustfmt", "clippy"]

@@ -1,7 +1,7 @@
 # 数据格式
 
 游戏数据都是 JSON。数值以这里为准；中文名在 `i18n/data.csv`，旧表格只作参考。
-`CardDB`、`LevelDB` 加载时会校验字段和 id，出错时报错，测试也会因此失败。
+`CardDB`、`LevelDB` 加载时会校验字段和 id，出错时报错，测试也会因此失败。Rust 版结算（`engine/`）读同一份卡牌数据，校验相同。
 
 ## cards.json
 

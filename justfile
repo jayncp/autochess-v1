@@ -6,9 +6,10 @@ limit := "timeout 600"
 run:
     {{godot}} --path .
 
-# 全部测试：数据检查、战斗用例（含镜像检查、事件自洽）、回放检查、冒烟流程
+# 全部测试：数据检查、战斗用例（含镜像检查、事件自洽）、回放检查、冒烟流程，再跑 Rust 版的测试
 test:
     {{limit}} {{godot}} --headless --path . --script res://tests/run_tests.gd
+    just rs-test
 
 # 用当前引擎重录规则用例的期望值，并列出变化
 record:
@@ -33,6 +34,19 @@ replay-time *args:
 # 批量模拟：输入 JSONL 每行 {"p1": [...], "p2": [...]}，输出每行一个结果；加 --log 带事件日志，--cards <文件> 加额外卡牌
 sim input output *flags:
     {{limit}} {{godot}} --headless --path . --script res://cli/sim.gd -- {{input}} {{output}} {{flags}}
+
+# Rust 版结算（engine/）：格式和静态检查，警告当错误
+rs-check: _cargo
+    cd engine && cargo fmt --check && cargo clippy --all-targets --quiet -- -D warnings
+
+# Rust 版结算的测试，含 tests/cases/ 的共用用例
+rs-test: _cargo
+    cd engine && cargo test --quiet
+
+# 检查有没有装 Rust（版本由 engine/rust-toolchain.toml 指定，第一次运行时自动安装）
+[private]
+_cargo:
+    @command -v cargo > /dev/null || { echo "没找到 cargo：Rust 版结算需要先装 rustup（https://rustup.rs），装好后重开终端"; exit 1; }
 
 # Python 工具：代码检查和测试
 tools-check:

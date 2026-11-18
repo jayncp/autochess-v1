@@ -1,0 +1,15 @@
+[package]
+name = "autochess-core"
+description = "牛马自走棋的战斗结算（只算结果），和 scripts/core/battle_sim.gd 逐场一致"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "autochess_core"
+
+[dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true
