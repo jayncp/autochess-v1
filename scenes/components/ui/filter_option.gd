@@ -2,28 +2,37 @@ class_name FilterOption
 extends CheckBox
 ## 筛选的勾选块（图鉴的筛选栏、科研模式的选卡区）：勾选框后面画内容，spec 给出：
 ## text 文字；icon 图标 id（assets/ui/icons/）和 tint 颜色；chip 技能方块（见 CardFace.draw_chip）；stars 星星个数。
-## size 是高度，48 是常规，44 是小号（字和图标也小一号）。
+## size 是高度，48 是常规，44 是小号（字和图标也小一号）。box 为假时不画勾选框，勾上时只有金框（科研模式的选卡区放不下勾选框）。
 
 const FONT := preload("res://assets/fonts/sans_medium.tres")
 const STAR_COLOR := Color("ffd866")
-## 勾选框左边的边距、勾选框、间距（和主题的 FilterCheck 一致），右边距
+## 勾选框左边的边距、勾选框、间距（和主题的 FilterCheck 一致），右边距；没有勾选框时左边只有边距
 const CONTENT_LEFT := 40.0
 const CONTENT_RIGHT := 14.0
+const BOXLESS_LEFT := 10.0
 
 var spec: Dictionary
 var _font_size: int
 var _icon_size: float
 
 
-func _init(spec_: Dictionary, height := 48.0) -> void:
+func _init(spec_: Dictionary, height := 48.0, box := true) -> void:
 	spec = spec_
 	theme_type_variation = &"FilterCheck"
 	focus_mode = FOCUS_NONE
 	_font_size = 22 if height >= 48 else 20
 	_icon_size = 26.0 if height >= 48 else 24.0
+	var left := CONTENT_LEFT
+	if not box:
+		var none := PlaceholderTexture2D.new()
+		none.size = Vector2.ZERO
+		for icon in ["checked", "unchecked", "checked_disabled", "unchecked_disabled"]:
+			add_theme_icon_override(icon, none)
+		add_theme_constant_override("h_separation", 0)
+		left = BOXLESS_LEFT
 	# 星星挤一点：图鉴筛选栏里一行放得下四个"★★★★"
 	var right := 8.0 if spec.has("stars") else CONTENT_RIGHT
-	custom_minimum_size = Vector2(CONTENT_LEFT + _content_width() + right, height)
+	custom_minimum_size = Vector2(left + _content_width() + right, height)
 
 
 func _content_width() -> float:

@@ -4,7 +4,7 @@ extends SceneTree
 ## 用法：just gen-random
 
 const Harness := preload("res://tests/battle_harness.gd")
-const COUNT := 100
+const COUNT := 150
 const SEED := 20261102
 const MIN_APPEAR := 3
 

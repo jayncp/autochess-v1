@@ -70,6 +70,8 @@ func _check_data() -> void:
 			for part in parts:
 				if not ResourceLoader.exists("res://assets/ui/fx/%s%s.png" % [part, skill]):
 					_failures.append("[data] 缺少飘字贴图：%s%s.png" % [part, skill])
+	for scope in CardDB.SCOPES:
+		keys.append("scope." + scope)
 	for level_id in LevelDB.all():
 		keys.append("level." + level_id)
 	var locale := TranslationServer.get_locale()
@@ -142,9 +144,10 @@ func _run_unit_tests() -> void:
 	_test_annihilate()
 	_test_overlay()
 	_test_bonus_sources()
+	_test_event_details()
 	_test_skill_text()
 	_test_live_specials()
-	print("单元测试：6 组")
+	print("单元测试：7 组")
 
 
 ## 湮灭（目前没有卡带湮灭）：打对方全体、走伤害流程；同一时间节点先腐蚀后湮灭，所以庇护挡的是腐蚀
@@ -201,6 +204,53 @@ func _test_bonus_sources() -> void:
 		_failures.append("[unit-bonus] 腐蚀伤害的 by 应是发动者 1-0，实际 %s" % hits[0].effects[0].by)
 
 
+## 事件日志里出现了哪些新机制（回放检查用来确认阵容覆盖到）
+func _event_marks(events: Array) -> Array:
+	var marks := {}
+	for e in events:
+		marks[e.type] = true
+		for f in e.get("effects", []):
+			if f.kind == "grant":
+				marks["grant"] = true
+			if f.has("again"):
+				marks["again"] = true
+		if e.type == "clash":
+			for k in 2:
+				var attacker: Dictionary = _unit_info(events, e.effects[1 - k].by)
+				if attacker.special_skills.has("lethal") and e.attacks[k] != BattleSim.LETHAL_ATTACK:
+					marks["immune"] = true
+	return marks.keys()
+
+
+func _unit_info(events: Array, uid: String) -> Dictionary:
+	for u in events[0].p1 + events[0].p2:
+		if u.uid == uid:
+			return u
+	return {}
+
+
+## 回放依赖的事件细节（结果由规则用例检查）：多一次的标记、多一轮的来源、协战按位置分开、神佑给的层数
+func _test_event_details() -> void:
+	var cases := Harness.load_cases(Harness.CASES_PATH)
+	var events := func(id: String) -> Array:
+		var c: Dictionary = cases.filter(func(x): return x.id == id)[0]
+		return BattleSim.simulate(c.p1, c.p2).events
+	var corrode: Array = events.call("rule-extra-resolve").filter(func(e): return e.type == "beat" and e.skill == "corrode")[0].effects
+	var again := corrode.filter(func(f): return f.has("again")).map(func(f): return [f.kind, f.again, f.again_by])
+	if again != [["damage", 1, "1-0"]]:
+		_failures.append("[unit-events] 多一次的那一下应标 again 1、来自 1-0，实际 %s" % [again])
+	var rounds: Array = events.call("rule-extra-round-stack").filter(func(e): return e.type == "round").map(func(e): return [e.round, e.units, e.sources])
+	if rounds != [[2, ["1-0"], ["1-0"]], [3, ["1-0"], ["1-1"]]]:
+		_failures.append("[unit-events] 熊猫大侠的两次多一轮应来自自己和金甲虎王，实际 %s" % [rounds])
+	var assists: Array = events.call("rule-assist-order").filter(func(e): return e.type == "assist").map(func(e): return e.effects.map(func(f): return f.by))
+	if assists != [["1-1"], ["1-2"]]:
+		_failures.append("[unit-events] 协战应按位置分成两个事件（1-1、1-2），实际 %s" % [assists])
+	var grants: Array = events.call("rule-extra-round-special").filter(func(e): return e.type == "special" and e.skill == "bless").map(
+		func(e): return e.effects.map(func(f): return [f.unit, f.skill, f.amount, f.value]))
+	if grants != [[["1-1", "shelter", 2, 2]], [["1-1", "shelter", 2, 4]]]:
+		_failures.append("[unit-events] 神佑两轮应给骑士王 2、4 层庇护，实际 %s" % [grants])
+
+
 ## 卡面文字：带时机的特殊技能、描述型特殊技能、按结算顺序排列
 func _test_skill_text() -> void:
 	var cases := [
@@ -208,6 +258,11 @@ func _test_skill_text() -> void:
 		[load_card.special_skill_text({"awaken": {"timings": ["pre_battle", "on_enter"]}}), "战前、入场：唤醒"],
 		[load_card.special_skill_text({"on_trigger_gain": {"skill": "rally", "amount": 2}}), "己方角色触发集结时，自身战斗力 +2"],
 		[load_card.special_skill_text({"on_resolve_bonus": {"skill": "corrode", "amount": 2}, "sturdy": 4}), "坚固4；己方角色结算腐蚀时，伤害 +2"],
+		[load_card.special_skill_text({"bless": {"timings": ["on_enter"], "amount": 2}}), "入场：神佑2"],
+		[load_card.special_skill_text({"immune_lethal": null, "sturdy": 2}), "坚固2；免疫致命"],
+		[load_card.special_skill_text({"extra_resolve": {"scope": "self", "skill": "corrode"}}), "自身腐蚀多结算一次"],
+		[load_card.special_skill_text({"extra_round": {"scope": "allies", "timing": "on_enter"}}), "己方入场多触发一轮"],
+		[load_card.special_skill_text({"extra_round": {"scope": "first", "timing": "pre_battle"}}), "开战时位于己方第 1 位的角色，战前多触发一轮"],
 		[load_card.base_skill_text({"wealth": 1, "support": 3, "rage": 2}), "狂暴2、支援3、财富1"],
 		[load_card.special_skill_text({"shelter": 1, "sturdy": 4}), "坚固4；庇护1"],
 	]
@@ -240,7 +295,16 @@ func _run_replay_checks() -> void:
 		["skip-midway", [["soldier", ""], ["soldier", ""], ["tiger", "holy_water"]], [["sludge", "thorns"], ["shield_guard", ""]], 30],
 		["mechanics", [["wisp", ""], ["fey_tiger", ""], ["mimic", ""], ["butterfly", ""], ["pixie", "hollow"]],
 			[["captain", ""], ["toad", ""], ["soldier", ""], ["tiger", "flash_orb"], ["paladin", ""]], -1],
+		# 神佑、协战、免疫致命、多一次、多一轮都要出现（正式卡调数值后可能不再出现，届时换阵容）
+		["mechanics-2", [["pure_sage", ""], ["high_priest", ""], ["knight_king", ""], ["ninja", ""], ["forest_archer", ""]],
+			[["king_cobra", "golden_sword"], ["panda_hero", ""], ["envoy", ""], ["dream_mushroom", ""]], -1],
 	]
+	var needed := ["round", "assist", "grant", "again", "immune"]
+	var events: Array = BattleSim.simulate(cases[-1][1], cases[-1][2]).events
+	var seen := _event_marks(events)
+	for mark in needed:
+		if mark not in seen:
+			_failures.append("[replay-mechanics-2] 阵容里没有出现 %s，换一个阵容" % mark)
 	for c in cases:
 		global_var.battle_card_list_1 = c[1].map(func(u): return u[0])
 		global_var.battle_equip_list_1 = c[1].map(func(u): return u[1])
@@ -577,6 +641,14 @@ func _check_level_select(select: Node) -> void:
 
 ## 图鉴的筛选：组内满足任一，组间同时满足；排序；点卡放大
 func _check_book(book: Node) -> void:
+	# 布局：侧栏不被内容撑宽、不压住顶栏和网格；排序、重置筛选在网格的截断线以上
+	var rail: Control = book.get_node("Rail")
+	var scroll: Control = book.get_node("Scroll")
+	if rail.get_rect().end.x > book.get_node("Head").position.x or rail.get_rect().end.x > scroll.position.x:
+		_failures.append("[smoke-book] 侧栏宽 %d，压住了顶栏或网格" % rail.size.x)
+	for button in [book.get_node("%Sort"), book.get_node("Head/Reset")]:
+		if button.get_global_rect().end.y > scroll.global_position.y:
+			_failures.append("[smoke-book] %s 的下边 %d 低于网格的截断线 %d" % [button.name, button.get_global_rect().end.y, scroll.global_position.y])
 	var cards: Array = CardDB.all().values()
 	var expect := func(label: String, filter: Callable) -> void:
 		var count := cards.filter(filter).size()

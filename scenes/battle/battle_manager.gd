@@ -22,7 +22,10 @@ const PACE := {
 	"read": 0.5,         # 生效后留给玩家看的时间，然后才开始下一拍
 	"defend": 0.15,      # 坚固先弹词条，过这么久再弹实际扣的数值
 	"extra": 0.15,       # 同一拍里多出来的飘字（队长）错开
-	"awaken": 0.3,       # 唤醒：弹词条、一道光到下一位
+	"awaken": 0.3,       # 唤醒、神佑：弹词条、一道光到下一位
+	"again": 0.3,        # 多一次：多出来的每一下晚这么久
+	"round": 0.35,       # 多一轮：来源弹卡名，重走的单位收回再发动
+	"assist": 0.25,      # 协战：一道光打到对方交战位
 	"woken_in": 0.2,
 	"woken_out": 0.2,
 	"act_out": 0.2,      # 发动的卡在交战前收回
@@ -51,6 +54,8 @@ const DISSOLVE := preload("res://scenes/battle/fx/dissolve.gdshader")
 const BEAM_CYAN := Color("29c4d6")
 const RALLY_SPARK := Color("ffb66e")
 const ANNIHILATE_ORB := Color("b48cff")
+const BLESS_BEAM := Color("f2c94c")
+const ASSIST_ORB := Color("f28c28")
 
 ## 烧散用的噪声
 static var _noise: ImageTexture
@@ -198,7 +203,7 @@ func play_events() -> void:
 		var e: Dictionary = events[i]
 		var step := []
 		i += 1
-		while i < events.size() and events[i].type in ["special", "beat", "clash", "backlash"]:
+		while i < events.size() and events[i].type in ["round", "special", "beat", "clash", "assist", "backlash"]:
 			step.append(events[i])
 			i += 1
 		match e.type:
@@ -234,7 +239,7 @@ func play_events() -> void:
 
 
 ## 一步：轮到（向中间靠一点；战前的还亮青色光圈）→ 发动（再往前、放大、金光、时机图标亮）
-## → 特殊技能、各拍、交战、反噬 → 收回
+## → 特殊技能、各拍（多一轮时再来一遍）、交战、协战、反噬 → 收回
 func play_step(units: Array, actors: Array, timing: String, step: Array) -> void:
 	var marked: Array = units if timing == "pre_battle" else []
 	_mark_turn(marked, 1.0)
@@ -259,6 +264,8 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 			await _retract(woken)
 			woken = []
 		match e.type:
+			"round":
+				await play_round(e, actors, timing)
 			"special":
 				woken = await play_special(e)
 			"beat":
@@ -270,6 +277,8 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 					await wait(PACE.act_out)
 					out = false
 				await play_clash(e, units)
+			"assist":
+				await play_assist(e)
 			"backlash":
 				await play_backlash(e)
 	if not woken.is_empty():
@@ -308,9 +317,34 @@ func mark_front() -> void:
 			player_battle_fields[side][n].face.engaged = n == 0
 
 
-## 特殊技能阶段（唤醒）：发动者弹"唤醒"、特殊技能栏亮起，一道光连到下一位，下一位出列；
-## 返回出列的卡，它们的拍播完后收回
+## 多一轮：来源的特殊技能栏亮起、弹卡名（连线到重走的单位）；重走的单位收回一点再发动，这一轮没有的单位收回等着
+func play_round(e: Dictionary, actors: Array, timing: String) -> void:
+	var cards := _cards_of(e.units)
+	for k in e.units.size():
+		_character_effect("extra_round", e.sources[k], e.units[k], 0)
+	var waiting := actors.filter(func(card): return card not in cards)
+	_pose(actors, OFF.step, 1.0, PACE.act_out)
+	light_timing(waiting, "")
+	await wait(PACE.act_out)
+	_pose(cards, OFF.act, ACT_SCALE, PACE.act_in)
+	light_timing(cards, timing)
+	await wait(PACE.act_in + PACE.round)
+
+
+## 特殊技能的一步：
+## - 唤醒：发动者弹"唤醒"、特殊技能栏亮起，一道光连到下一位，下一位出列；返回出列的卡，它们的拍播完后收回；
+## - 神佑：发动者弹"神佑"、特殊技能栏亮起，一道金光连到下一位，下一位弹"庇护"、罩上保护罩
 func play_special(e: Dictionary) -> Array:
+	if e.skill == "bless":
+		for f in e.effects:
+			var source = _cards[f.source]
+			_badge(source, FloatBadge.keyword(e.skill))
+			_light_special(source)
+			if _detail() == 2:
+				_spawn_later(PACE.awaken * 0.15, FxEffect.Kind.BEAM, PACE.awaken + 0.2, {from = source, to = _cards[f.unit], color = BLESS_BEAM})
+			_grant_later(f, PACE.awaken)
+		await wait(PACE.awaken + PACE.read)
+		return []
 	var woken := []
 	for f in e.effects:
 		var source = _cards[f.source]
@@ -325,6 +359,18 @@ func play_special(e: Dictionary) -> Array:
 		card.face.glow = not have_been_skipped
 	await wait(PACE.woken_in + PACE.act_hold)
 	return woken
+
+
+## 获得词条（如神佑给的庇护）：特殊技能栏更新（有庇护就罩上保护罩），弹这个词条
+func _grant_later(f: Dictionary, delay: float) -> void:
+	await wait(delay)
+	if have_been_skipped:
+		return
+	_specials[f.unit][f.skill] = f.value
+	var card = _cards[f.unit]
+	card.face.set_specials(_specials[f.unit])
+	_badge(card, FloatBadge.keyword(f.skill))
+	_light_special(card)
 
 
 ## 被唤醒的卡收回原位
@@ -360,7 +406,11 @@ func play_beat(e: Dictionary) -> void:
 	var defended := false
 	for f in e.effects:
 		var target = _cards[f.unit]
-		var delay := fly
+		# 多一次：多出来的每一下依次晚一点，第一个效果出现时来源弹卡名
+		var start: float = f.get("again", 0) * PACE.again
+		var delay := fly + start
+		if start > 0 and f == e.effects.filter(func(g): return g.get("again") == f.again and g.get("again_by") == f.again_by)[0]:
+			_character_effect_later(start, "extra_resolve", f.again_by, f.by if f.kind == "damage" else f.source)
 		if skill in ["inspire", "annihilate"] and _detail() == 2:
 			var side_cards: Array = player_battle_fields[_side(target)]
 			# 振奋从发动者向两边扩，湮灭从对方交战位往后
@@ -378,11 +428,11 @@ func play_beat(e: Dictionary) -> void:
 			match skill:
 				"support", "inspire":
 					if target != caster:
-						_spawn(FxEffect.Kind.ORB, delay, {from = caster, to = target, color = color})
+						_spawn_later(start, FxEffect.Kind.ORB, delay - start, {from = caster, to = target, color = color})
 				"corrode":
-					_spawn(FxEffect.Kind.VENOM, delay, {from = caster, to = target})
+					_spawn_later(start, FxEffect.Kind.VENOM, delay - start, {from = caster, to = target})
 				"annihilate":
-					_spawn(FxEffect.Kind.ORB, delay, {from = caster, to = target, color = ANNIHILATE_ORB, big = true})
+					_spawn_later(start, FxEffect.Kind.ORB, delay - start, {from = caster, to = target, color = ANNIHILATE_ORB, big = true})
 		# 蟾蜍这类：出手时特殊技能栏亮起、弹卡名，白线连到被加成的那一下
 		for uid in f.get("boosts", []):
 			_character_effect("on_resolve_bonus", uid, f.unit, 0, "", delay + 0.45)
@@ -406,6 +456,10 @@ func play_clash(e: Dictionary, unit_cards: Array) -> void:
 			_badge(unit_cards[k], FloatBadge.keyword("lethal"))
 			_light_special(unit_cards[k])
 			lethal = true
+		elif _specials[_uid(unit_cards[k])].has("lethal") and _specials[_uid(unit_cards[1 - k])].has("immune_lethal"):
+			# 对方免疫致命：致命无效，对方弹"免疫致命"
+			_badge(unit_cards[1 - k], FloatBadge.keyword("immune_lethal"))
+			_light_special(unit_cards[1 - k])
 	_pose(unit_cards, OFF.clash, 1.0, PACE.clash_lunge, Tween.TRANS_QUAD, Tween.EASE_IN)
 	await wait(PACE.clash_lunge)
 	if have_been_skipped:
@@ -420,6 +474,18 @@ func play_clash(e: Dictionary, unit_cards: Array) -> void:
 	await wait(PACE.hit_stop)
 	_pose(unit_cards, OFF.step, 1.0, PACE.clash_back)
 	await wait(PACE.clash_back + PACE.clash_read + (PACE.lethal if lethal else 0.0) + (PACE.defend if defended else 0.0))
+
+
+## 协战：持有者特殊技能栏亮起，一道光打到对方交战位，对方受到伤害（弹"协战"和扣的数值）
+func play_assist(e: Dictionary) -> void:
+	var fly := PACE.assist if _detail() == 2 else 0.0
+	for f in e.effects:
+		var holder = _cards[f.by]
+		_light_special(holder)
+		if fly > 0:
+			_spawn(FxEffect.Kind.ORB, fly, {from = holder, to = _cards[f.unit], color = ASSIST_ORB})
+		_land(f, fly)
+	await wait(fly + PACE.read)
 
 
 ## 反噬：持有者特殊技能栏亮起、炸开一圈尖刺，随后受到伤害
@@ -545,14 +611,14 @@ func _damage(f: Dictionary) -> void:
 		_hurt(card)
 
 
-## 伤害的飘字：交战是大号数字（致命命中是 −∞），反噬是词条，腐蚀、湮灭是基础技能；没有造成伤害就不带数值
+## 伤害的飘字：交战是大号数字（致命命中是 −∞），反噬、协战是词条，腐蚀、湮灭是基础技能；没有造成伤害就不带数值
 func _damage_badge(f: Dictionary) -> FloatBadge:
 	var change = -f.dealt if f.dealt > 0 else null
 	match f.source:
 		"clash":
 			return FloatBadge.clash(-INF if f.amount >= BattleSim.LETHAL_ATTACK else -f.dealt)
-		"backlash":
-			return FloatBadge.keyword("backlash", change)
+		"backlash", "assist":
+			return FloatBadge.keyword(f.source, change)
 	return FloatBadge.skill(f.source, change)
 
 
@@ -583,6 +649,12 @@ func _character_effect(effect_id: String, holder: String, target: String, amount
 		_spawn(FxEffect.Kind.THREAD, thread_time, {from = card, to = _cards[target]})
 	if trigger and trigger != holder:
 		_spawn(FxEffect.Kind.THREAD, thread_time, {from = _cards[trigger], to = card})
+
+
+func _character_effect_later(delay: float, effect_id: String, holder: String, target: String) -> void:
+	await wait(delay)
+	if not have_been_skipped:
+		_character_effect(effect_id, holder, target, 0)
 
 
 ## 把一个效果写到卡面上：战力（变化时跳动）；庇护被消耗时更新特殊技能栏，用完就移除（保护罩跟着消失）
@@ -693,6 +765,8 @@ func show_final_state() -> void:
 		for f in e.get("effects", []):
 			if f.kind == "damage" and f.shelter:
 				_consume_shelter(f.unit)
+			elif f.kind == "grant":
+				_specials[f.unit][f.skill] = f.value
 	for uid in _cards:
 		var card = _cards[uid]
 		var side := int(uid.split("-")[0])
@@ -779,5 +853,10 @@ func _spawn(kind: FxEffect.Kind, duration: float, props: Dictionary) -> void:
 
 
 func _spawn_later(delay: float, kind: FxEffect.Kind, duration: float, props: Dictionary) -> void:
-	await wait(delay)
+	if delay > 0:
+		await wait(delay)
 	_spawn(kind, duration, props)
+
+
+func _uid(card) -> String:
+	return card.get_meta("uid")

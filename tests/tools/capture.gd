@@ -149,6 +149,10 @@ func _card_pages() -> void:
 	var equipment := ["iron_sword", "holy_shield", "war_banner", "holy_water", "necklace", "hollow"].map(func(id): return {"equip": id})
 	await _card_page("cards_build", [["构筑阶段", characters], ["装备卡", equipment]])
 
+	var high := ["elf_princess", "yao_bikuni", "hydra", "griffin_knight", "vajra_arhat", "knight_king"].map(func(id): return {"card": id})
+	var high_equipment := ["golden_serpent_head", "prayer_beads", "void_heart", "moon_dial", "holy_grail", "heart_potion"].map(func(id): return {"equip": id})
+	await _card_page("cards_high", [["3★–5★ 角色：长句、多个时机、多个特殊技能", high], ["3★–5★ 装备", high_equipment]])
+
 	var pairs := [["tiger_man", "war_banner"], ["porcupine", "holy_shield"], ["fairy", "holy_water"], ["soldier", "necklace"], ["maneater", "hollow"], ["demo_hero", "demo_gear"]]
 	var combined := pairs.map(func(pair): return {"card": pair[0], "equip": pair[1]})
 	var live := [
@@ -251,6 +255,11 @@ func _screens() -> void:
 	await _frames(5)
 	await _shot("book")
 	var book: Node = manager.current_scene
+	# 滚动一段：看网格上边的截断和顶栏对不对齐
+	book.get_node("Scroll").scroll_vertical = 200
+	await _frames(3)
+	await _shot("book_scrolled")
+	book.get_node("Scroll").scroll_vertical = 0
 	book.toggle_filter("stars", 2)
 	book.toggle_filter("special", "shelter")
 	book.toggle_filter("special", "lethal")
