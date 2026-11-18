@@ -1,6 +1,6 @@
 # Rust 版结算
 
-> **状态**：进行中（issue #30）。第 1、2 批已合并（PR #31、#32），第 3 批开发完成，待审；执行记录见第 7 节。
+> **状态**：已完成（2026-11-19，issue #30，PR #31–#33）。执行记录见第 7 节。
 > **依据**：规则以 [battle-rules.md](../design/battle-rules.md) 为准；基准实现是 `scripts/core/battle_sim.gd`（结算）和 `scripts/core/card_db.gd`（装备合并）；用例在 `tests/cases/`（说明见 [tests/README.md](../../tests/README.md)）。
 > 用户不熟悉 Rust：代码要好读、好对照，每个 PR 的说明里写清楚怎么验证。规则或基准实现有不清楚的地方，先问用户。
 
@@ -166,7 +166,7 @@ engine-cli <输入.jsonl> <输出.jsonl> [--cards <额外卡牌.json>] [--trace]
 
   计划里的目标是单线程比 Godot 版快 50 倍以上（当时按 6600 场/秒估），已经达到。
 
-### 第 3 批：Python 绑定（分支 `rust-engine-3`）
+### 第 3 批：Python 绑定（PR #33）
 
 - **绑定** `engine/py/`（PyO3 0.30、numpy 0.30，abi3，Python ≥3.12）：模块 `autochess_engine`，一个 `Engine` 对象（创建时读入卡牌和额外卡牌）。
   - `simulate`：字符串 id 传阵容。
