@@ -26,6 +26,10 @@ levels:
 level-check *file:
     {{limit}} {{godot}} --headless --path . --script res://cli/levels.gd -- {{file}}
 
+# 估算回放时长（1 倍速）：随机对局的平均、中位、P90 和各段落的占比；可指定场数、--stars 1,2 只用这些星级
+replay-time *args:
+    {{limit}} {{godot}} --headless --path . --script res://cli/replay_time.gd -- {{args}}
+
 # 批量模拟：输入 JSONL 每行 {"p1": [...], "p2": [...]}，输出每行一个结果；加 --log 带事件日志，--cards <文件> 加额外卡牌
 sim input output *flags:
     {{limit}} {{godot}} --headless --path . --script res://cli/sim.gd -- {{input}} {{output}} {{flags}}

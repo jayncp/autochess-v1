@@ -5,6 +5,8 @@ extends SceneTree
 ## 用法：just test
 
 const Harness := preload("res://tests/battle_harness.gd")
+## 回放开头的停顿（battle_manager.PACE.start），不属于任何时点
+const PACE_START := 0.4
 const TIMEOUT_SEC := 300.0
 ## 能打赢的摆法（冒烟用例里关卡的解），冒烟流程用它记通关
 const WINNING := {"boar_rush": [["vulture", "war_banner"], ["maneater", ""], ["tiger_man", "spiked_gauntlet"], ["half_elf", ""]]}
@@ -382,7 +384,8 @@ func _run_replay_checks() -> void:
 			_failures.append("[replay-%s] 结束后还有飘字或亮起的卡" % c[0])
 		scene.free()
 	await _check_skip_keeps_shelter()
-	print("回放检查：%d 条" % (cases.size() + 1))
+	_check_measuring(cases[-1])
+	print("回放检查：%d 条" % (cases.size() + 2))
 
 
 ## 设置和进度存档：读写往返、不合法的值、备份恢复、新版本只读
@@ -458,6 +461,29 @@ func _remove_test_files() -> void:
 	for file in TEST_FILES:
 		if FileAccess.file_exists("user://" + file):
 			DirAccess.remove_absolute("user://" + file)
+
+
+## 测回放时长（cli/replay_time.gd）：不真的等，一次播完，记下时长和每个时点；最后的局面照样和 BattleSim 一致
+func _check_measuring(c: Array) -> void:
+	global_var.battle_card_list_1 = c[1].map(func(u): return u[0])
+	global_var.battle_equip_list_1 = c[1].map(func(u): return u[1])
+	global_var.battle_card_list_2 = c[2].map(func(u): return u[0])
+	global_var.battle_equip_list_2 = c[2].map(func(u): return u[1])
+	var scene: Node = load("res://scenes/battle/battle.tscn").instantiate()
+	root.add_child(scene)
+	var battle_manager: Node = scene.get_node("battle_manager")
+	battle_manager.battle_speed = 1.0
+	battle_manager.measuring = true
+	battle_manager._on_start_battle_pressed_battle()
+	var total := 0.0
+	for key in battle_manager.measured:
+		total += battle_manager.measured[key]
+	var steps: float = battle_manager.measured_steps.reduce(func(sum, step): return sum + step[1], 0.0)
+	if battle_manager.winner == 0 or total <= 0 or absf(steps + PACE_START - total) > 0.01:
+		_failures.append("[replay-measuring] 测时长应一次播完、各时点加起来等于总时长：胜负 %s，总 %.2f，时点 %.2f" % [battle_manager.winner, total, steps])
+	else:
+		_check_replay(battle_manager, "replay-measuring")
+	scene.free()
 
 
 ## 播放途中跳过：已经播放过的庇护消耗不能在最终局面里重复扣。
