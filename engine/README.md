@@ -18,16 +18,21 @@ Cargo 工作区，目录里有 `.gdignore`，Godot 不扫描它。
 | `core/src/battle.rs` | 战斗结算，对应 `BattleSim` |
 | `core/tests/cases.rs` | 共用用例：`tests/cases/` 的规则用例和冒烟用例，都检查交换左右后对称；`VERSION` 和 `BattleSim.VERSION` 一致 |
 | `cli/`（crate `autochess-cli`，程序 `engine-cli`） | 批量模拟的命令行，输入输出同 `cli/sim.gd`，多核并行 |
+| `py/`（crate `autochess-py`，Python 模块 `autochess_engine`） | Python 绑定（PyO3），`tools/` 通过它批量模拟；`pyproject.toml` 是 maturin 的配置，`autochess_engine.pyi` 是给类型检查看的接口说明 |
 | `rust-toolchain.toml` | 固定 Rust 版本和组件，换机器时自动安装同一版 |
 | `rustfmt.toml` | 排版：行宽 120 |
 | `Cargo.lock` | 依赖的确切版本，提交进仓库 |
 
-依赖：`serde_json`（读 JSON）、`rayon`（命令行的多核并行）。Python 绑定（`py/`）在第 3 批加入。
+依赖：`serde_json`（读 JSON）、`rayon`（多核并行）、`pyo3` 和 `numpy`（Python 绑定）。
+`cargo build`、`cargo test` 不写 `-p` 时只管 `core` 和 `cli`；`py` 由 maturin 构建（见下）。
 
 ## 环境
 
 1. 装 rustup：<https://rustup.rs>（macOS、Linux 都是一行命令），装好后重开终端。
 2. 第一次运行 `just rs-test` 时，rustup 按 `rust-toolchain.toml` 自动安装指定版本，之后就不用管了。
+3. Python 绑定不用另外装什么：`tools/` 的 uv 环境把它当作本地路径依赖，第一次运行 `just tools-check`、`just experiment` 等命令时用 maturin 编译（约 1 分钟），之后 Rust 源码变了才重新编译。
+
+macOS（Apple 芯片）和 Linux（x86-64）都能构建、通过测试，不写平台相关的代码。
 
 ## 命令
 
@@ -35,10 +40,10 @@ Cargo 工作区，目录里有 `.gdignore`，Godot 不扫描它。
 |---|---|
 | `just rs-test` | Rust 的全部测试（含共用用例），几秒钟；`just test` 最后也会跑它 |
 | `just rs-check` | 格式检查（`cargo fmt --check`）和静态检查（`cargo clippy`，警告当错误） |
-| `just rs-build` | 发布构建命令行 `target/release/engine-cli`；下面几条会自动先做 |
+| `just rs-build` | 发布构建命令行 `target/release/engine-cli`，并更新 `tools/` 里的 Python 绑定；下面几条会自动先做 |
 | `just sim <输入> <输出> [--cards <文件>] [--trace] [--threads N]` | 批量模拟，格式见下 |
 | `just diff-sim [场数] [--seed N]` | 和 Godot 版对拍，默认 100 万场，约 45 秒 |
-| `just bench` | 测速：固定的一批对局，单线程、多线程和 Godot 版的场/秒 |
+| `just bench` | 测速：固定的一批对局，Godot 版、命令行、从 Python 调用的场/秒 |
 
 ## 批量模拟（`engine-cli`）
 
@@ -59,6 +64,32 @@ Cargo 工作区，目录里有 `.gdignore`，Godot 不扫描它。
 再用 `--trace` 跑一遍，指出第一处不同的步骤和那一步双方的战斗力。有不一致时以非 0 退出。
 
 发现不一致，先看是哪一边的问题：是 GDScript 版的 bug 就报告，先定规则再改，并补成规则用例。
+
+## Python 绑定（`autochess_engine`）
+
+平衡实验一般用 `tools/autochess_tools/sim.py` 的 `simulate(对局列表, extra_cards)`，默认就走 Rust 版。直接用绑定：
+
+```python
+from autochess_tools.sim import engine
+
+rust = engine()  # 读入 data/cards.json；engine(extra_cards) 加额外卡牌
+rust.simulate([([["tiger_man", ""]], [["vulture", "iron_sword"]])])  # [(2, 'wipe', [], [8])]
+```
+
+- `simulate(对局列表, threads=0)`：字符串 id，返回 `[(winner, reason, P1 幸存者的战斗力, P2 幸存者的战斗力), ...]`。
+- `simulate_ids(p1, p2, threads=0)`：按编号传 numpy 数组，形状 `(场数, 位置数 ≤7, 2)`，每格 `[角色编号, 装备编号]`，`-1` 表示空位、不带装备；编号见 `ids()`、`index(id)`。
+  返回 `winner`、`reason`（0 = 全灭、1 = 连续无人阵亡）和双方幸存者的战斗力（`(场数, 7)`，后面补 0）四个数组。大批量时用它：省掉 Python 字符串的转换，快 5 倍以上。
+- 结算时释放 GIL、多核并行，结果顺序和输入一致；`threads` 为 0 时用全部核心。阵容或卡牌数据有误时报 `ValueError`。
+
+速度（`just bench`，12 核 Mac，30 万场随机对局）：
+
+| 调用方式 | 单线程 | 12 线程 |
+|---|---:|---:|
+| 命令行 `engine-cli`（只算结算） | 约 57 万场/秒 | 约 500 万 |
+| Python `simulate`（字符串 id，含转换） | 约 34 万 | 约 75 万（转换要持有 GIL，是瓶颈） |
+| Python `simulate_ids`（编号数组） | 约 53 万 | 约 420 万 |
+
+Godot 版单进程约 4300 场/秒。
 
 在 `engine/` 里也可以直接用 cargo：`cargo test`、`cargo fmt`（自动排版）、`cargo clippy --all-targets`。
 

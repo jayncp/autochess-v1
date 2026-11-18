@@ -1,5 +1,5 @@
-"""批量模拟：调用 Godot 的 cli/sim.gd（大批量时拆成几份，用多个 Godot 进程并行跑），
-或 Rust 版的 engine-cli（对拍、测速用）。
+"""批量模拟。默认用 Rust 版结算的 Python 绑定（autochess_engine，多核）；
+Godot 版（cli/sim.gd，拆给多个进程并行）和 Rust 版的命令行 engine-cli 留给对拍、测速用。
 """
 
 import json
@@ -8,7 +8,10 @@ import subprocess
 import tempfile
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
+
+from autochess_engine import Engine
 
 from autochess_tools.data import REPO, Card
 
@@ -45,10 +48,34 @@ def simulate(
     battles: Sequence[tuple[Lineup, Lineup]],
     extra_cards: Sequence[Card] | None = None,
     workers: int | None = None,
+    backend: str | None = None,
 ) -> list[Result]:
-    """模拟一批对局，结果顺序与输入一致。extra_cards 是只在本次模拟有效的额外卡牌（如白板单位）。"""
-    rows = run_godot([{"p1": p1, "p2": p2} for p1, p2 in battles], extra_cards=extra_cards, workers=workers)
-    return [Result(r["winner"], r["p1"], r["p2"]) for r in rows]
+    """模拟一批对局，结果顺序与输入一致。extra_cards 是只在本次模拟有效的额外卡牌（如白板单位）。
+
+    backend：rust（默认）或 godot（只用于对拍），不写时看环境变量 AUTOCHESS_BACKEND；
+    workers：Rust 版的线程数、Godot 版的进程数，默认用全部核心。
+    """
+    backend = backend or os.environ.get("AUTOCHESS_BACKEND", "rust")
+    if backend == "godot":
+        rows = run_godot([{"p1": p1, "p2": p2} for p1, p2 in battles], extra_cards=extra_cards, workers=workers)
+        return [Result(r["winner"], r["p1"], r["p2"]) for r in rows]
+    if backend != "rust":
+        raise ValueError(f"未知的后端 {backend}（rust 或 godot）")
+    results = engine(extra_cards).simulate(list(battles), workers or 0)
+    return [Result(winner, p1, p2) for winner, _, p1, p2 in results]
+
+
+def engine(extra_cards: Sequence[Card] | None = None) -> Engine:
+    """Rust 版的结算引擎：读入 data/cards.json 和额外卡牌（同 id 覆盖原卡）。额外卡牌相同时复用同一个。
+
+    大批量时用它的 simulate_ids（按编号传 numpy 数组）更快，编号见 ids()、index()。
+    """
+    return _engine(json.dumps(list(extra_cards)) if extra_cards else None)
+
+
+@lru_cache(maxsize=8)
+def _engine(extra_cards: str | None) -> Engine:
+    return Engine(str(REPO / "data" / "cards.json"), extra_cards)
 
 
 def run_godot(

@@ -5,9 +5,9 @@
 
 ## 现状
 
-- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；阶段 3 第二轮（3★/4★/5★）已完成：设计记录 `docs/plans/stage-3-high-stars.md`，开发记录 `docs/plans/stage-3-high-stars-dev.md`，现在共 87 张角色、57 件装备（3★ 以上还没有卡图）。Rust 版结算进行中（计划 `docs/plans/rust-engine.md`，issue #30，分三批）；之后是强度测试和卡图。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；阶段 3 第二轮（3★/4★/5★）已完成：设计记录 `docs/plans/stage-3-high-stars.md`，开发记录 `docs/plans/stage-3-high-stars-dev.md`，现在共 87 张角色、57 件装备（3★ 以上还没有卡图）。Rust 版结算进行中（计划 `docs/plans/rust-engine.md`，issue #30，分三批，第 3 批 Python 绑定待审）；之后是强度测试和卡图。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
 - 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关，记录通关）、图鉴、战斗演出（速度/跳过）、设置。冒险、线下对战未实现。
-- 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并和各种显示顺序在 `CardDB`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。Rust 版结算在 `engine/`，只算结果、供批量模拟，GDScript 版是规则的基准实现。
+- 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并和各种显示顺序在 `CardDB`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。Rust 版结算在 `engine/`，只算结果、供批量模拟（命令行和 Python 绑定，`tools/` 默认用它），GDScript 版是规则的基准实现。
 - 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
 
 ## 核心规则（详见 `docs/design/`，以 `docs/decisions.md` 为准）
@@ -37,7 +37,7 @@
 - `assets/`：`cards/<id>.png`（没有卡图的卡，卡面上显示淡显的种族图标）、`backgrounds/`、`ui/`（主题 `theme.tres`、图标、卡牌边框和法阵、控件贴图、飘字的饰板 `ui/fx/`，都由脚本生成）、`fonts/`（子集化的字体和字体变体）
 - `tests/`：测试。规则用例和测试卡在 `tests/cases/`（只用测试卡，Rust 版共用），说明见 `tests/README.md`
 - `engine/`：Rust 版结算（Cargo 工作区，带 `.gdignore`），和 GDScript 版逐函数对应、逐场一致，说明见 `engine/README.md`
-- `tools/`：Python 分析和平衡实验、美术素材生成（uv 管理，带 `.gdignore`），说明见 `tools/README.md`
+- `tools/`：Python 分析和平衡实验、美术素材生成（uv 管理，带 `.gdignore`；批量模拟通过 Rust 版的 Python 绑定，第一次运行时自动编译），说明见 `tools/README.md`
 
 ## 命令
 
