@@ -1,6 +1,6 @@
 # 阶段 3 第二轮开发：3★/4★/5★ 的机制和卡牌
 
-> **状态**：实施中，issue #25。第 1 批在分支 `high-stars-1`。执行记录见第 6 节。
+> **状态**：实施中，issue #25。第 1 批已完成（PR #26）。执行记录见第 6 节。
 > **依据**：规则以 [battle-rules.md](../design/battle-rules.md) 为准（标"待实现"的就是这次要做的，汇总在它的第 9 节）；卡牌数据以设计表 [card-workbook.xlsx](../design/card-workbook.xlsx) 里状态为"设计中"的行为准（序号、英文 id、各格内容都已填好）；设计的来由见 [stage-3-high-stars.md](stage-3-high-stars.md)。
 > 规则和设计表有矛盾或没说清的地方，先问用户，不要自行决定。
 
@@ -147,7 +147,7 @@
 
 ## 6. 执行记录
 
-### 第 1 批：结算结构改造
+### 第 1 批：结算结构改造（PR #26）
 
 - **结构**：`BattleSim.STEPS` 列出一个时点里特殊技能的七步，每步写属于它的带时机的特殊技能（现在只有"醒"里的唤醒），双方同时结算，每步每个技能记一个 `special` 事件。被动挂在事件上：`_on_trigger`（己方角色触发一轮某个技能时）、`_hit`（腐蚀、湮灭的每一下，先加结算加成）。多一轮、多一次在第 2 批。
 - **效果 id**：队长 `rally_gain` → `on_trigger_gain {skill, amount}`，蟾蜍 `corrode_boost` → `on_resolve_bonus {skill, amount}`。参数的种类在 `CardDB.SPECIAL_PARAMS`，加载时校验；卡面文字的模板用 `{参数名}`。
