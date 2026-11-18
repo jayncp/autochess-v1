@@ -24,8 +24,11 @@ const PACE := {
 	"extra": 0.15,       # 同一拍里多出来的飘字（队长）错开
 	"awaken": 0.3,       # 唤醒、神佑：弹词条、一道光到下一位
 	"again": 0.3,        # 多一次：多出来的每一下晚这么久
-	"round": 0.35,       # 多一轮：来源弹卡名，重走的单位收回再发动
-	"assist": 0.25,      # 协战：一道光打到对方交战位
+	"round_turn": 0.15,  # 多一轮：重走的单位收回、再发动各这么久
+	"round": 0.2,        # 多一轮：来源弹卡名后停一下
+	"quick_read": 0.25,  # 多一轮重走的那几拍：内容和第一轮一样，留给玩家看的时间减半
+	"sword": 0.55,       # 协战：光剑现出、飞过去、斩击
+	"assist_gap": 0.35,  # 协战：每往后一个位置晚这么久
 	"woken_in": 0.2,
 	"woken_out": 0.2,
 	"act_out": 0.2,      # 发动的卡在交战前收回
@@ -55,7 +58,6 @@ const BEAM_CYAN := Color("29c4d6")
 const RALLY_SPARK := Color("ffb66e")
 const ANNIHILATE_ORB := Color("b48cff")
 const BLESS_BEAM := Color("f2c94c")
-const ASSIST_ORB := Color("f28c28")
 
 ## 烧散用的噪声
 static var _noise: ImageTexture
@@ -69,6 +71,16 @@ var is_pre_battle = false
 ## 开战时是设置里的默认速度，战斗中可以临时切换
 var battle_speed: float = GameSettings.speed
 var have_been_skipped = false
+## 测回放时长（cli/replay_time.gd）：不真的等，只把 1 倍速下主流程要等的时间加起来；
+## measured 按段落分开记（战前、入场、交战的各部分、多一轮、阵亡）
+var measuring := false
+var measured := {}
+## 测时长时每个时点的用时：[时点类型, 秒, 里面的事件类型]
+var measured_steps := []
+var _clock := 0.0
+var _segment := ""
+## 正在播多一轮重走的那几拍（留给玩家看的时间减半）
+var _quick := false
 ## 战斗界面（布局和状态显示）
 @onready var _ui = $".."
 @onready var _badges: BadgeLayer = $"../badges"
@@ -198,14 +210,18 @@ func play_events() -> void:
 	var last_engage := ""
 	var repeats := 0
 	var i := 1  # 第 0 个是 start
+	_segment = "start"
 	await wait(PACE.start)
 	while i < events.size() and not have_been_skipped:
 		var e: Dictionary = events[i]
+		_segment = e.type
 		var step := []
 		i += 1
 		while i < events.size() and events[i].type in ["round", "special", "beat", "clash", "assist", "backlash"]:
 			step.append(events[i])
 			i += 1
+		var started := _clock
+		var done := false
 		match e.type:
 			"pre_battle":
 				pre_battle_steps += 1
@@ -224,23 +240,29 @@ func play_events() -> void:
 				if repeats >= STALEMATE_REPEATS:
 					_ui.show_note(tr("ui.battle.stalemate"))
 					await wait(PACE.stalemate)
-					break
-				await play_step(_cards_of(e.units), _cards_of(e.actors), "on_engage", step)
-				if have_been_skipped:
-					return
-				no_death_engages += 1
-				_ui.show_note(_engage_text(engages, no_death_engages))
+					done = true
+				else:
+					await play_step(_cards_of(e.units), _cards_of(e.actors), "on_engage", step)
+					if have_been_skipped:
+						return
+					no_death_engages += 1
+					_ui.show_note(_engage_text(engages, no_death_engages))
 			"death":
 				no_death_engages = 0
 				last_engage = ""
 				await play_death(e.units)
 			"end":
-				break
+				done = true
+		if measuring and e.type != "end":
+			measured_steps.append([e.type, _clock - started, step.map(func(x): return x.type)])
+		if done:
+			break
 
 
 ## 一步：轮到（向中间靠一点；战前的还亮青色光圈）→ 发动（再往前、放大、金光、时机图标亮）
 ## → 特殊技能、各拍（多一轮时再来一遍）、交战、协战、反噬 → 收回
 func play_step(units: Array, actors: Array, timing: String, step: Array) -> void:
+	var segment := _segment
 	var marked: Array = units if timing == "pre_battle" else []
 	_mark_turn(marked, 1.0)
 	_pose(units, OFF.step, 1.0, PACE.step_in)
@@ -257,9 +279,15 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 		await wait(PACE.act_in + PACE.act_hold)
 	var woken := []
 	var out := not actors.is_empty()
+	var extra_round := false
+	var assisted := false
 	for e in step:
 		if have_been_skipped:
+			_quick = false
 			return
+		extra_round = extra_round or e.type == "round"
+		_quick = extra_round and e.type in ["special", "beat"]
+		_segment = segment + "/" + ("extra_round" if extra_round and e.type in ["round", "special", "beat"] else e.type)
 		if not woken.is_empty() and not e.get("woken", false):
 			await _retract(woken)
 			woken = []
@@ -278,11 +306,16 @@ func play_step(units: Array, actors: Array, timing: String, step: Array) -> void
 					out = false
 				await play_clash(e, units)
 			"assist":
-				await play_assist(e)
+				# 一个交战里的协战（按位置一个事件）一起播，后面的位置依次晚一点
+				if not assisted:
+					assisted = true
+					await play_assist(step.filter(func(x): return x.type == "assist"))
 			"backlash":
 				await play_backlash(e)
+	_quick = false
 	if not woken.is_empty():
 		await _retract(woken)
+	_segment = segment
 	var all := units.duplicate()
 	for card in actors:
 		if card not in all:
@@ -323,12 +356,12 @@ func play_round(e: Dictionary, actors: Array, timing: String) -> void:
 	for k in e.units.size():
 		_character_effect("extra_round", e.sources[k], e.units[k], 0)
 	var waiting := actors.filter(func(card): return card not in cards)
-	_pose(actors, OFF.step, 1.0, PACE.act_out)
+	_pose(actors, OFF.step, 1.0, PACE.round_turn)
 	light_timing(waiting, "")
-	await wait(PACE.act_out)
-	_pose(cards, OFF.act, ACT_SCALE, PACE.act_in)
+	await wait(PACE.round_turn)
+	_pose(cards, OFF.act, ACT_SCALE, PACE.round_turn)
 	light_timing(cards, timing)
-	await wait(PACE.act_in + PACE.round)
+	await wait(PACE.round_turn + PACE.round)
 
 
 ## 特殊技能的一步：
@@ -347,7 +380,7 @@ func play_special(e: Dictionary) -> Array:
 			if _detail() == 2:
 				_spawn_later(PACE.awaken * 0.15, FxEffect.Kind.BEAM, PACE.awaken + 0.2, {from = source, to = _cards[f.unit], color = BLESS_BEAM})
 			_grant_later(f, PACE.awaken)
-		await wait(PACE.awaken + PACE.read)
+		await wait(PACE.awaken + _read())
 		return []
 	var woken := []
 	for f in e.effects:
@@ -385,7 +418,7 @@ func _play_effect(e: Dictionary) -> void:
 			_land(f, PACE.awaken)
 		else:
 			_grant_later(f, PACE.awaken)
-	await wait(PACE.awaken + PACE.read)
+	await wait(PACE.awaken + _read())
 
 
 ## 技能的变化（获得、复制、清除、改数值）写进 _base、_specials；回放和最终局面共用
@@ -404,21 +437,23 @@ func _apply_change(f: Dictionary) -> void:
 
 ## 技能的变化在 delay 之后显示到卡面上：获得弹词条或技能（有庇护就罩上保护罩），改数值弹技能，清除时卡面闪一下
 func _grant_later(f: Dictionary, delay: float) -> void:
-	await wait(delay)
+	await _after(delay)
 	if have_been_skipped:
 		return
 	_apply_change(f)
 	var card = _cards[f.unit]
 	card.face.set_base_skills(_base[f.unit])
 	card.face.set_specials(_specials[f.unit])
+	# 层数、技能值的变化是白字（"庇护 +2""集结 +1""腐蚀 +3"），没有数值的词条只弹名字
 	match f.kind:
 		"grant":
-			var base: bool = f.skill in CardDB.BASE_SKILLS
-			_badge(card, FloatBadge.skill(f.skill) if base else FloatBadge.keyword(f.skill))
-			if not base:
+			if f.skill in CardDB.BASE_SKILLS:
+				_badge(card, FloatBadge.skill(f.skill, f.amount, true))
+			else:
+				_badge(card, FloatBadge.keyword(f.skill, f.amount, true))
 				_light_special(card)
 		"raise":
-			_badge(card, FloatBadge.skill(f.skill))
+			_badge(card, FloatBadge.skill(f.skill, f.amount, true))
 		"clear":
 			_spawn(FxEffect.Kind.FLASH, 0.3, {to = card})
 
@@ -437,7 +472,7 @@ func play_beat(e: Dictionary) -> void:
 	var casters := _casters(e)
 	var fly := _fly_time(skill, casters)
 	light_skill(casters, skill)
-	await wait(PACE.cast)
+	await wait(PACE.cast * (0.6 if _quick else 1.0))
 	if have_been_skipped:
 		return
 	var color: Color = FloatBadge.SKILL_COLORS[skill]
@@ -500,7 +535,7 @@ func play_beat(e: Dictionary) -> void:
 			defended = true
 		_land(f, delay)
 		last = maxf(last, delay)
-	await wait(last + PACE.read + (PACE.defend if defended else 0.0))
+	await wait(last + _read() + (PACE.defend if defended else 0.0))
 	light_skill(casters, "")
 
 
@@ -536,16 +571,27 @@ func play_clash(e: Dictionary, unit_cards: Array) -> void:
 	await wait(PACE.clash_back + PACE.clash_read + (PACE.lethal if lethal else 0.0) + (PACE.defend if defended else 0.0))
 
 
-## 协战：持有者特殊技能栏亮起，一道光打到对方交战位，对方受到伤害（弹"协战"和扣的数值）
-func play_assist(e: Dictionary) -> void:
-	var fly := PACE.assist if _detail() == 2 else 0.0
-	for f in e.effects:
-		var holder = _cards[f.by]
-		_light_special(holder)
-		if fly > 0:
-			_spawn(FxEffect.Kind.ORB, fly, {from = holder, to = _cards[f.unit], color = ASSIST_ORB})
-		_land(f, fly)
-	await wait(fly + PACE.read)
+## 协战（规格见 docs/plans/effects-pacing.md 2.2）：持有者特殊技能栏亮起、向前一顿，身前现出一把光剑，
+## 加速飞向对方交战位、一道斩击，弹"协战"和扣的数值。按位置从前往后，每个位置晚 0.35 秒，同一位置双方同时
+func play_assist(events: Array) -> void:
+	var sword := PACE.sword if _detail() == 2 else 0.0
+	for k in events.size():
+		for f in events[k].effects:
+			_assist_later(f, k * PACE.assist_gap, sword)
+	await wait((events.size() - 1) * PACE.assist_gap + sword + PACE.read)
+
+
+func _assist_later(f: Dictionary, delay: float, sword: float) -> void:
+	await _after(delay)
+	if have_been_skipped:
+		return
+	var holder = _cards[f.by]
+	_light_special(holder)
+	_pose([holder], OFF.step, 1.0, 0.12)
+	_spawn(FxEffect.Kind.SWORD, sword, {from = holder, to = _cards[f.unit]})
+	await _after(0.12)
+	_pose([holder], 0.0, 1.0, 0.2)
+	_land(f, sword * 0.85 - 0.12)
 
 
 ## 反噬：持有者特殊技能栏亮起、炸开一圈尖刺，随后受到伤害
@@ -619,7 +665,7 @@ func _dissolve(card) -> void:
 ## trigger 是触发队长这类效果的卡（从它连白线过来）
 func _land(f: Dictionary, delay: float, trigger = null) -> void:
 	if delay > 0:
-		await wait(delay)
+		await _after(delay)
 	if have_been_skipped:
 		return
 	var card = _cards[f.unit]
@@ -662,7 +708,7 @@ func _damage(f: Dictionary) -> void:
 		if f.dealt == 0:
 			apply_effect(f)
 			return
-		await wait(PACE.defend)
+		await _after(PACE.defend)
 		if have_been_skipped:
 			return
 	_badge(card, _damage_badge(f))
@@ -714,7 +760,7 @@ func _character_effect(effect_id: String, holder: String, target: String, amount
 
 
 func _character_effect_later(delay: float, effect_id: String, holder: String, target: String) -> void:
-	await wait(delay)
+	await _after(delay)
 	if not have_been_skipped:
 		_character_effect(effect_id, holder, target, 0)
 
@@ -860,7 +906,24 @@ func show_final_state() -> void:
 ##### 动画工具 #####
 #==============================================
 
+## 生效后留给玩家看的时间；多一轮重走的那几拍减半
+func _read() -> float:
+	return PACE.quick_read if _quick else PACE.read
+
+
+## 主流程等一会儿（按当前速度）；测时长时只记下
 func wait(seconds: float) -> void:
+	if measuring:
+		measured[_segment] = measured.get(_segment, 0.0) + seconds
+		_clock += seconds
+		return
+	await get_tree().create_timer(seconds / battle_speed).timeout
+
+
+## 和 wait 一样，用在不挡住主流程的效果里（飘字、晚一点生效的伤害）；测时长时不计
+func _after(seconds: float) -> void:
+	if measuring:
+		return
 	await get_tree().create_timer(seconds / battle_speed).timeout
 
 
@@ -918,7 +981,7 @@ func _spawn(kind: FxEffect.Kind, duration: float, props: Dictionary) -> void:
 
 func _spawn_later(delay: float, kind: FxEffect.Kind, duration: float, props: Dictionary) -> void:
 	if delay > 0:
-		await wait(delay)
+		await _after(delay)
 	_spawn(kind, duration, props)
 
 

@@ -20,11 +20,14 @@ enum Kind {
 	STEEL,         ## 坚固：卡面上扫过一道金属光
 	THORNS,        ## 反噬：卡上炸开一圈尖刺
 	EMBERS,        ## 余烬：阵亡烧散时从卡上飘起
+	SWORD,         ## 光剑：from 身前现出、剑尖指向 to，加速飞过去拖着残影，最后一道斩击（协战）
 }
 
 const VENOM_COLORS: Array[Color] = [Color("24520f"), Color("5fae35"), Color("b9f08f"), Color("f4ffd8")]
 const DROP := Color(0.56, 0.86, 0.36)
 const GOLD_LIGHT := Color(1, 0.96, 0.8)
+## 协战的光剑：人族的橙色
+const SWORD_COLOR := Color("f28c28")
 
 ## 柔和的圆形光点（白色，用颜色调制）
 static var _glow: GradientTexture2D
@@ -61,6 +64,7 @@ func _ready() -> void:
 	var card := to if to else from
 	_k = card.face.display_scale
 	# 光类的特效叠加着画，更亮
+	# 光剑不叠加：叠在亮色的卡图上会发白，看不出是橙色的剑
 	if kind in [Kind.ORB, Kind.SPARKS, Kind.BURST, Kind.IMPACT, Kind.BEAM, Kind.THREAD, Kind.EMBERS, Kind.SHIELD_HIT, Kind.SHIELD_BREAK, Kind.STEEL]:
 		var additive := CanvasItemMaterial.new()
 		additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
@@ -122,9 +126,53 @@ func _draw() -> void:
 			_draw_thorns(p)
 		Kind.EMBERS:
 			_draw_embers(p)
+		Kind.SWORD:
+			_draw_sword(p)
 
 
 # ---------- 各种特效 ----------
+
+## 协战：前 35% 光剑在持有者身前现出（剑尖指向目标），接着加速飞过去、拖着三道残影，最后 15% 是目标上的一道斩击
+func _draw_sword(p: float) -> void:
+	var a := _art(from)
+	var b := _art(to)
+	var dir := (b - a).normalized()
+	var start := a + dir * 100 * _k
+	if p < 0.85:
+		var appear := minf(1, p / 0.35)
+		var fly := clampf((p - 0.35) / 0.5, 0, 1)
+		for i in range(3, -1, -1):
+			if i > 0 and fly <= 0:
+				continue
+			_blade(start.lerp(b, _ease_in(clampf(fly - i * 0.07, 0, 1))), dir, appear * (1 - i * 0.28) * (1.0 if i == 0 else 0.6))
+		return
+	var q := (p - 0.85) / 0.15
+	var normal := dir.orthogonal()
+	var reach := 90 * _k
+	var cut := _crescent(b - normal * reach - dir * 25 * _k, b + normal * reach + dir * 25 * _k, 20 * _k * (1 - q * 0.5), 0.45)
+	_dot(b, 80 * _k, Color(SWORD_COLOR, 0.6 * (1 - q)))
+	draw_colored_polygon(cut, Color(1, 0.97, 0.88, 1 - q))
+
+
+## 一把光剑：中心在 at、剑尖朝 dir；外面一圈橙色的光，里面白色
+func _blade(at: Vector2, dir: Vector2, alpha: float) -> void:
+	if alpha <= 0:
+		return
+	var n := dir.orthogonal()
+	var k := _k
+	var tip := at + dir * 80 * k
+	var hilt := at - dir * 50 * k
+	var shoulder := at + dir * 46 * k
+	_dot(at + dir * 12 * k, 78 * k, Color(SWORD_COLOR, 0.5 * alpha))
+	var edge := PackedVector2Array([tip + dir * 5 * k, shoulder + n * 15 * k, hilt + n * 12 * k, hilt - n * 12 * k, shoulder - n * 15 * k])
+	draw_colored_polygon(edge, Color(0.35, 0.12, 0.02, 0.7 * alpha))
+	var blade := PackedVector2Array([tip, shoulder + n * 12 * k, hilt + n * 9 * k, hilt - n * 9 * k, shoulder - n * 12 * k])
+	draw_colored_polygon(blade, Color(SWORD_COLOR, alpha))
+	var core := PackedVector2Array([tip - dir * 10 * k, shoulder + n * 4 * k, hilt + n * 3 * k, hilt - n * 3 * k, shoulder - n * 4 * k])
+	draw_colored_polygon(core, Color(1, 0.97, 0.88, alpha))
+	draw_line(hilt + n * 24 * k, hilt - n * 24 * k, Color(0.35, 0.12, 0.02, 0.8 * alpha), 10 * k)
+	draw_line(hilt + n * 22 * k, hilt - n * 22 * k, Color(1, 0.86, 0.55, alpha), 6 * k)
+	draw_line(hilt, hilt - dir * 22 * k, Color(1, 0.86, 0.55, alpha), 7 * k)
 
 ## 光球：沿弧线飞过去（同一排拱得高些），拖着几颗渐小的光点
 func _draw_orb(p: float) -> void:

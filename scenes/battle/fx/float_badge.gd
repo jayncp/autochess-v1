@@ -57,12 +57,12 @@ var _push_shown := 0.0
 var _anchor := Vector2.ZERO
 
 
-## 基础技能：n 是战斗力变化（财富是金币数）；null 表示只显示名称
-static func skill(skill_id: String, n: Variant = null) -> FloatBadge:
+## 基础技能：n 是战斗力变化（财富是金币数）；null 表示只显示名称；count 为真时 n 是技能值的变化（白字，如"集结 +1"）
+static func skill(skill_id: String, n: Variant = null, count := false) -> FloatBadge:
 	var badge := FloatBadge.new()
 	badge.id = skill_id
 	badge.text = TranslationServer.translate("keyword." + skill_id)
-	badge._set_number(n, COIN if skill_id == "wealth" else Color())
+	badge._set_number(n, Color.WHITE if count else COIN if skill_id == "wealth" else Color())
 	return badge
 
 

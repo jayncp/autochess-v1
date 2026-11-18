@@ -547,12 +547,16 @@ func _draw_table(area: Rect2, tier: int) -> void:
 			_draw_chips(_chips(shown, skills), cell, false)
 
 
-## 一格里的时机：一个时机一行，多个时机时缩小字号竖排
+## 一格里的时机：一个时机写名称；多个时机写不下，改成一排图标（和紧凑卡、战斗中的图标一样）
 func _draw_slot_timings(timings: Array, center: Vector2) -> void:
-	var size: float = [19.0, 15.0, 12.0][timings.size() - 1]
+	if timings.size() == 1:
+		_text(tr("timing." + timings[0]), SANS_BOLD, center, 19, TIMING_COLORS[timings[0]], 2)
+		return
+	var size := 21.0 if timings.size() == 2 else 15.0
+	var step := size + 2
 	for i in timings.size():
-		var y := center.y + (i - (timings.size() - 1) / 2.0) * size * 1.1
-		_text(tr("timing." + timings[i]), SANS_BOLD, Vector2(center.x, y), size, TIMING_COLORS[timings[i]], 2)
+		var x := center.x + (i - (timings.size() - 1) / 2.0) * step
+		_outline_icon(timings[i], Vector2(x, center.y), size, TIMING_COLORS[timings[i]])
 
 
 ## 紧凑卡、战斗中：左边竖排这张卡有的时机图标，右边是合并后的基础技能，都按数量居中
