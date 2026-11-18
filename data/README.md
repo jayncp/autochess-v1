@@ -15,16 +15,25 @@
 | `star` | 星级 |
 | `races` | 种族列表（只有角色有），见 `CardDB.RACES` |
 | `strength` | 战斗力。角色必填；装备的战斗力加到角色上 |
-| `timing_1`、`timing_2` | 时机-1、时机-2，见 `CardDB.TIMINGS` |
+| `timing_1`、`timing_2` | 时机-1、时机-2：时机的列表（一格可以写多个），见 `CardDB.TIMINGS`，如 `["on_enter", "on_engage"]` |
 | `skills_1`、`skills_2` | 基础技能-1、基础技能-2：`{技能 id: 数值}` |
-| `special_skills` | 特殊技能：`{技能 id: 数值或 null}`，没有数值的（如致命）写 `null`；带时机的写 `{"timing": 时机}`，如 `{"awaken": {"timing": "pre_battle"}}`。描述型的（如队长的 `rally_gain`）卡面文字在翻译表 `effect.<id>` |
+| `special_skills` | 特殊技能：`{技能 id: 值}`，写法见下 |
+
+**特殊技能的值**：
+
+- 词条：数值（如庇护的层数 `{"shelter": 2}`），没有数值的（如致命）写 `null`。
+- 带参数的写成字典，参数见 `CardDB.SPECIAL_PARAMS`：
+  - `timings`：带时机的特殊技能在哪些时机生效，如 `{"awaken": {"timings": ["pre_battle"]}}`；
+  - `skill`、`amount`：作用于哪个基础技能、数值，如队长 `{"on_trigger_gain": {"skill": "rally", "amount": 2}}`。
+- 描述型特殊技能一种效果一个 id，卡牌之间只是参数不同；卡面文字在翻译表 `effect.<id>`，模板里的 `{参数名}` 换成参数（`{skill}` 显示技能名）。有哪些效果、各属于时点里的哪一步，见 [battle-rules.md 6.3](../docs/design/battle-rules.md#63-特殊技能描述型)。
 
 **格子**：时机、基础技能各两格，特殊技能一格。角色和装备都可以填任意格，通常角色填 1、装备填 2。
 合并时装备那一格有内容就覆盖角色的，写 `"clear"` 表示清空，规则见 [battle-rules.md 第 2 节](../docs/design/battle-rules.md#2-卡牌和装备)。
 
 ```json
-{"id": "tiger_man", "no": 1201, "type": "character", "star": 2, "races": ["beast", "human"], "strength": 9, "timing_1": "on_engage", "skills_1": {"rage": 2, "rally": 1}},
-{"id": "holy_water", "no": 2210, "type": "equipment", "star": 2, "strength": 3, "timing_2": "pre_battle"},
+{"id": "tiger_man", "no": 1201, "type": "character", "star": 2, "races": ["beast", "human"], "strength": 9, "timing_1": ["on_engage"], "skills_1": {"rage": 2, "rally": 1}},
+{"id": "holy_water", "no": 2210, "type": "equipment", "star": 2, "strength": 3, "timing_2": ["pre_battle"]},
+{"id": "toad", "no": 1220, "type": "character", "star": 2, "races": ["nature"], "strength": 6, "timing_1": ["on_enter"], "skills_1": {"corrode": 5}, "special_skills": {"on_resolve_bonus": {"skill": "corrode", "amount": 2}}},
 ```
 
 ## levels.json

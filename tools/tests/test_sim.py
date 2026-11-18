@@ -15,16 +15,19 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def test_matches_golden_cases() -> None:
-    lines = (data.REPO / "tests" / "golden" / "battles.jsonl").read_text(encoding="utf-8").splitlines()
-    cases = [json.loads(line) for line in lines[:20]]
-    results = simulate([(c["p1"], c["p2"]) for c in cases])
+def test_matches_rule_cases() -> None:
+    """规则用例（tests/cases/battles.json）用测试卡，作为额外卡牌传给 cli/sim.gd。"""
+    folder = data.REPO / "tests" / "cases"
+    cases = json.loads((folder / "battles.json").read_text(encoding="utf-8"))
+    test_cards = json.loads((folder / "cards.json").read_text(encoding="utf-8"))
+    results = simulate([(c["p1"], c["p2"]) for c in cases], test_cards)
     for case, result in zip(cases, results, strict=True):
+        expect = case["expect"]
         assert (result.winner, result.p1, result.p2) == (
-            case["expect"]["winner"],
-            case["expect"]["p1"],
-            case["expect"]["p2"],
-        )
+            expect["winner"],
+            [strength for _, strength in expect["p1"]],
+            [strength for _, strength in expect["p2"]],
+        ), case["id"]
 
 
 def test_extra_cards() -> None:

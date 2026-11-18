@@ -18,7 +18,11 @@
 
 ## 待办
 
-- [ ] 阶段 3 第二轮开发：按 `docs/plans/stage-3-high-stars-dev.md` 分四批实现机制和卡牌
+- [ ] 阶段 3 第二轮开发：按 `docs/plans/stage-3-high-stars-dev.md` 分四批实现机制和卡牌（issue #25）
+  - [ ] 第 1 批：结算结构改造、一格多个时机、用例迁到 `tests/cases/`（分支 `high-stars-1`，待审）
+  - [ ] 第 2 批：词条类机制和 43 张角色、35 件装备
+  - [ ] 第 3 批：描述型特殊技能和剩下的卡
+  - [ ] 第 4 批：表现和收尾
 - [ ] Rust 版结算和对拍；强度测试、迭代数值
 - [ ] 卡图
 - 之后再定：构筑阶段的拖放反馈、音效；Android 的存档导入导出；正式发布前定 Android 包名（现在是占位的 `com.example.autochess`，改了存档会丢）

@@ -81,7 +81,7 @@ keyword_desc.sturdy,每次受到的伤害 −N（最低为 0）
 keyword_desc.awaken,触发下一位角色的基础技能
 keyword_desc.shelter,抵挡 N 次伤害，每次消耗一层（先于坚固）
 keyword_desc.lethal,交战时攻击视为无穷大，可被庇护抵挡
-effect.rally_gain,己方角色触发集结时，自身战斗力 +%d
-effect.corrode_boost,己方角色结算腐蚀时，伤害 +%d
+effect.on_trigger_gain,己方角色触发{skill}时，自身战斗力 +{amount}
+effect.on_resolve_bonus,己方角色结算{skill}时，伤害 +{amount}
 level.boar_rush,猪突猛进
 level.tiger_gale,虎虎生风

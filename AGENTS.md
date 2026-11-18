@@ -35,7 +35,7 @@
 - `scripts/`：`core/`（`CardDB`、`LevelDB`、`BattleSim`；设置 `GameSettings`、进度存档 `SaveData`）、`global_var.gd`（场景之间共享的静态变量：开战的阵容和来自哪个关卡、当次的紧凑模式）
 - `cli/`：GDScript 无头命令，如 `sim.gd`（批量模拟）、`build_theme.gd`（生成主题）
 - `assets/`：`cards/<id>.png`（没有卡图的卡，卡面上显示淡显的种族图标）、`backgrounds/`、`ui/`（主题 `theme.tres`、图标、卡牌边框和法阵、控件贴图、飘字的饰板 `ui/fx/`，都由脚本生成）、`fonts/`（子集化的字体和字体变体）
-- `tests/`：基线测试，说明见 `tests/README.md`
+- `tests/`：测试。规则用例和测试卡在 `tests/cases/`（只用测试卡，以后 Rust 版共用），说明见 `tests/README.md`
 - `tools/`：Python 分析和平衡实验、美术素材生成（uv 管理，带 `.gdignore`），说明见 `tools/README.md`
 
 ## 命令
@@ -70,7 +70,7 @@
   - 内部一律用英文 id，显示文字一律走翻译表：场景里写 key，代码里用 `tr()`；
   - 给开发者看的报错信息可以直接写中文；
   - 改了 CSV 后要重新导入（`godot --import`），生成的 `*.translation` 一起提交。
-- 新增卡牌：在 `data/cards.json` 按序号加数据，`i18n/data.csv` 加中文名，`assets/cards/<id>.png` 放卡图（没有就先不放）；新词条还要加 `keyword.<id>` 和 `keyword_desc.<id>`，描述型特殊技能加 `effect.<id>`。测试的数据检查会核对翻译是否齐全，并列出还没有卡图的卡。
+- 新增卡牌：在 `data/cards.json` 按序号加数据，`i18n/data.csv` 加中文名，`assets/cards/<id>.png` 放卡图（没有就先不放）；新词条还要加 `keyword.<id>` 和 `keyword_desc.<id>`；描述型特殊技能一种效果一个 id 加参数（先在 `docs/design/battle-rules.md` 6.3 找同类），新效果加 `effect.<id>`。测试的数据检查会核对翻译是否齐全，并列出还没有卡图的卡。
 - 存档在 `user://`（目录 `niuma_autochess`），文件和字段见 `docs/design/save-data.md`；改存档格式时按那里的规则升版本。测试和截图用各自的文件名，不读写玩家的存档。
 - 协议暂定：代码 AGPL-3.0-or-later，美术/数据/文档 CC BY-SA 4.0。
 - 开发流程：阶段性任务先在 `docs/plans/` 写计划，用户确认后开 issue，在分支上开发，通过 PR 合并；小修改直接提交到 main。

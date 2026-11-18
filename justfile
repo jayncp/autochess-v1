@@ -10,15 +10,15 @@ run:
 test:
     {{limit}} {{godot}} --headless --path . --script res://tests/run_tests.gd
 
-# 用当前引擎重录战斗用例的期望值，并列出变化
+# 用当前引擎重录规则用例的期望值，并列出变化
 record:
-    {{limit}} {{godot}} --headless --path . --script res://tests/tools/record_golden.gd
+    {{limit}} {{godot}} --headless --path . --script res://tests/tools/record_cases.gd
 
-# 重新生成随机用例（卡牌增删后），之后运行 just record
+# 重新生成冒烟用例里的随机对局（卡牌增删后）
 gen-random:
     {{limit}} {{godot}} --headless --path . --script res://tests/tools/gen_random_cases.gd
 
-# 枚举关卡的全部解，写入 level 组用例，之后运行 just record
+# 枚举关卡的全部解，写入冒烟用例
 levels:
     {{limit}} {{godot}} --headless --path . --script res://tests/tools/level_solutions.gd
 

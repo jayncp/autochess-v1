@@ -67,12 +67,12 @@ func _gui_input(event: InputEvent) -> void:
 static func terms(data: Dictionary) -> Array:
 	var timings := []
 	for slot in CardDB.TIMING_SLOTS:
-		if data.get(slot) is String and data[slot] != CardDB.CLEAR:
-			timings.append(data[slot])
+		if data.get(slot) is Array:
+			timings.append_array(data[slot])
 	var specials: Dictionary = data.special_skills if data.get("special_skills") is Dictionary else {}
 	for value in specials.values():
-		if value is Dictionary:
-			timings.append(value.timing)
+		if value is Dictionary and value.has("timings"):
+			timings.append_array(value.timings)
 	var base := {}
 	for slot in CardDB.SKILL_SLOTS:
 		if data.get(slot) is Dictionary:

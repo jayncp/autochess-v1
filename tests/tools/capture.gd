@@ -134,9 +134,9 @@ func _card_pages() -> void:
 	TranslationServer.add_translation(names)
 	CardDB.add_cards([
 		{"id": "demo_hero", "no": 0, "type": "character", "star": 3, "races": ["beast", "human", "divine"], "strength": 9,
-			"timing_1": "on_enter", "skills_1": {"rage": 2, "rally": 1, "inspire": 1, "corrode": 3}},
+			"timing_1": ["pre_battle", "on_enter"], "skills_1": {"rage": 2, "rally": 1, "inspire": 1, "corrode": 3}},
 		{"id": "demo_gear", "no": 0, "type": "equipment", "star": 3, "strength": 3,
-			"timing_2": "on_engage", "skills_2": {"support": 3, "wealth": 2}, "special_skills": {"sturdy": 2}},
+			"timing_2": ["pre_battle", "on_enter", "on_engage"], "skills_2": {"support": 3, "wealth": 2}, "special_skills": {"sturdy": 2}},
 	])
 	var tiers := []
 	var equipment_tiers := []
