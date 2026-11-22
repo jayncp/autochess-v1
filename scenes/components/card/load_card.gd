@@ -91,6 +91,8 @@ static func one_skill_text(skill: String, value) -> String:
 			match key:
 				"skill":
 					params[key] = _t("keyword." + value[key])
+					# "〈技能〉值"：任意基础技能写"基础技能数值"
+					params.skill_value = _t("keyword.any_value") if value[key] == CardDB.ANY else _t("ui.card.skill_value") % params[key]
 				"scope", "timing", "target":
 					params[key] = _t("%s.%s" % [key, value[key]])
 				_:

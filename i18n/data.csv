@@ -38,7 +38,7 @@ card.forest_archer,密林射手
 card.temple_guard,神庙守卫
 card.mammoth,猛犸
 card.ninja,忍者
-card.elf_princess,精灵公主
+card.star_mage,星辰法师
 card.envoy,神使
 card.swamp_tentacle,沼泽触手
 card.alpha_wolf,头狼
@@ -68,7 +68,7 @@ card.high_priest,神官
 card.rafflesia,大王花
 card.panda_hero,熊猫大侠
 card.pure_sage,纯净尊者
-card.star_mage,星辰法师
+card.elf_princess,精灵公主
 card.arbiter,神裁者
 card.scarecrow,灾厄草人
 card.erlang,二郎真君
@@ -113,7 +113,7 @@ card.scorpion_stinger,蝎尾毒钩
 card.heart_potion,噬心药剂
 card.horned_helmet,牛角头盔
 card.kunai,苦无
-card.prayer_beads,念珠
+card.sludge_bolt,淤泥飞弹
 card.lute,鲁特琴
 card.oracle_book,神谕之书
 card.parrot_puppet,鹦鹉手偶
@@ -121,14 +121,14 @@ card.silver_sword,银剑
 card.dust_boots,踏尘靴
 card.berserker_axe,狂战斧
 card.treasure_bowl,聚宝盆
-card.white_wolf_totem,白狼图腾
+card.legion_shield,军团圣盾
 card.general_token,将军令牌
 card.holy_hymn,神圣乐章
 card.rafflesia_bud,大王花苞
 card.omniscient_robe,全知法袍
 card.moon_dial,月相轮盘
 card.cross_emblem,十字纹章
-card.temple_core,神庙核心
+card.poison_dagger,淬毒匕首
 card.golden_sword,金剑
 card.elf_veil,精灵头纱
 card.tiger_tally,虎符
@@ -139,9 +139,9 @@ card.petrifying_eye,石化之眼
 card.holy_grail,圣杯
 card.clockwork_box,千机之匣
 card.golden_bell,金钟罩
-card.elf_scepter,精灵神杖
+card.yata_mirror,八咫镜
 card.holy_sword,圣剑
-card.void_heart,虚无之心
+card.golden_chainmail,锁子黄金甲
 card.golden_serpent_head,金色蛇首
 race.beast,动物
 race.human,人族
@@ -198,15 +198,14 @@ scope.allies,己方
 scope.first,开战时位于己方第 1 位的角色，
 scope.self_and_second,自身和开战时位于己方第 2 位的角色，
 scope.self_and_front,自身和前一位，
-effect.on_trigger_raise,己方角色触发{skill}后，己方全体的{skill}值 +{amount}
+effect.on_trigger_raise,己方角色触发{skill}后，己方全体的{skill_value} +{amount}
 effect.double_skills,自身的基础技能数值和开战时的战斗力翻倍
 effect.equipment_times,从装备获得的战斗力和基础技能数值变为 {amount} 倍
 effect.copy_skills,额外获得一份对方交战位的基础技能
 effect.grant,{target}获得{skill}{amount}
 effect.clear_skills,清除{target}的基础技能
-effect.raise_skills,己方全体的{skill}值 +{amount}
+effect.raise_skills,己方全体的{skill_value} +{amount}
 effect.gain_skill_sum,自身战斗力 + 己方全体基础技能数值之和
-effect.gain_if_outnumbered,对方角色多于己方时，自身战斗力 +{amount}
 effect.gain_all_if_outnumbered,对方角色多于己方时，己方全体战斗力 +{amount}
 effect.damage_half_strength,对方交战位受到其战斗力一半的伤害
 effect.execute,对方交战位战斗力高于自身时，对其造成致命伤害
@@ -217,5 +216,6 @@ target.allies,己方全体
 target.enemies,对方全体
 target.enemy_first_two,对方前两位
 keyword.any,基础技能
+keyword.any_value,基础技能数值
 level.boar_rush,猪突猛进
 level.tiger_gale,虎虎生风

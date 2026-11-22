@@ -8,8 +8,8 @@ const Harness := preload("res://tests/battle_harness.gd")
 ## 回放开头的停顿（battle_manager.PACE.start），不属于任何时点
 const PACE_START := 0.4
 const TIMEOUT_SEC := 300.0
-## 能打赢的摆法（冒烟用例里关卡的解），冒烟流程用它记通关
-const WINNING := {"boar_rush": [["vulture", "war_banner"], ["maneater", ""], ["tiger_man", "spiked_gauntlet"], ["half_elf", ""]]}
+## 能打赢的摆法（冒烟用例里关卡的解），冒烟流程用它记通关。猪突猛进在数值校正后没有解（待重做），用虎虎生风
+const WINNING := {"tiger_gale": [["tiger_man", "lionheart"], ["half_elf", "venom_fang"], ["shield_guard", ""], ["tiger_man", ""]]}
 ## 卡牌数据的校验用例：合法和不合法的写法各一张卡
 const CARD_CHECKS_PATH := "res://tests/cases/card_checks.json"
 const TEST_FILES := ["test_settings.cfg", "test_save.json", "test_save.json.bak", "test_save.json.tmp", "test_save.json.broken"]
@@ -79,6 +79,7 @@ func _check_data() -> void:
 	for target in CardDB.TARGETS:
 		keys.append("target." + target)
 	keys.append("keyword." + CardDB.ANY)
+	keys.append("keyword.any_value")
 	for level_id in LevelDB.all():
 		keys.append("level." + level_id)
 	var locale := TranslationServer.get_locale()
@@ -335,7 +336,7 @@ func _test_skill_text() -> void:
 		[load_card.special_skill_text({"grant": {"timings": ["pre_battle"], "target": "next", "skill": "lethal", "amount": null}}), "战前：下一位角色获得致命"],
 		[load_card.special_skill_text({"grant": {"timings": ["on_enter"], "target": "allies", "skill": "rally", "amount": 1}}), "入场：己方全体获得集结1"],
 		[load_card.special_skill_text({"clear_skills": {"timings": ["on_enter", "on_engage"], "target": "enemy_first_two"}}), "入场、交战：清除对方前两位的基础技能"],
-		[load_card.special_skill_text({"raise_skills": {"timings": ["on_enter"], "skill": "any", "amount": 2}}), "入场：己方全体的基础技能值 +2"],
+		[load_card.special_skill_text({"raise_skills": {"timings": ["on_enter"], "skill": "any", "amount": 2}}), "入场：己方全体的基础技能数值 +2"],
 		[load_card.special_skill_text({"on_resolve_gain": {"skill": "any", "amount": 2}}), "己方角色结算基础技能时，自身战斗力 +2"],
 		[load_card.special_skill_text({"on_enemy_resolve_gain_all": {"skill": "any", "amount": 1}}), "对方角色结算基础技能时，己方全体战斗力 +1"],
 		[load_card.special_skill_text({"on_trigger_boost": {"skill": "rally", "amount": 2}}), "己方角色触发集结时，该角色战斗力 +2"],
@@ -392,17 +393,18 @@ func _run_replay_checks() -> void:
 		["skip-midway", [["soldier", ""], ["soldier", ""], ["tiger", "holy_water"]], [["sludge", "thorns"], ["shield_guard", ""]], 30],
 		["mechanics", [["wisp", ""], ["fey_tiger", ""], ["mimic", ""], ["butterfly", ""], ["pixie", "hollow"]],
 			[["captain", ""], ["toad", ""], ["soldier", ""], ["tiger", "flash_orb"], ["paladin", ""]], -1],
-		# 下面两条要出现列出的机制（正式卡调数值后可能不再出现，届时换阵容）
+		# 下面三条要出现列出的机制（正式卡调数值后可能不再出现，届时换阵容）
 		["mechanics-2", [["pure_sage", ""], ["high_priest", ""], ["knight_king", ""], ["ninja", ""], ["forest_archer", ""]],
 			[["king_cobra", "golden_sword"], ["panda_hero", ""], ["envoy", ""], ["dream_mushroom", ""]], -1,
 			["round", "assist", "grant", "again", "immune"]],
 		["mechanics-3", [["shaman", ""], ["chanter", ""], ["alchemist", ""], ["arbiter", ""]],
-			[["vulture", ""], ["parrot", ""], ["medusa", ""], ["swamp_king", ""], ["tumbleweed", ""], ["soldier", ""]], -1,
-			["copy", "clear", "raise", "raise@beat", "grant", "damage_half_strength", "gain_skill_sum", "gain_if_outnumbered"]],
-		# 正式数据还没有用到的新机制，先用测试卡
-		["mechanics-4", [["t_dryad", ""], ["t_soldier", "t_mirror"], ["t_leader", ""], ["t_star_mage", ""], ["t_pure_sage", ""], ["t_tiger", "t_whip"], ["t_judge", ""]],
-			[["t_yak", ""], ["t_executioner", ""], ["t_forest_archer", ""], ["t_executioner", "t_iron_sword"], ["t_executioner", ""],
-				["t_wolf_king", "t_iron_sword"], ["t_tiger", "t_iron_sword"]], -1,
+			[["vulture", ""], ["parrot", ""], ["tumbleweed", ""], ["medusa", ""], ["swamp_king", ""], ["soldier", ""]], -1,
+			["copy", "clear", "raise", "raise@beat", "grant", "damage_half_strength", "gain_skill_sum", "gain_all_if_outnumbered"]],
+		# 数值校正加的新机制
+		["mechanics-4", [["forest_archer", ""], ["soldier", "yata_mirror"], ["captain", ""], ["star_mage", ""], ["pure_sage", ""],
+				["tiger", "tiger_tail_whip"], ["arbiter", ""]],
+			[["snow_yak", ""], ["king_cobra", ""], ["forest_archer", ""], ["king_cobra", "iron_sword"], ["king_cobra", ""],
+				["white_wolf_king", "iron_sword"], ["tiger", "legion_shield"]], -1,
 			["on_trigger_boost", "on_resolve_gain", "on_enemy_resolve_gain_all", "gain_all_if_outnumbered", "execute", "execute@immune", "halved", "round", "grant"]],
 	]
 	for c in cases:
@@ -652,7 +654,7 @@ func _run_smoke() -> void:
 	await _check_lineup_rules(manager)
 	manager.current_scene._on_back_button_pressed()
 	await _frames(2)
-	# 进入时紧凑模式是默认值，临时切换后打完回来保持；赢了才记通关（第一关用能赢的摆法）
+	# 进入时紧凑模式是默认值，临时切换后打完回来保持；赢了才记通关（WINNING 里的关用能赢的摆法）
 	for level_id in LevelDB.all():
 		manager.current_scene.enter_level(level_id)
 		await create_timer(0.3).timeout

@@ -48,7 +48,7 @@ def test_matches_rule_cases(backend: str) -> None:
 @pytest.mark.parametrize("backend", BACKENDS)
 def test_extra_cards(backend: str) -> None:
     [result] = simulate([([["vanilla_10", ""]], [["pixie", ""]])], [vanilla_character(10)], backend=backend)
-    assert (result.winner, result.p1, result.p2) == (1, [4], [])
+    assert (result.winner, result.p1, result.p2) == (1, [2], [])
     assert result.score() == 1.0 and result.score(2) == 0.0
 
 

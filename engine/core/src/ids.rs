@@ -124,7 +124,6 @@ pub enum Special {
     ClearSkills,
     RaiseSkills,
     GainSkillSum,
-    GainIfOutnumbered,
     GainAllIfOutnumbered,
     DamageHalfStrength,
     /// 〈时机〉对方交战位的战斗力高于自身时，对它造成一次致命伤害（庇护能挡，对免疫致命的是 0 点）
@@ -132,7 +131,7 @@ pub enum Special {
 }
 
 impl Special {
-    pub const COUNT: usize = 28;
+    pub const COUNT: usize = 27;
     pub const ALL: [Special; Special::COUNT] = [
         Special::Backlash,
         Special::Sturdy,
@@ -158,7 +157,6 @@ impl Special {
         Special::ClearSkills,
         Special::RaiseSkills,
         Special::GainSkillSum,
-        Special::GainIfOutnumbered,
         Special::GainAllIfOutnumbered,
         Special::DamageHalfStrength,
         Special::Execute,
@@ -190,7 +188,6 @@ impl Special {
             Special::ClearSkills => "clear_skills",
             Special::RaiseSkills => "raise_skills",
             Special::GainSkillSum => "gain_skill_sum",
-            Special::GainIfOutnumbered => "gain_if_outnumbered",
             Special::GainAllIfOutnumbered => "gain_all_if_outnumbered",
             Special::DamageHalfStrength => "damage_half_strength",
             Special::Execute => "execute",
@@ -225,7 +222,7 @@ impl Special {
             Special::Grant => &[Timings, Target, Skill, Amount],
             Special::ClearSkills => &[Timings, Target],
             Special::RaiseSkills => &[Timings, Skill, Amount],
-            Special::GainIfOutnumbered | Special::GainAllIfOutnumbered => &[Timings, Amount],
+            Special::GainAllIfOutnumbered => &[Timings, Amount],
             _ => &[],
         }
     }
