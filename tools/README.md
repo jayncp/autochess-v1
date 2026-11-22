@@ -74,4 +74,4 @@
 - 用 rsync 同步代码时不要保留修改时间（`rsync -rlzc`）：Rust 源码的时间比上次编译早的话，Python 绑定不会重新编译。
 - 远程连接不稳定时，用 `nohup` 在后台跑，再隔一会儿看 `runs/<名字>/` 下的日志；`report.md` 出现就是跑完了。
 
-**规则开关**：试验里有六条规则的口径和正式规则不同（`engine/core/src/trial.rs`），导入 `autochess_tools.balance` 时会全部打开。想按正式规则搜索，先设环境变量 `AUTOCHESS_OFFICIAL_RULES=1`。
+**规则开关**：试验里有六条规则的口径和正式规则不同（`engine/core/src/trial.rs`），导入 `autochess_tools.balance` 时会全部打开。想按正式规则和正式数据搜索：先设环境变量 `AUTOCHESS_OFFICIAL_RULES=1`，`stage` 加 `--official`（`run`、`check` 用 `--change` 指向一个内容是 `[]` 的文件）。

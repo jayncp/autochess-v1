@@ -15,22 +15,21 @@ import sys
 import time
 from pathlib import Path
 
+from autochess_tools.balance import DATA
 from autochess_tools.balance.meta import STAGES
-
-ROOT = Path(__file__).resolve().parents[2] / "balance"
 
 
 def main() -> None:
     names = [s.name for s in STAGES]
     parser = argparse.ArgumentParser(description="六个阶段同时搜索")
     parser.add_argument("name", help="这一轮的名字，也是结果目录的名字")
-    parser.add_argument("--change", type=Path, default=ROOT / "trial.json", help="改过的卡，默认 balance/trial.json")
-    parser.add_argument("--warm", type=Path, nargs="*", default=[ROOT / "pools"], help="起点阵容的目录，可以写几个")
+    parser.add_argument("--change", type=Path, default=DATA / "trial.json", help="改过的卡，默认 balance/trial.json")
+    parser.add_argument("--warm", type=Path, nargs="*", default=[DATA / "pools"], help="起点阵容的目录，可以写几个")
     parser.add_argument("--stages", nargs="*", default=names, choices=names)
     parser.add_argument("--threads", type=int, help="每个进程的线程数，默认是核心数除以阶段数")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--rounds", type=int, default=80)
-    parser.add_argument("--out", type=Path, default=ROOT / "runs")
+    parser.add_argument("--out", type=Path, default=DATA / "runs")
     args = parser.parse_args()
 
     out = args.out / args.name

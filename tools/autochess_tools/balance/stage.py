@@ -2,10 +2,11 @@
 报告（Markdown）打印到标准输出，进度打印到标准错误。
 
 用法（在 tools/ 下）：
-  uv run python -m autochess_tools.balance.stage <阶段> [--change 改动.json] [--warm 目录 ...] [--save 目录]
-      [--seed N] [--rounds N] [--ban id,id]
+  uv run python -m autochess_tools.balance.stage <阶段> [--change 改动.json | --official] [--warm 目录 ...]
+      [--save 目录] [--seed N] [--rounds N] [--ban id,id]
 
---change：改过的卡（JSON 数组，同 id 覆盖正式数据）；--warm：从这些目录里存的阵容出发；
+--change：改过的卡（JSON 数组，同 id 覆盖正式数据），默认是候选数值 balance/trial.json；--official：按正式数据；
+--warm：从这些目录里存的阵容出发，默认 balance/pools；
 --save：把这次的阵容存到这个目录。
 六个阶段一起跑用 autochess_tools.balance.run。
 """
@@ -20,6 +21,7 @@ from pathlib import Path
 import numpy as np
 
 from autochess_tools import data
+from autochess_tools.balance import DATA
 from autochess_tools.balance.meta import STAGES, Cards, Meta, build, contains, load_pools, save_pool, scores
 
 RACES = {"beast": "动物", "human": "人族", "elf": "精灵", "divine": "神族", "nature": "自然"}
@@ -104,8 +106,9 @@ def report(meta: Meta) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="一个阶段的阵容搜索")
     parser.add_argument("stage", choices=[s.name for s in STAGES])
-    parser.add_argument("--change", type=Path, help="改过的卡（JSON 数组）")
-    parser.add_argument("--warm", type=Path, nargs="*", default=[], help="从这些目录里存的阵容出发")
+    parser.add_argument("--change", type=Path, default=DATA / "trial.json", help="改过的卡，默认 balance/trial.json")
+    parser.add_argument("--official", action="store_true", help="不套用改过的卡，按正式数据搜索")
+    parser.add_argument("--warm", type=Path, nargs="*", default=[DATA / "pools"], help="起点阵容的目录，可以写几个")
     parser.add_argument("--save", type=Path, help="把这次的阵容存到这个目录")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--rounds", type=int, default=80, help="每次扩充阵容库最多几轮")
@@ -113,7 +116,7 @@ def main() -> None:
     args = parser.parse_args()
 
     start = time.time()
-    changed = json.loads(args.change.read_text()) if args.change else []
+    changed = [] if args.official else json.loads(args.change.read_text())
     cards = Cards(changed, [x for x in args.ban.split(",") if x])
     stage = next(s for s in STAGES if s.name == args.stage)
 

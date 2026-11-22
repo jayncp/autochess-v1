@@ -18,8 +18,8 @@ from pathlib import Path
 import numpy as np
 
 from autochess_tools import data
+from autochess_tools.balance import DATA
 from autochess_tools.balance.meta import STAGES, Cards, Meta, Space, contains, load_pools
-from autochess_tools.balance.run import ROOT
 
 
 def main() -> None:
@@ -27,8 +27,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="加大力度的带卡搜索")
     parser.add_argument("--cards", required=True, help="要复核的卡，id 用逗号隔开")
     parser.add_argument("--stages", nargs="*", default=names, choices=names)
-    parser.add_argument("--change", type=Path, default=ROOT / "trial.json")
-    parser.add_argument("--pools", type=Path, nargs="*", default=[ROOT / "pools"])
+    parser.add_argument("--change", type=Path, default=DATA / "trial.json")
+    parser.add_argument("--pools", type=Path, nargs="*", default=[DATA / "pools"])
     parser.add_argument("--save", type=Path)
     args = parser.parse_args()
 
