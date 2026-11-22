@@ -10,7 +10,7 @@
 | [design/levels.md](design/levels.md) | 现有关卡的数据与解（两关都待重做） | 活文档 |
 | [design/art-direction.md](design/art-direction.md) | 美术与界面规范：画风、卡面、各界面布局、控件、素材生成 | 活文档 |
 | [design/save-data.md](design/save-data.md) | 存档：位置、文件、字段、版本和升级规则 | 活文档 |
-| [design/card-workbook.xlsx](design/card-workbook.xlsx) | 卡牌设计表：全部角色和装备（和正式数据一致；数值校正改过的卡有效战力已清空，等重测）、旧设计（参考） | 设计草稿，正式数据以 `data/cards.json` 为准 |
+| [design/card-workbook.xlsx](design/card-workbook.xlsx) | 卡牌设计表：全部角色和装备（和正式数据一致；数值校正改过的卡有效战力已清空，指标见 issue #39）、旧设计（参考） | 设计草稿，正式数据以 `data/cards.json` 为准 |
 | [design/balance-notes.md](design/balance-notes.md) | 调数值的经验：怎么读数据、时机、体系和辅助卡、强卡和克制、调整的方法 | 活文档 |
 | [design/balance-trial.xlsx](design/balance-trial.xlsx) | 数值试验表：校正后的数值，已写进正式数据；下一轮试验在这张表上改（流程见 [tools/README.md](../tools/README.md)） | 设计草稿，正式数据以 `data/cards.json` 为准 |
 | [design/balance-report-*](design/) | 模拟实验报告；`2026-11-22` 是数值校正收尾版的全阶段结果（`.html` 是趋势图） | 快照，带时效 |

@@ -18,14 +18,12 @@
 - 阶段 3 第二轮开发（issue #25，PR #26–#29，计划和执行记录 `docs/plans/stage-3-high-stars-dev.md`）：结算结构改造（时点内七步、被动挂在事件上、用例迁到 `tests/cases/`），神佑、协战、免疫致命、多一次、多一轮，全部描述型特殊技能，98 张新卡（现在共 87 张角色、57 件装备），回放表现和节奏，回放时长工具 `just replay-time`。
 - Rust 版结算（issue #30，PR #31–#33，计划和执行记录 `docs/plans/rust-engine.md`）：`engine/` 的核心库（和 GDScript 版逐函数对应）、命令行 `engine-cli`、Python 绑定 `autochess_engine`（`tools/` 的批量模拟默认用它）；对拍 `just diff-sim` 100 万场零差异，单线程约为 Godot 版的 130 倍；顺带收紧了卡牌数据的校验（`tests/cases/card_checks.json`）。
 
-- 数值校正（记录 `docs/plans/balance-tuning.md`，经验 `docs/design/balance-notes.md`）：按对局阶段搜索均衡阵容，校正到"没有废卡、没有一家独大"；试验数值在 `docs/design/balance-trial.xlsx`，测试工具在 `tools/autochess_tools/balance/`（`just balance`）。新机制和候选数值已经写进正式规则和正式数据。
+- 数值校正（记录 `docs/plans/balance-tuning.md`，经验 `docs/design/balance-notes.md`）：按对局阶段搜索均衡阵容，校正到"没有废卡、没有一家独大"；试验数值在 `docs/design/balance-trial.xlsx`，测试工具在 `tools/autochess_tools/balance/`（`just balance`）。
+- 数值校正写进正式版（issue #36，三个 PR，计划和执行记录 `docs/plans/balance-port.md`）：新机制在 GDScript 版实现、Rust 版去掉试验开关；118 张卡的数值写进 `data/cards.json`，5 件装备改名改 id；回放的合并显示（八咫镜、两个萨满）、战前减半和致命伤害的表现；规则、决策、设计文档同步。两个关卡因此待重做。
 
 ## 待办
 
-- [ ] 把数值校正的结果写进正式数据（计划 `docs/plans/balance-port.md`，清单见 `docs/plans/balance-tuning.md` 第 7 节），分三个 PR：
-  - [x] 规则：新机制在 GDScript 版实现，Rust 版对齐、去掉试验开关（鹦鹉、炼药师、千机之匣、萨满、星辰法师的口径已经是新的）
-  - [x] 数据：`data/cards.json`、改名的装备、卡面文字和翻译、冒烟用例（两个关卡待重做，见 `docs/design/levels.md`）
-  - [ ] 收尾：回放表现、有效战力重测、文档
+- [ ] 数值指标：有效战力的去留，平衡验收改用阶段搜索（issue #39；`card-design.md` 第 1、3 节和设计表的有效战力列等它定）
 - [ ] 卡图
 - 之后再定：构筑阶段的拖放反馈、音效；Android 的存档导入导出；正式发布前定 Android 包名（现在是占位的 `com.example.autochess`，改了存档会丢）
   - 备选工具（用户需要时再做）：设计表导入脚本（"设计中"的行 → `data/cards.json` + 中文名）；草稿评估实验（直接测"设计中"行的有效战力）

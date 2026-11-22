@@ -5,7 +5,7 @@
 
 ## 现状
 
-- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；阶段 3 第二轮（3★/4★/5★）已完成：设计记录 `docs/plans/stage-3-high-stars.md`，开发记录 `docs/plans/stage-3-high-stars-dev.md`，现在共 87 张角色、57 件装备（3★ 以上还没有卡图）。Rust 版结算已完成（计划和执行记录 `docs/plans/rust-engine.md`，PR #31–#33）；数值校正已做完一轮（记录 `docs/plans/balance-tuning.md`，经验 `docs/design/balance-notes.md`），新机制和候选数值都已写进正式规则和正式数据（计划和执行记录 `docs/plans/balance-port.md`，issue #36 第 1、2 步）；两个关卡因此待重做（`docs/design/levels.md`）；接下来是第 3 步收尾（回放表现、有效战力重测），以及卡图。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；阶段 3 第二轮（3★/4★/5★）已完成：设计记录 `docs/plans/stage-3-high-stars.md`，开发记录 `docs/plans/stage-3-high-stars-dev.md`，现在共 87 张角色、57 件装备（3★ 以上还没有卡图）。Rust 版结算已完成（计划和执行记录 `docs/plans/rust-engine.md`，PR #31–#33）；数值校正已做完一轮（记录 `docs/plans/balance-tuning.md`，经验 `docs/design/balance-notes.md`），校正的结果已经写进正式版（新机制、数据、回放表现，计划和执行记录 `docs/plans/balance-port.md`，issue #36）；两个关卡因此待重做（`docs/design/levels.md`）；有效战力还当不当平衡指标待定（issue #39）；接下来是卡图。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
 - 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关，记录通关；数值校正后待重做）、图鉴、战斗演出（速度/跳过）、设置。冒险、线下对战未实现。
 - 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并和各种显示顺序在 `CardDB`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。Rust 版结算在 `engine/`，只算结果、供批量模拟（命令行和 Python 绑定，`tools/` 默认用它），GDScript 版是规则的基准实现。
 - 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
@@ -21,7 +21,7 @@
 - 格子模型：装备像一张卡盖在角色卡上，时机、基础技能各两格，特殊技能一格；逐格覆盖（数据里用 `"clear"` 表示清空），再把两格合并。通常角色填 1、装备填 2，就是叠加。战斗力不分格，直接相加。
 - 术语见 `docs/design/battle-rules.md` 第 1 节，卡面写法、显示顺序、分隔符见第 7 节：用"基础技能"不用"普通技能"，卡面不说"在场"。
 - 规则的现行规范和待实现项见 `docs/design/battle-rules.md`。
-- 平衡：角色和装备各自平衡；角色各档有效战力均值 6/13/21/30/40。
+- 平衡：角色和装备各自平衡；数值按对局阶段搜索均衡阵容来校正（验收：没有废卡、没有一家独大，`docs/plans/balance-tuning.md`）。角色各档有效战力均值 6/13/21/30/40 是校正前的目标，是否保留见 issue #39。
 - 羁绊和升星暂不做。
 
 ## 目录
