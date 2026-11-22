@@ -10,13 +10,16 @@ const TIMINGS := ["pre_battle", "on_enter", "on_engage"]
 ## 基础技能，也是结算顺序：作用对象由近及远，先加后减，财富最后。BattleSim 按它分拍
 const BASE_SKILLS := ["rage", "rally", "support", "inspire", "corrode", "annihilate", "wealth"]
 ## 特殊技能按所属种族排，同族里词条在前；不属于某个种族的描述型效果在最后，按时点里的步骤排（被动在前）
-const SPECIAL_SKILLS := ["backlash", "sturdy", "assist", "immune_lethal", "on_trigger_gain", "awaken", "shelter", "bless",
-	"lethal", "on_resolve_bonus", "on_resolve_raise", "extra_resolve", "extra_round", "double_skills", "double_equipment",
-	"copy_skills", "grant", "clear_skills", "raise_skills", "gain_half_skill_sum", "gain_if_outnumbered", "damage_half_strength"]
+const SPECIAL_SKILLS := ["backlash", "sturdy", "assist", "immune_lethal", "on_trigger_boost", "awaken", "shelter", "bless",
+	"lethal", "on_trigger_gain", "on_resolve_bonus", "halve_pre_battle_damage", "on_trigger_raise", "on_resolve_gain",
+	"on_enemy_resolve_gain_all", "extra_resolve", "extra_round", "double_skills", "equipment_times", "copy_skills", "grant",
+	"clear_skills", "raise_skills", "gain_skill_sum", "gain_if_outnumbered", "gain_all_if_outnumbered", "damage_half_strength",
+	"execute"]
 ## 描述型特殊技能：一种效果一个 id 加参数，不起词条名，卡面写整句（翻译 key 是 effect.<id>，{参数名} 换成参数）
-const DESCRIPTIVE_SPECIALS := ["on_trigger_gain", "on_resolve_bonus", "on_resolve_raise", "extra_resolve", "extra_round",
-	"double_skills", "double_equipment", "copy_skills", "grant", "clear_skills", "raise_skills", "gain_half_skill_sum",
-	"gain_if_outnumbered", "damage_half_strength"]
+const DESCRIPTIVE_SPECIALS := ["on_trigger_boost", "on_trigger_gain", "on_resolve_bonus", "halve_pre_battle_damage",
+	"on_trigger_raise", "on_resolve_gain", "on_enemy_resolve_gain_all", "extra_resolve", "extra_round", "double_skills",
+	"equipment_times", "copy_skills", "grant", "clear_skills", "raise_skills", "gain_skill_sum", "gain_if_outnumbered",
+	"gain_all_if_outnumbered", "damage_half_strength", "execute"]
 ## 写成参数字典的特殊技能和它们的参数；不在这里的写数值（如庇护的层数）或 null（如致命、千机之匣）。
 ## timings：带时机的特殊技能在哪些时机生效（属于特殊技能本身，和卡牌的时机无关）；
 ## skill：基础技能（"any" 是任意 / 所有基础技能；获得的可以是词条）；amount：数值（获得没有数值的词条时是 null）；
@@ -25,22 +28,29 @@ const SPECIAL_PARAMS := {
 	"awaken": ["timings"],
 	"bless": ["timings", "amount"],
 	"on_trigger_gain": ["skill", "amount"],
+	"on_trigger_boost": ["skill", "amount"],
+	"on_trigger_raise": ["skill", "amount"],
+	"on_resolve_gain": ["skill", "amount"],
 	"on_resolve_bonus": ["skill", "amount"],
-	"on_resolve_raise": ["skill", "amount"],
+	"on_enemy_resolve_gain_all": ["skill", "amount"],
 	"extra_resolve": ["scope", "skill"],
 	"extra_round": ["scope", "timing"],
+	"equipment_times": ["amount"],
 	"copy_skills": ["timings"],
 	"grant": ["timings", "target", "skill", "amount"],
 	"clear_skills": ["timings", "target"],
 	"raise_skills": ["timings", "skill", "amount"],
-	"gain_half_skill_sum": ["timings"],
+	"gain_skill_sum": ["timings"],
 	"gain_if_outnumbered": ["timings", "amount"],
+	"gain_all_if_outnumbered": ["timings", "amount"],
 	"damage_half_strength": ["timings"],
+	"execute": ["timings"],
 }
-## 被动的范围：自身、己方全体、开战时位于己方第 1 位的角色（翻译 key 是 scope.<id>）
-const SCOPES := ["self", "allies", "first"]
-## 对象：下一位、己方全体、对方全体、对方前两位（翻译 key 是 target.<id>）
-const TARGETS := ["next", "allies", "enemies", "enemy_first_two"]
+## 被动的范围：自身、己方全体、开战时位于己方第 1 位的角色、自身和开战时位于己方第 2 位的角色、
+## 自身和队列里的前一位（翻译 key 是 scope.<id>）
+const SCOPES := ["self", "allies", "first", "self_and_second", "self_and_front"]
+## 对象：自身、下一位、下两位、己方全体、对方全体、对方前两位（翻译 key 是 target.<id>）
+const TARGETS := ["self", "next", "next_two", "allies", "enemies", "enemy_first_two"]
 ## "任意 / 所有基础技能"（翻译 key 是 keyword.any）
 const ANY := "any"
 ## 带数值的词条（庇护的层数等），数值是正整数；其余词条（如致命）不带数值，写 null
@@ -91,7 +101,7 @@ static func combine(card_id: String, equip_id: String) -> Dictionary:
 ## 装备像一张卡盖在角色卡上（docs/design/battle-rules.md 第 2 节）：
 ## 逐格处理，装备那一格有内容就覆盖，没有就沿用角色的，写"空"就清空；
 ## 然后两格合并：时机取并集，基础技能同名相加。战斗力不分格，角色的加上装备的。
-## 合并时生效的特殊技能（千机之匣、千机魔女）在这里把数值翻倍；printed 为真时不翻倍，得到卡面上印的数（卡面据此把不同的标紫）
+## 合并时生效的特殊技能（千机之匣、千机魔女）在这里把数值乘上倍数；printed 为真时不乘，得到卡面上印的数（卡面据此把不同的标紫）
 static func combine_data(c: Dictionary, e: Dictionary, printed := false) -> Dictionary:
 	var timings := []
 	for slot in TIMING_SLOTS:
@@ -109,8 +119,11 @@ static func combine_data(c: Dictionary, e: Dictionary, printed := false) -> Dict
 		if base_skills.get(skill, 0) > 0:
 			sorted[skill] = base_skills[skill]
 	base_skills = sorted
+	var strength: int = c.strength + e.get("strength", 0) * (1 if printed else equipment_times(special))
+	if special.has("double_skills") and not printed:
+		strength *= 2
 	return {
-		"strength": c.strength + e.get("strength", 0) * (1 if printed else equipment_times(special)),
+		"strength": strength,
 		"timings": TIMINGS.filter(func(t): return t in timings),
 		"base_skills": base_skills,
 		"special_skills": special.duplicate(),
@@ -119,7 +132,8 @@ static func combine_data(c: Dictionary, e: Dictionary, printed := false) -> Dict
 	}
 
 
-## 合并后一格基础技能的倍数：千机之匣（自身的基础技能数值翻倍）两格都 ×2；千机魔女（从装备获得的翻倍）装备填了的那格 ×2。
+## 合并后一格基础技能的倍数：千机之匣（自身的基础技能数值翻倍，战斗力也翻倍）两格都 ×2；
+## 千机魔女（从装备获得的变为 N 倍）装备填了的那格 ×N。
 ## special 是合并后的特殊技能：被装备覆盖掉就没有这个效果
 static func skill_times(special: Dictionary, e: Dictionary, slot: String) -> int:
 	var times := 2 if special.has("double_skills") else 1
@@ -128,9 +142,9 @@ static func skill_times(special: Dictionary, e: Dictionary, slot: String) -> int
 	return times
 
 
-## 装备的战斗力的倍数（千机魔女 ×2）
+## 装备的战斗力和基础技能的倍数（千机魔女）
 static func equipment_times(special: Dictionary) -> int:
-	return 2 if special.has("double_equipment") else 1
+	return special.equipment_times.amount if special.has("equipment_times") else 1
 
 
 ## 一格的叠放结果：装备有这格就用装备的（"空"表示清空），否则沿用角色的

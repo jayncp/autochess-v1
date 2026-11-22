@@ -307,17 +307,16 @@ impl Deck {
                 base_skills.set(skill, sums[skill as usize]);
             }
         }
-        Combined {
-            strength: c.strength + e.map_or(0, |e| e.strength) * equipment_times(&special),
-            timings,
-            base_skills,
-            special_skills: special,
+        let mut strength = c.strength + e.map_or(0, |e| e.strength) * equipment_times(&special);
+        if special.has(Special::DoubleSkills) {
+            strength *= 2;
         }
+        Combined { strength, timings, base_skills, special_skills: special }
     }
 }
 
-/// 合并后第 k 格基础技能的倍数（`CardDB.skill_times`）：千机之匣（自身的基础技能数值翻倍）两格都 ×2；
-/// 千机魔女（从装备获得的翻倍）装备填了的那格 ×2。special 是合并后的特殊技能：被装备覆盖掉就没有这个效果
+/// 合并后第 k 格基础技能的倍数（`CardDB.skill_times`）：千机之匣（自身的基础技能数值翻倍，战斗力也翻倍）两格都 ×2；
+/// 千机魔女（从装备获得的变为 N 倍）装备填了的那格 ×N。special 是合并后的特殊技能：被装备覆盖掉就没有这个效果
 fn skill_times(special: &Specials, e: Option<&Card>, k: usize) -> i32 {
     let mut times = if special.has(Special::DoubleSkills) { 2 } else { 1 };
     if e.is_some_and(|e| matches!(e.skill_slots[k], Slot::Filled(_))) {
@@ -326,10 +325,9 @@ fn skill_times(special: &Specials, e: Option<&Card>, k: usize) -> i32 {
     times
 }
 
-/// 装备的战斗力的倍数（`CardDB.equipment_times`，千机魔女 ×2）
+/// 装备的战斗力和基础技能的倍数（`CardDB.equipment_times`，千机魔女）
 fn equipment_times(special: &Specials) -> i32 {
-    let factor = if crate::trial::triple_equipment() { 3 } else { 2 };
-    if special.has(Special::DoubleEquipment) { factor } else { 1 }
+    special.params(Special::EquipmentTimes).map_or(1, |params| params.amount())
 }
 
 /// 一格的叠放结果（`CardDB._overlay`）：装备有这格（写了内容或 "clear"）就用装备的，否则沿用角色的；
@@ -644,13 +642,17 @@ mod tests {
     #[test]
     fn combine_doubles() {
         let deck = deck();
-        // 千机之匣：自身的基础技能翻倍
+        // 千机之匣：自身的基础技能和战斗力翻倍
         let boxed = combine(&deck, "t_soldier", "t_clockwork_box");
         assert_eq!(boxed.base_skills, skills(&[(BaseSkill::Rally, 4)]));
-        assert_eq!(boxed.strength, 3);
+        assert_eq!(boxed.strength, 6);
         // 千机魔女：装备的战斗力和装备那一格的基础技能翻倍
         let witch = combine(&deck, "t_clockwork_witch", "t_wooden_sword");
         assert_eq!(witch.strength, 15 + 10);
         assert_eq!(witch.base_skills, skills(&[(BaseSkill::Rally, 2)]));
+        // 倍数是参数
+        let triple = combine(&deck, "t_witch_3", "t_ruyi_staff");
+        assert_eq!(triple.strength, 15 + 30);
+        assert_eq!(triple.base_skills, skills(&[(BaseSkill::Rage, 15), (BaseSkill::Rally, 2)]));
     }
 }

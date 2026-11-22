@@ -60,7 +60,7 @@
 **一轮的流程**
 
 1. 设计者改 `docs/design/balance-trial.xlsx`。
-2. `just balance sheet read ../docs/design/balance-trial.xlsx balance/trial.json balance/overrides.json`：读回改动。先核对它列出的差别和"要留意的"几处；文字改了的特殊技能要在对照表里补上数据（新效果还要先在 Rust 版里实现）。
+2. `just balance sheet read ../docs/design/balance-trial.xlsx balance/trial.json balance/overrides.json`：读回改动。先核对它列出的差别和"要留意的"几处；文字改了的特殊技能要在对照表里补上数据（新效果要先按改规则的流程实现，见 `engine/README.md`）。
 3. `just balance run <名字> --warm balance/pools balance/runs/<上一轮>/pools ...`：起点写上最近三四轮的阵容目录。
 4. `just balance compare balance/runs/<名字>/report.md balance/runs/<上一轮>/report.md --changed 5`：看哪些卡变了。
 5. 出场率很低、带卡得分又明显低于 0.5 的卡，下结论之前用 `check` 复核；带 `--save` 存下找到的阵容，把那个目录加进下一次的 `--warm` 重跑，才是这些卡真实的出场率。
@@ -74,4 +74,6 @@
 - 用 rsync 同步代码时不要保留修改时间（`rsync -rlzc`）：Rust 源码的时间比上次编译早的话，Python 绑定不会重新编译。
 - 远程连接不稳定时，用 `nohup` 在后台跑，再隔一会儿看 `runs/<名字>/` 下的日志；`report.md` 出现就是跑完了。
 
-**规则开关**：试验里有六条规则的口径和正式规则不同（`engine/core/src/trial.rs`），导入 `autochess_tools.balance` 时会全部打开。想按正式规则和正式数据搜索：先设环境变量 `AUTOCHESS_OFFICIAL_RULES=1`，`stage` 加 `--official`（`run`、`check` 用 `--change` 指向一个内容是 `[]` 的文件）。
+**按正式数据搜索**：`stage` 加 `--official`（`run`、`check` 用 `--change` 指向一个内容是 `[]` 的文件）。规则只有一套，候选数值和正式数据只是卡不同。
+
+**对拍候选数值**：`just diff-sim 1000000 --cards balance/trial.json`，随机对局从套用候选数值之后的卡里抽，Godot 版和 Rust 版逐场比较。

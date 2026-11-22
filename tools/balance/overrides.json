@@ -45,7 +45,7 @@
  "star_mage": {
   "text": "己方角色结算基础技能时，自身战斗力 +3",
   "special": {
-   "on_trigger_gain": {
+   "on_resolve_gain": {
     "skill": "any",
     "amount": 3
    }
@@ -302,7 +302,7 @@
  "elf_scepter": {
   "text": "对方角色结算基础技能时，己方全体战斗力 +1",
   "special": {
-   "on_enemy_trigger_gain_all": {
+   "on_enemy_resolve_gain_all": {
     "skill": "any",
     "amount": 1
    }

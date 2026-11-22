@@ -16,7 +16,6 @@ Cargo 工作区，目录里有 `.gdignore`，Godot 不扫描它。
 | `core/src/ids.rs` | 各种 id（时机、基础技能、特殊技能、范围、对象……）和它们的顺序，对应 `CardDB` 开头的常量 |
 | `core/src/cards.rs` | 读取和校验卡牌数据、按 id 查询、装备合并，对应 `CardDB` |
 | `core/src/battle.rs` | 战斗结算，对应 `BattleSim` |
-| `core/src/trial.rs` | 试验开关：数值试验里改了口径、还没进正式规则的几条，用环境变量打开（见下面"和 GDScript 版不同的地方"） |
 | `core/tests/cases.rs` | 共用用例：`tests/cases/` 的规则用例和冒烟用例，都检查交换左右后对称；`VERSION` 和 `BattleSim.VERSION` 一致 |
 | `cli/`（crate `autochess-cli`，程序 `engine-cli`） | 批量模拟的命令行，输入输出同 `cli/sim.gd`，多核并行 |
 | `py/`（crate `autochess-py`，Python 模块 `autochess_engine`） | Python 绑定（PyO3），`tools/` 通过它批量模拟；`pyproject.toml` 是 maturin 的配置，`autochess_engine.pyi` 是给类型检查看的接口说明；`src/search.rs` 是数值试验用的阵容搜索（爬山，多核） |
@@ -121,13 +120,6 @@ Godot 版单进程约 4300 场/秒。
 
 卡牌数据的校验和 `CardDB.problems` 完全一致（共用 `tests/cases/card_checks.json`，规则见 [data/README.md](../data/README.md)），结算结果逐场一致。
 阵容的检查更严：角色的位置放了装备、装备的位置放了角色，或者一方超过 7 个单位（游戏里最多 7 个卡位），都直接报错。
-
-**数值试验留下的、只在 Rust 版里有的东西**（[docs/plans/balance-tuning.md](../docs/plans/balance-tuning.md) 第 6 节）：
-
-- 五种新效果（`on_trigger_boost`、`execute`、`halve_pre_battle_damage`、`gain_all_if_outnumbered`、`on_enemy_trigger_gain_all`）、多一轮的两个新范围（`self_and_second`、`self_and_front`）、两个新对象（`self`、`next_two`）。正式数据没有用到它们，GDScript 版也不认识；`ids.rs`、`battle.rs` 里都标了"试验"。
-- 六个试验开关（`core/src/trial.rs`），用环境变量打开，都不设时结算和 GDScript 版逐场一致，`just diff-sim` 不受影响。
-
-这些转正时按下面的流程补到 GDScript 版，开关删掉。
 
 ## 改规则的流程
 

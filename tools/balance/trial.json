@@ -812,7 +812,7 @@
    "corrode": 2
   },
   "special_skills": {
-   "gain_half_skill_sum": {
+   "gain_skill_sum": {
     "timings": [
      "on_enter"
     ]
@@ -974,7 +974,7 @@
    "corrode": 4
   },
   "special_skills": {
-   "on_resolve_raise": {
+   "on_trigger_raise": {
     "skill": "corrode",
     "amount": 1
    }
@@ -1211,7 +1211,7 @@
    "support": 5
   },
   "special_skills": {
-   "on_trigger_gain": {
+   "on_resolve_gain": {
     "skill": "any",
     "amount": 3
    }
@@ -1453,7 +1453,9 @@
    "pre_battle"
   ],
   "special_skills": {
-   "double_equipment": null
+   "equipment_times": {
+    "amount": 3
+   }
   }
  },
  {
@@ -2030,7 +2032,7 @@
   "type": "equipment",
   "star": 5,
   "special_skills": {
-   "on_enemy_trigger_gain_all": {
+   "on_enemy_resolve_gain_all": {
     "skill": "any",
     "amount": 1
    }

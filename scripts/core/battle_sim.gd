@@ -19,36 +19,41 @@ extends RefCounted
 ## - backlash：effects 为反噬伤害
 ## - death：units 为阵亡单位
 ## - end：winner（1/2 = 该方胜，3 = 平局），reason（wipe = 全灭，no_death = 连续无人阵亡）
-## 效果：buff {source, unit, skill（基础技能，或被动的 id，如 on_trigger_gain）, amount, strength}；
+## 效果：buff {source, unit, skill（基础技能，或描述型特殊技能的 id，如 on_trigger_gain）, amount, strength}；
 ##       damage {unit, by（造成伤害的单位：腐蚀、湮灭是发动者，交战是对方交战位，反噬是自己）,
-##              source（clash/corrode/annihilate/assist/backlash）, amount, sturdy, shelter（是否被庇护挡下）, dealt, strength,
-##              有结算加成（on_resolve_bonus）时还有 boosts（加成来自哪些单位）}；
+##              source（clash/corrode/annihilate/assist/backlash，或造成伤害的特殊技能的 id）, amount, sturdy,
+##              shelter（是否被庇护挡下）, dealt, strength,
+##              有结算加成（on_resolve_bonus）时还有 boosts（加成来自哪些单位）；战前伤害减半生效时有 halved；
+##              致命伤害（execute）打在免疫致命的单位上时 amount 是 0，带 immune}；
 ##       wealth {source, unit, amount}（只做特效，不改战力）；awaken {source, unit}（unit 是被唤醒的单位）；
 ##       grant {source, unit, skill, amount, value}（获得技能或词条，value 是获得后的数值，如神佑给的庇护层数；致命这类没有数值的是 null）；
-##       copy {source, unit, from, skills}（unit 的基础技能变成 from 的 skills）；clear {source, unit, skills}（清除了哪些基础技能）；
+##       copy {source, unit, from, skills}（unit 额外获得一份 from 的基础技能，skills 是获得之后 unit 的基础技能）；
+##       clear {source, unit, skills}（清除了哪些基础技能）；
 ##       raise {source, unit, skill, amount, value}（基础技能的数值 +amount，value 是之后的数值）。
 ##       strength 是结算后的战力。多一次多出来的结算，效果上带 again（第几次多结算，从 1 起）和 again_by（来自哪个单位）
 
 ## 事件日志的版本，规则或事件格式变化时加一，供以后的重播判断版本是否一致
-const VERSION := 8
+const VERSION := 9
 ## 致命的攻击值
 const LETHAL_ATTACK := 10000
 ## 平局：连续多少次交战无人阵亡
 const NO_DEATH_ENGAGES := 20
 ## 一个时点里特殊技能的步骤（battle-rules.md 4.1）：记 → 增 → 删 → 改 → 加 → 减 → 醒，之后才是基础技能。
-## 每一步列出属于它的带时机的特殊技能，双方同时结算；被动不占步骤，挂在事件上（_on_trigger、_hit、resolve_beats 里的多一次、resolve_timing 里的多一轮）
+## 每一步列出属于它的带时机的特殊技能，双方同时结算；被动不占步骤，挂在事件上
+## （_on_resolve、_on_trigger、_after_trigger、_hit、resolve_beats 里的多一次、resolve_timing 里的多一轮、damage 里的减半）
 ## "记"这一步只读取场面（record_special），后面的步骤按记录结算，所以记下的效果也列在它生效的那一步里
 const STEPS := {
-	"record": ["copy_skills", "gain_half_skill_sum", "gain_if_outnumbered", "damage_half_strength"],
+	"record": ["copy_skills", "gain_skill_sum", "gain_if_outnumbered", "gain_all_if_outnumbered", "damage_half_strength", "execute"],
 	"grant": ["bless", "grant", "copy_skills"],
 	"clear": ["clear_skills"],
 	"raise": ["raise_skills"],
-	"gain": ["gain_half_skill_sum", "gain_if_outnumbered"],
-	"damage": ["damage_half_strength"],
+	"gain": ["gain_skill_sum", "gain_if_outnumbered", "gain_all_if_outnumbered"],
+	"damage": ["damage_half_strength", "execute"],
 	"awaken": ["awaken"],
 }
 ## 按方记下持有者的特殊技能：被动（不带时机的描述型特殊技能，挂在事件上）和协战
-const INDEXED := ["on_trigger_gain", "on_resolve_bonus", "on_resolve_raise", "extra_resolve", "extra_round", "assist"]
+const INDEXED := ["on_trigger_gain", "on_trigger_boost", "on_trigger_raise", "on_resolve_gain", "on_resolve_bonus",
+	"on_enemy_resolve_gain_all", "extra_resolve", "extra_round", "assist"]
 
 
 class Unit:
@@ -66,7 +71,7 @@ class Unit:
 	var acting_timings: Array
 	## 带时机的特殊技能的 id（没有的跳过特殊技能的各步）
 	var timed_specials := {}
-	## 千机之匣：基础技能在合并装备时已经翻倍；战斗中获得、被加的基础技能数值也 ×2
+	## 千机之匣：战斗力和基础技能在合并装备时已经翻倍；战斗中获得、被加的基础技能数值也 ×2（获得的战斗力不翻倍）
 	var doubled := false
 	var done_pre_battle := false
 	var done_entering := false
@@ -110,6 +115,8 @@ var _no_death_engages := 0
 var _holders := {1: {}, 2: {}}
 ## 这一轮"记"下的场面："uid/特殊技能 id" -> 记录
 var _records := {}
+## 正在结算的时点，不在时点里（对撞、协战、反噬）是 ""
+var _timing := ""
 
 
 func _init(p1: Array, p2: Array) -> void:
@@ -233,6 +240,7 @@ func assist(fronts: Array) -> void:
 ## 每组都按拍结算，每拍双方同时，拍的顺序就是 CardDB.BASE_SKILLS。中途不判死。
 ## 多一轮：有多一轮的单位把整轮再走一遍（来源相加），别的单位等着；第 2 轮起先记一个 round 事件
 func resolve_timing(actors: Array, timing: String) -> void:
+	_timing = timing
 	var extra := {}  # 单位 -> 多出来的每一轮来自哪个持有者
 	var rounds := 1
 	if _holders[1].has("extra_round") or _holders[2].has("extra_round"):
@@ -247,10 +255,13 @@ func resolve_timing(actors: Array, timing: String) -> void:
 				"sources": group.map(func(u): return extra[u][r - 1].uid)})
 		resolve_beats(special_steps(group, timing), true)
 		resolve_beats(group.filter(func(u): return timing in u.timings), false)
+	_timing = ""
 
 
 ## 被动：〈范围〉〈时机〉多触发一轮（extra_round），返回给 u 带来多一轮的持有者（每个一轮）。
-## 范围：self 自身；allies 己方全体；first 开战时位于己方第 1 位的角色（只在战前，持有者自己在第 1 位时没有效果）
+## 范围：self 自身；allies 己方全体；first 开战时位于己方第 1 位的角色（持有者自己在第 1 位时没有效果）；
+## self_and_second 自身和开战时位于己方第 2 位的角色（持有者自己在第 2 位时只算一次）；
+## self_and_front 自身和队列里紧挨在自己前面的那一位（按当时的队列）
 func _extra_rounds(u: Unit, timing: String) -> Array:
 	var sources := []
 	for holder in _holders[u.side].get("extra_round", []):
@@ -266,35 +277,37 @@ func _extra_rounds(u: Unit, timing: String) -> Array:
 			"first":
 				if u.index == 0 and holder != u:
 					sources.append(holder)
+			"self_and_second":
+				if holder == u or u.index == 1:
+					sources.append(holder)
+			"self_and_front":
+				if holder == u or next_unit(u) == holder:
+					sources.append(holder)
 	return sources
 
 
 ## 一组单位按拍结算基础技能；woken 标记被唤醒的那一组，回放据此让它们出列。
-## 每个单位结算完一个技能，就是"触发了这个技能"，接着结算挂在触发上的被动（一轮只算一次）；
-## 多一次：同一拍里接着再结算，每一下分开走伤害流程，数值每次重新读
+## 一个单位的一个技能在一轮里：结算一下（连同"结算时"的被动）→ "触发时"的被动（一轮一次）→
+## 多一次：同一拍里接着再结算，每一下分开走伤害流程、数值每次重新读、各带"结算时"的被动 →
+## 全部结算完，"触发后"的被动（一轮一次）
 func resolve_beats(units: Array, woken: bool) -> void:
-	var triggered := {}  # 这一组里已经触发过的单位（"任意基础技能"的被动一轮只算一次）
 	for skill in CardDB.BASE_SKILLS:
 		var effects := []
 		for u in units:
 			if u.base_skills.has(skill):
-				var holders: Dictionary = _holders[u.side]
 				effects.append_array(apply_skill(u, skill, u.base_skills[skill]))
-				if holders.has("on_resolve_raise"):
-					effects.append_array(_after_resolve(u, skill))
-				if holders.has("on_trigger_gain"):
-					effects.append_array(_on_trigger(u, skill, not triggered.has(u)))
-					triggered[u] = true
-				if holders.has("extra_resolve"):
+				effects.append_array(_on_resolve(u, skill))
+				effects.append_array(_on_trigger(u, skill))
+				if _holders[u.side].has("extra_resolve"):
 					var sources := _extra_resolves(u, skill)
 					for k in sources.size():
 						var again := apply_skill(u, skill, u.base_skills[skill])
-						if holders.has("on_resolve_raise"):
-							again.append_array(_after_resolve(u, skill))
+						again.append_array(_on_resolve(u, skill))
 						for f in again:
 							f.again = k + 1
 							f.again_by = sources[k].uid
 						effects.append_array(again)
+				effects.append_array(_after_trigger(u, skill))
 		if effects.is_empty():
 			continue
 		var beat := {"type": "beat", "skill": skill, "effects": effects}
@@ -347,15 +360,18 @@ func record_special(u: Unit, skill: String) -> Variant:
 		"copy_skills":
 			# 鹦鹉：对方交战位此刻的基础技能（卡面上的数，千机之匣已经翻倍）
 			return [enemies[0], enemies[0].base_skills.duplicate()] if not enemies.is_empty() else [null, {}]
-		"gain_half_skill_sum":
-			# 炼药师：己方全体基础技能数值之和（含财富）的一半，四舍五入
+		"gain_skill_sum":
+			# 炼药师：己方全体基础技能数值之和（含财富）
 			var total := 0
 			for partner in fields[u.side]:
 				for s in partner.base_skills:
 					total += partner.base_skills[s]
-			return roundi(total / 2.0)
-		"gain_if_outnumbered":
+			return total
+		"gain_if_outnumbered", "gain_all_if_outnumbered":
 			return enemies.size() > fields[u.side].size()
+		"execute":
+			# 眼镜王蛇：对方交战位此刻的战斗力高于自身时才有
+			return enemies[0] if not enemies.is_empty() and enemies[0].strength > u.strength else null
 		"damage_half_strength":
 			# 沼泽之王：对方交战位此刻战斗力的一半，四舍五入
 			return [enemies[0], roundi(maxi(0, enemies[0].strength) / 2.0)] if not enemies.is_empty() else [null, 0]
@@ -368,12 +384,16 @@ func _record(u: Unit, skill: String) -> Variant:
 	return _records["%s/%s" % [u.uid, skill]]
 
 
-## 对象：下一位、己方全体、对方全体、对方前两位
+## 对象：自身、下一位、下两位（队列里排在自己后面的两位）、己方全体、对方全体、对方前两位
 func targets(u: Unit, target: String) -> Array:
 	match target:
+		"self":
+			return [u]
 		"next":
 			var next := next_unit(u)
 			return [next] if next else []
+		"next_two":
+			return fields[u.side].slice(fields[u.side].find(u) + 1).slice(0, 2)
 		"allies":
 			return fields[u.side].duplicate()
 		"enemies":
@@ -395,11 +415,12 @@ func apply_special(u: Unit, skill: String, params: Dictionary, woken: Array) -> 
 			# 〈对象〉获得〈技能或词条〉：没有的加上，已有的数值相加
 			return targets(u, params.target).map(func(t): return grant(u, t, params.skill, params.amount))
 		"copy_skills":
-			# 鹦鹉：对方交战位有基础技能时，自身的基础技能变成它的（整体换掉）
+			# 鹦鹉：额外获得一份对方交战位的基础技能（和已有的相加，同"获得"）
 			var record: Array = _record(u, skill)
 			if record[1].is_empty():
 				return []
-			u.base_skills = record[1].duplicate()
+			for s in record[1]:
+				grant(u, u, s, record[1][s])
 			return [{"kind": "copy", "source": u.uid, "unit": u.uid, "from": record[0].uid, "skills": u.base_skills.duplicate()}]
 		"clear_skills":
 			# 美杜莎女王：清除对方前两位的基础技能（特殊技能不受影响）
@@ -417,14 +438,29 @@ func apply_special(u: Unit, skill: String, params: Dictionary, woken: Array) -> 
 					if t.base_skills.has(s) and (params.skill == "any" or params.skill == s):
 						effects.append(raise(u, t, s, params.amount))
 			return effects
-		"gain_half_skill_sum":
+		"gain_skill_sum":
 			var amount: int = _record(u, skill)
 			return [buff(u, u, amount, skill)] if amount > 0 else []
 		"gain_if_outnumbered":
 			return [buff(u, u, params.amount, skill)] if _record(u, skill) else []
+		"gain_all_if_outnumbered":
+			# 神裁者：对方角色多于己方时，己方全体战斗力 +N
+			if not _record(u, skill):
+				return []
+			return fields[u.side].map(func(t): return buff(u, t, params.amount, skill))
 		"damage_half_strength":
 			var record: Array = _record(u, skill)
 			return [damage(record[0], record[1], skill, u)] if record[0] else []
+		"execute":
+			# 致命伤害：庇护能挡（消耗一层）；对免疫致命的单位是 0 点，不消耗庇护
+			var target = _record(u, skill)
+			if target == null:
+				return []
+			if target.special_skills.has("immune_lethal"):
+				var hit := damage(target, 0, skill, u)
+				hit.immune = true
+				return [hit]
+			return [damage(target, LETHAL_ATTACK, skill, u)]
 		"awaken":
 			var next := next_unit(u)
 			if next == null:
@@ -447,26 +483,45 @@ func _index_holders(side: int) -> void:
 	_holders[side] = holders
 
 
-## 被动：己方角色触发〈技能〉时，自身战斗力 +N（on_trigger_gain，如队长）。
-## "any"（星辰法师）是任意基础技能：一个角色触发一轮只算一次，first 表示这是它这一轮的第一个技能
-func _on_trigger(u: Unit, skill: String, first: bool) -> Array:
+## 一方带某个被动、技能对得上的持有者（参数里的 skill 是这个技能，或 "any" 任意基础技能）
+func _passive_holders(side: int, passive: String, skill: String) -> Array:
+	return _holders[side].get(passive, []).filter(func(holder):
+		var wanted: String = holder.special_skills[passive].skill
+		return wanted == skill or wanted == CardDB.ANY)
+
+
+## "结算时"的被动，每一下都算（含多一次的每一下）：
+## 己方角色结算〈技能〉时，自身战斗力 +N（on_resolve_gain，星辰法师）；
+## 对方角色结算〈技能〉时，己方全体战斗力 +N（on_enemy_resolve_gain_all，八咫镜，由对方的持有者结算）
+func _on_resolve(u: Unit, skill: String) -> Array:
 	var effects := []
-	for holder in _holders[u.side].on_trigger_gain:
-		var params: Dictionary = holder.special_skills.on_trigger_gain
-		if params.skill == skill or params.skill == "any" and first:
-			effects.append(buff(holder, holder, params.amount, "on_trigger_gain"))
+	for holder in _passive_holders(u.side, "on_resolve_gain", skill):
+		effects.append(buff(holder, holder, holder.special_skills.on_resolve_gain.amount, "on_resolve_gain"))
+	for holder in _passive_holders(3 - u.side, "on_enemy_resolve_gain_all", skill):
+		for t in fields[holder.side]:
+			effects.append(buff(holder, t, holder.special_skills.on_enemy_resolve_gain_all.amount, "on_enemy_resolve_gain_all"))
 	return effects
 
 
-## 被动：己方角色结算〈技能〉后，己方全体的〈技能〉值 +N（on_resolve_raise，萨满），每一下之后马上加，只加有这个技能的
-func _after_resolve(u: Unit, skill: String) -> Array:
+## "触发时"的被动，一个角色的一个技能一轮算一次（多一次不算新的触发）：
+## 己方角色触发〈技能〉时，自身战斗力 +N（on_trigger_gain，沼泽触手）；该角色战斗力 +N（on_trigger_boost，队长）
+func _on_trigger(u: Unit, skill: String) -> Array:
 	var effects := []
-	for holder in _holders[u.side].on_resolve_raise:
-		var params: Dictionary = holder.special_skills.on_resolve_raise
-		if params.skill == skill:
-			for t in fields[u.side]:
-				if t.base_skills.has(skill):
-					effects.append(raise(holder, t, skill, params.amount))
+	for holder in _passive_holders(u.side, "on_trigger_gain", skill):
+		effects.append(buff(holder, holder, holder.special_skills.on_trigger_gain.amount, "on_trigger_gain"))
+	for holder in _passive_holders(u.side, "on_trigger_boost", skill):
+		effects.append(buff(holder, u, holder.special_skills.on_trigger_boost.amount, "on_trigger_boost"))
+	return effects
+
+
+## "触发后"的被动：己方角色触发〈技能〉后，己方全体的〈技能〉值 +N（on_trigger_raise，萨满）。
+## 这个角色这一轮的这个技能全部结算完（含多一次）之后加一次，只加有这个技能的
+func _after_trigger(u: Unit, skill: String) -> Array:
+	var effects := []
+	for holder in _passive_holders(u.side, "on_trigger_raise", skill):
+		for t in fields[u.side]:
+			if t.base_skills.has(skill):
+				effects.append(raise(holder, t, skill, holder.special_skills.on_trigger_raise.amount))
 	return effects
 
 
@@ -546,11 +601,13 @@ func buff(source: Unit, target: Unit, amount: int, skill: String) -> Dictionary:
 	return {"kind": "buff", "source": source.uid, "unit": target.uid, "skill": skill, "amount": amount, "strength": target.strength}
 
 
-## 伤害流程：有庇护就挡下这次伤害、消耗一层（先于坚固）→ 否则减去坚固（最低 0）→ 扣战力。by 是造成伤害的单位
+## 伤害流程：有庇护就挡下这次伤害、消耗一层（先于坚固）→ 否则减去坚固（最低 0）→
+## 战前时点里带"战前时点受到的伤害减半"的再减半（四舍五入）→ 扣战力。by 是造成伤害的单位
 func damage(target: Unit, amount: int, source: String, by: Unit) -> Dictionary:
 	var sheltered := amount > 0 and target.special_skills.has("shelter")
 	var sturdy := 0
 	var dealt := 0
+	var halved := false
 	if sheltered:
 		target.special_skills.shelter -= 1
 		if target.special_skills.shelter <= 0:
@@ -558,9 +615,15 @@ func damage(target: Unit, amount: int, source: String, by: Unit) -> Dictionary:
 	else:
 		sturdy = target.special_skills.get("sturdy", 0)
 		dealt = maxi(0, amount - sturdy)
+		halved = dealt > 0 and _timing == "pre_battle" and target.special_skills.has("halve_pre_battle_damage")
+		if halved:
+			dealt = roundi(dealt / 2.0)
 	target.strength -= dealt
-	return {"kind": "damage", "unit": target.uid, "by": by.uid, "source": source, "amount": amount,
+	var hit := {"kind": "damage", "unit": target.uid, "by": by.uid, "source": source, "amount": amount,
 		"sturdy": sturdy, "shelter": sheltered, "dealt": dealt, "strength": target.strength}
+	if halved:
+		hit.halved = true
+	return hit
 
 
 ## 判死：一次性移除双方所有战力 ≤0 的单位，返回是否有人阵亡
