@@ -20,13 +20,14 @@
 1. **第一轮：1★/2★ 打底**（已完成，[plans/stage-3-cards.md](plans/stage-3-cards.md)）：统一规范（术语、显示顺序、格子模型）→ 新机制（支援、唤醒、条件触发、财富只做特效）→ 新卡（卡图先用占位图）。
 2. **3★/4★/5★**（已完成）：设计见 [plans/stage-3-high-stars.md](plans/stage-3-high-stars.md)（60 张角色、38 件装备），开发分四批，记录见 [plans/stage-3-high-stars-dev.md](plans/stage-3-high-stars-dev.md)。
 3. 卡图：先讨论形象，再 codex 生图、抠图、导出（流程见 [takeover/06-assets.md](takeover/06-assets.md#6-后续-ai-生图建议codex-cli)）。没有卡图的卡、剧毒之牙待画。
-4. **高性能版和强度测试**：Rust 版结算已完成（[plans/rust-engine.md](plans/rust-engine.md)，和 GDScript 版用同一份卡牌数据和用例、对拍零差异，Python 通过绑定调用）；数值校正已做完一轮（[plans/balance-tuning.md](plans/balance-tuning.md)：按对局阶段搜索均衡阵容，候选数值在 [design/balance-trial.xlsx](design/balance-trial.xlsx)）；新机制已经写进正式规则；接下来把候选数值写进正式数据（[plans/balance-port.md](plans/balance-port.md)）。
+4. **高性能版和强度测试**：Rust 版结算已完成（[plans/rust-engine.md](plans/rust-engine.md)，和 GDScript 版用同一份卡牌数据和用例、对拍零差异，Python 通过绑定调用）；数值校正已做完一轮（[plans/balance-tuning.md](plans/balance-tuning.md)：按对局阶段搜索均衡阵容，候选数值在 [design/balance-trial.xlsx](design/balance-trial.xlsx)）；新机制和候选数值都已写进正式规则和正式数据（[plans/balance-port.md](plans/balance-port.md) 第 1、2 步）；接下来是收尾：回放表现、有效战力重测（第 3 步）。
 
 ## 阶段 4：闯关模式
 
 - 只用裸卡和装备，不含羁绊、升星、经济。
 - **教学关**：每个词条一关，循序渐进。
 - **解谜关**：先定名字或敌方阵容，估算我方可用卡，用工具验证通过率，再微调；报告通过率和解的数量。
+- **现有两关待重做**：数值校正后猪突猛进无解、虎虎生风有 77 个解（[design/levels.md](design/levels.md)）。
 - 关卡描述、提示、评价，解锁（通关记录已经有了）。
 
 ## 阶段 5：冒险模式

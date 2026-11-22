@@ -35,21 +35,21 @@
 - 词条：带数值的写正整数（如庇护的层数 `{"shelter": 2}`），不带数值的（如致命）写 `null`。
 - 带参数的写成字典，参数见 `CardDB.SPECIAL_PARAMS`：
   - `timings`：带时机的特殊技能在哪些时机生效，如 `{"awaken": {"timings": ["pre_battle"]}}`；
-  - `skill`、`amount`：作用于哪个基础技能、数值，如队长 `{"on_trigger_gain": {"skill": "rally", "amount": 2}}`；神佑的层数也是 `amount`：`{"bless": {"timings": ["on_enter"], "amount": 2}}`；
+  - `skill`、`amount`：作用于哪个基础技能、数值，如队长 `{"on_trigger_boost": {"skill": "rally", "amount": 2}}`；神佑的层数也是 `amount`：`{"bless": {"timings": ["on_enter"], "amount": 2}}`；
   - `scope`：范围，`self`（自身）、`allies`（己方全体）、`first`（开战时位于己方第 1 位的角色）、`self_and_second`（自身和开战时位于己方第 2 位的角色）、`self_and_front`（自身和前一位）；`timing`：作用于哪个时机。如精灵公主 `{"extra_round": {"scope": "first", "timing": "pre_battle"}}`；
-  - `target`：对象，`self`（自身）、`next`（下一位）、`next_two`（下两位）、`allies`（己方全体）、`enemies`（对方全体）、`enemy_first_two`（对方前两位）。获得的 `skill` 可以是基础技能或词条，没有数值的词条 `amount` 写 `null`，如彼岸花妖 `{"grant": {"timings": ["pre_battle"], "target": "next", "skill": "lethal", "amount": null}}`；
+  - `target`：对象，`self`（自身）、`next`（下一位）、`next_two`（下两位）、`allies`（己方全体）、`enemies`（对方全体）、`enemy_first_two`（对方前两位）。获得的 `skill` 可以是基础技能或词条，没有数值的词条 `amount` 写 `null`，如彼岸花妖 `{"grant": {"timings": ["pre_battle"], "target": "next_two", "skill": "lethal", "amount": null}}`；
   - `skill` 写 `"any"` 表示任意 / 所有基础技能（星辰法师、尤姆卡克斯）；
-  - 只有一个数值的效果也写成字典，如千机魔女的倍数 `{"equipment_times": {"amount": 2}}`。
+  - 只有一个数值的效果也写成字典，如千机魔女的倍数 `{"equipment_times": {"amount": 3}}`。
 - 没有参数的描述型效果写 `null`，如千机之匣 `{"double_skills": null}`。
-- 描述型特殊技能一种效果一个 id，卡牌之间只是参数不同；卡面文字在翻译表 `effect.<id>`，模板里的 `{参数名}` 换成参数（`{skill}` 显示技能名）。有哪些效果、各属于时点里的哪一步，见 [battle-rules.md 6.3](../docs/design/battle-rules.md#63-特殊技能描述型)。
+- 描述型特殊技能一种效果一个 id，卡牌之间只是参数不同；卡面文字在翻译表 `effect.<id>`，模板里的 `{参数名}` 换成参数（`{skill}` 显示技能名，`{skill_value}` 显示"腐蚀值"这样的技能值，任意基础技能时是"基础技能数值"）。有哪些效果、各属于时点里的哪一步，见 [battle-rules.md 6.3](../docs/design/battle-rules.md#63-特殊技能描述型)。
 
 **格子**：时机、基础技能各两格，特殊技能一格。角色和装备都可以填任意格，通常角色填 1、装备填 2。
 合并时装备那一格有内容就覆盖角色的，写 `"clear"` 表示清空，规则见 [battle-rules.md 第 2 节](../docs/design/battle-rules.md#2-卡牌和装备)。
 
 ```json
-{"id": "tiger_man", "no": 1201, "type": "character", "star": 2, "races": ["beast", "human"], "strength": 9, "timing_1": ["on_engage"], "skills_1": {"rage": 2, "rally": 1}},
-{"id": "holy_water", "no": 2210, "type": "equipment", "star": 2, "strength": 3, "timing_2": ["pre_battle"]},
-{"id": "toad", "no": 1220, "type": "character", "star": 2, "races": ["nature"], "strength": 6, "timing_1": ["on_enter"], "skills_1": {"corrode": 5}, "special_skills": {"on_resolve_bonus": {"skill": "corrode", "amount": 2}}},
+{"id": "tiger_man", "no": 1201, "type": "character", "star": 2, "races": ["beast", "human"], "strength": 8, "timing_1": ["on_engage"], "skills_1": {"rage": 2, "rally": 1}},
+{"id": "holy_water", "no": 2210, "type": "equipment", "star": 2, "strength": 2, "skills_2": {"inspire": 2}},
+{"id": "toad", "no": 1220, "type": "character", "star": 2, "races": ["nature"], "strength": 8, "timing_1": ["on_enter"], "skills_1": {"corrode": 6}, "special_skills": {"on_resolve_bonus": {"skill": "corrode", "amount": 1}}},
 ```
 
 ## levels.json
