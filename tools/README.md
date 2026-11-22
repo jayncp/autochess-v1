@@ -7,7 +7,7 @@
 - 环境：用 uv 管理。第一次运行 `just` 命令时会自动创建 `tools/.venv`，并编译 Rust 版的 Python 绑定（要先装 Rust，见 `engine/README.md`；Rust 源码变了会自动重新编译）。
   要手动同步环境时用 `uv sync --all-groups`（只写 `uv sync` 会删掉美术素材用的依赖组）。
 - Godot 路径默认是 `/Applications/Godot.app/Contents/MacOS/Godot`，可用环境变量 `GODOT` 覆盖。
-- 想用 Godot 版跑某个实验（比如核对结果），设环境变量 `AUTOCHESS_BACKEND=godot`：`AUTOCHESS_BACKEND=godot just experiment effective_strength`。
+- 想用 Godot 版跑某个实验（比如核对结果），设环境变量 `AUTOCHESS_BACKEND=godot`：`AUTOCHESS_BACKEND=godot just experiment star_totals`。
 - `just experiment <名字>`：运行 `autochess_tools/experiments/<名字>.py`，结果打印到终端。
 - `just tools-check`：ruff 检查和格式、ty 类型检查、pytest。提交前在本地运行（CI 目前停用）。
 
@@ -20,7 +20,6 @@
 | `lineups.py` | 随机对局（固定种子）：每方 1–7 人、各星级的正式卡、允许同名卡；机制密集的对局多从带特殊机制的卡里抽 |
 | `diff_sim.py` | 对拍（`just diff-sim`）：同一批随机对局分别用两个版本跑，逐场比较，不一致时用简要轨迹找出第一处不同 |
 | `bench.py` | 测速（`just bench`）：Rust 版单线程、多线程和 Godot 版单进程的场/秒 |
-| `effective.py` | 有效战力：与被测卡（或装备）表现相同的白板战力 |
 | `balance/` | 数值试验：分阶段的阵容搜索（见下面"数值试验"） |
 | `art/` | 美术素材生成（依赖组 `art`：fonttools、resvg-py）：`fonts.py` 字体子集，`icons.py` 图标，`ornaments.py` 卡牌边框和法阵，`ui.py` 控件和卡面面板贴图，`fx.py` 战斗飘字的饰板。用 `just fonts`、`just art` 运行，规范见 `docs/design/art-direction.md` |
 
@@ -28,10 +27,7 @@
 
 | 名字 | 内容 |
 |---|---|
-| `matrix_1star` | 1★ 基准对局矩阵，与 `docs/design/card-design.md` 第 3 节逐格对比 |
-| `effective_strength` | 当前卡池的有效战力：角色（1★、2★ 环境）、装备（2★ 环境），以及几件装备按宿主的价值。经济卡照测，但不进环境、不计入均值 |
 | `star_totals` | 同总星级的多个低星对少量高星的随机摆位平均分（方法同星级报告第 1 节） |
-| `holy_water` | 装备有效战力，以及圣水 +0 到 +4 各版本按宿主的价值 |
 
 实验结果写成 `docs/design/balance-report-<日期>.md`（带时效的快照）。
 
@@ -49,6 +45,7 @@
 | `compare <新报告> [旧报告]` | 汇总一份报告，或者列出两份报告之间每张卡的变化 |
 | `trend <输出.html> <说明> <报告>` | 把报告做成一页趋势图：每张卡各阶段的出场率和带卡得分 |
 | `sheet read/write` | 试验表（Excel）和"改过的卡"之间互转 |
+| `usage <设计表> <报告> <说明>` | 把一份报告里各阶段的出场率填进设计表（`card-workbook.xlsx` 的"出场率"六列），说明写进表头批注。只在定版时整列重填 |
 
 数据在 `tools/balance/`：
 
@@ -63,7 +60,7 @@
 3. `just balance run <名字> --warm balance/pools balance/runs/<上一轮>/pools ...`：起点写上最近三四轮的阵容目录。
 4. `just balance compare balance/runs/<名字>/report.md balance/runs/<上一轮>/report.md --changed 5`：看哪些卡变了。
 5. 出场率很低、带卡得分又明显低于 0.5 的卡，下结论之前用 `check` 复核；带 `--save` 存下找到的阵容，把那个目录加进下一次的 `--warm` 重跑，才是这些卡真实的出场率。
-6. 一轮定下来后，把 `runs/<名字>/pools/` 复制成 `balance/pools/`。
+6. 一轮定下来后，把 `runs/<名字>/pools/` 复制成 `balance/pools/`，并用 `usage` 把这一轮的出场率填进设计表。
 
 **在哪里跑**
 

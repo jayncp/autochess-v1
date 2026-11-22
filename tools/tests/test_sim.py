@@ -12,9 +12,14 @@ import pytest
 
 from autochess_tools import data
 from autochess_tools.diff_sim import first_difference
-from autochess_tools.effective import vanilla_character
 from autochess_tools.lineups import mixed_battles
 from autochess_tools.sim import ENGINE, engine, godot_path, run_engine, run_godot, simulate
+
+
+def vanilla_character(strength: int) -> data.Card:
+    """白板角色：没有时机和技能"""
+    return {"id": f"vanilla_{strength}", "no": 0, "type": "character", "star": 0, "races": [], "strength": strength}
+
 
 needs_godot = pytest.mark.skipif(
     not Path(godot_path()).exists() and shutil.which(godot_path()) is None, reason="找不到 Godot"

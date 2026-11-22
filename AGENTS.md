@@ -5,7 +5,7 @@
 
 ## 现状
 
-- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；阶段 3 第二轮（3★/4★/5★）已完成：设计记录 `docs/plans/stage-3-high-stars.md`，开发记录 `docs/plans/stage-3-high-stars-dev.md`，现在共 87 张角色、57 件装备（3★ 以上还没有卡图）。Rust 版结算已完成（计划和执行记录 `docs/plans/rust-engine.md`，PR #31–#33）；数值校正已做完一轮（记录 `docs/plans/balance-tuning.md`，经验 `docs/design/balance-notes.md`），校正的结果已经写进正式版（新机制、数据、回放表现，计划和执行记录 `docs/plans/balance-port.md`，issue #36）；两个关卡因此待重做（`docs/design/levels.md`）；有效战力还当不当平衡指标待定（issue #39）；接下来是卡图。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；阶段 3 第二轮（3★/4★/5★）已完成：设计记录 `docs/plans/stage-3-high-stars.md`，开发记录 `docs/plans/stage-3-high-stars-dev.md`，现在共 87 张角色、57 件装备（3★ 以上还没有卡图）。Rust 版结算已完成（计划和执行记录 `docs/plans/rust-engine.md`，PR #31–#33）；数值校正已做完一轮（记录 `docs/plans/balance-tuning.md`，经验 `docs/design/balance-notes.md`），校正的结果已经写进正式版（新机制、数据、回放表现，计划和执行记录 `docs/plans/balance-port.md`，issue #36）；两个关卡因此待重做（`docs/design/levels.md`）；平衡指标只用阶段搜索，有效战力的工具和目标已去掉（issue #39）；接下来是卡图。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
 - 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关，记录通关；数值校正后待重做）、图鉴、战斗演出（速度/跳过）、设置。冒险、线下对战未实现。
 - 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并和各种显示顺序在 `CardDB`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。Rust 版结算在 `engine/`，只算结果、供批量模拟（命令行和 Python 绑定，`tools/` 默认用它），GDScript 版是规则的基准实现。
 - 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
@@ -21,7 +21,7 @@
 - 格子模型：装备像一张卡盖在角色卡上，时机、基础技能各两格，特殊技能一格；逐格覆盖（数据里用 `"clear"` 表示清空），再把两格合并。通常角色填 1、装备填 2，就是叠加。战斗力不分格，直接相加。
 - 术语见 `docs/design/battle-rules.md` 第 1 节，卡面写法、显示顺序、分隔符见第 7 节：用"基础技能"不用"普通技能"，卡面不说"在场"。
 - 规则的现行规范和待实现项见 `docs/design/battle-rules.md`。
-- 平衡：角色和装备各自平衡；数值按对局阶段搜索均衡阵容来校正（验收：没有废卡、没有一家独大，`docs/plans/balance-tuning.md`）。角色各档有效战力均值 6/13/21/30/40 是校正前的目标，是否保留见 issue #39。
+- 平衡：角色和装备各自平衡；数值按对局阶段搜索均衡阵容来校正（验收：没有废卡、没有一家独大，`docs/plans/balance-tuning.md`）。不给各星级定强度目标，警戒线见 `docs/design/card-design.md` 第 1 节。
 - 羁绊和升星暂不做。
 
 ## 目录
@@ -45,7 +45,7 @@
 - Rust 版：`just rs-test`（测试，含共用用例）、`just rs-check`（`cargo fmt --check` 和 `cargo clippy`，含 Python 绑定，警告当错误）
 - 批量模拟：`just sim <输入.jsonl> <输出.jsonl> [--cards <额外卡牌.json>] [--trace] [--threads N]`（Rust 版，单线程约 57 万场/秒，默认用全部核心）；`just sim-godot`（Godot 版 `cli/sim.gd`，格式相同，单进程约 4300 场/秒，`--log` 带事件日志）
 - 对拍和测速：`just diff-sim [场数] [--cards 额外卡牌.json]`（同一批随机对局分别用 Godot 和 Rust 跑，逐场比较，默认 100 万场）、`just bench`；`just rs-build` 构建 Rust 版的命令行并更新 Python 绑定（上面几条会自动先做）
-- 关卡检查：`just level-check [关卡文件.json]`；回放时长：`just replay-time [场数] [--stars 1,2]`（1 倍速，随机对局的平均、P90、各段落和最长的时点）；平衡实验：`just experiment <名字>`；数值试验：`just balance <模块> [参数]`（`run` 六个阶段的阵容搜索、`check` 复核一张卡、`compare` 比较报告、`sheet` 读写试验表，流程见 `tools/README.md`）；Python 检查：`just tools-check`
+- 关卡检查：`just level-check [关卡文件.json]`；回放时长：`just replay-time [场数] [--stars 1,2]`（1 倍速，随机对局的平均、P90、各段落和最长的时点）；平衡实验：`just experiment <名字>`；数值试验：`just balance <模块> [参数]`（`run` 六个阶段的阵容搜索、`check` 复核一张卡、`compare` 比较报告、`sheet` 读写试验表、`usage` 把出场率填进设计表，流程见 `tools/README.md`）；Python 检查：`just tools-check`
 - 美术素材：`just fonts`（字体子集）、`just art`（图标、卡框、法阵、控件贴图、飘字饰板，之后重建主题）、`just theme`（只重建主题）；截图：`just shots <目录> [宽度] [高度]`（需要窗口；画在固定大小的视口里，手机宽度 2376 也是原尺寸）。规范见 `docs/design/art-direction.md`
 - Godot：`/Applications/Godot.app/Contents/MacOS/Godot`（`justfile` 里可用环境变量 `GODOT` 覆盖）
 - 无头脚本：`... --headless --path . --script <file.gd>`
