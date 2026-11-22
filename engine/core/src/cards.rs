@@ -328,7 +328,8 @@ fn skill_times(special: &Specials, e: Option<&Card>, k: usize) -> i32 {
 
 /// 装备的战斗力的倍数（`CardDB.equipment_times`，千机魔女 ×2）
 fn equipment_times(special: &Specials) -> i32 {
-    if special.has(Special::DoubleEquipment) { 2 } else { 1 }
+    let factor = if crate::trial::triple_equipment() { 3 } else { 2 };
+    if special.has(Special::DoubleEquipment) { factor } else { 1 }
 }
 
 /// 一格的叠放结果（`CardDB._overlay`）：装备有这格（写了内容或 "clear"）就用装备的，否则沿用角色的；

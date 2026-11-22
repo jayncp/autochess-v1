@@ -7,6 +7,8 @@
 //!
 //! 结算时释放 GIL，多核并行（rayon），结果顺序和输入一致。
 
+mod search;
+
 use autochess_core::{Deck, MAX_UNITS, Outcome, Pick, VERSION, simulate};
 use numpy::ndarray::Array2;
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray3, PyUntypedArrayMethods};
@@ -134,6 +136,83 @@ impl Engine {
         }
         let [s1, s2] = strengths;
         Ok((winner.into_pyarray(py), reason.into_pyarray(py), s1.into_pyarray(py), s2.into_pyarray(py)))
+    }
+    /// 得分矩阵（试验）：mine 里每套对 theirs 里每套，胜 1、平 0.5、负 0。阵容数组的格式同 simulate_ids
+    fn cross<'py>(
+        &self,
+        py: Python<'py>,
+        mine: PyReadonlyArray3<'py, i32>,
+        theirs: PyReadonlyArray3<'py, i32>,
+    ) -> PyResult<Bound<'py, PyArray2<f64>>> {
+        let (a, b) = (self.lineups(&mine)?, self.lineups(&theirs)?);
+        let deck = &self.deck;
+        let (rows, columns) = (a.len(), b.len());
+        let scores = py.detach(|| {
+            let other = b.iter().map(|l| search::picks(deck, l)).collect::<Result<Vec<_>, _>>()?;
+            let row = |l: &search::Lineup| Ok(search::row(deck, &search::picks(deck, l)?, &other));
+            a.par_iter().map(row).collect::<Result<Vec<_>, String>>()
+        });
+        let flat: Vec<f64> = scores.map_err(PyValueError::new_err)?.into_iter().flatten().collect();
+        let matrix = Array2::from_shape_vec((rows, columns), flat).map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(matrix.into_pyarray(py))
+    }
+
+    /// 并行爬山（试验，见 search.rs）：starts、opponents 的格式同 simulate_ids；keeps 是各起点必须带的卡（-1 不限）；
+    /// star、limit 按卡牌编号给星级和同名上限；options 是（卡位数, 总星上限）。
+    /// 返回（各起点最后的阵容，摊平成一维、每套 7×2 格、空位 -1；各起点的得分）
+    #[allow(clippy::too_many_arguments, clippy::type_complexity)]
+    fn climb<'py>(
+        &self,
+        py: Python<'py>,
+        starts: PyReadonlyArray3<'py, i32>,
+        keeps: Vec<i32>,
+        opponents: PyReadonlyArray3<'py, i32>,
+        weights: Vec<f64>,
+        steps: usize,
+        mutations: usize,
+        seed: u64,
+        chars: Vec<i32>,
+        equips: Vec<i32>,
+        star: Vec<i32>,
+        limit: Vec<usize>,
+        options: Vec<(usize, i32)>,
+        max_equips: usize,
+    ) -> PyResult<(Bound<'py, PyArray1<i32>>, Bound<'py, PyArray1<f64>>)> {
+        let (starts, opponents) = (self.lineups(&starts)?, self.lineups(&opponents)?);
+        if keeps.len() != starts.len() || weights.len() != opponents.len() {
+            return Err(PyValueError::new_err("keeps 要和 starts 一样长，weights 要和 opponents 一样长"));
+        }
+        let space = search::Space { chars, equips, star, limit, options, max_equips };
+        let deck = &self.deck;
+        let found = py.detach(|| {
+            let other = opponents.iter().map(|l| search::picks(deck, l)).collect::<Result<Vec<_>, _>>()?;
+            for start in &starts {
+                search::picks(deck, start)?;
+            }
+            Ok::<_, String>(search::climb(deck, &space, &starts, &keeps, &other, &weights, steps, mutations, seed))
+        });
+        let found = found.map_err(PyValueError::new_err)?;
+        let mut cells = vec![-1; found.len() * MAX_UNITS * 2];
+        for (k, (lineup, _)) in found.iter().enumerate() {
+            for (i, unit) in lineup.iter().enumerate() {
+                cells[(k * MAX_UNITS + i) * 2..(k * MAX_UNITS + i) * 2 + 2].copy_from_slice(unit);
+            }
+        }
+        let values: Vec<f64> = found.iter().map(|(_, value)| *value).collect();
+        Ok((cells.into_pyarray(py), values.into_pyarray(py)))
+    }
+}
+
+impl Engine {
+    /// 阵容数组（形状 (套数, 位置数 ≤7, 2)，角色 -1 的位置跳过）拆成一套一套
+    fn lineups(&self, array: &PyReadonlyArray3<'_, i32>) -> PyResult<Vec<search::Lineup>> {
+        let width = array.shape()[1];
+        if array.shape()[2] != 2 || width > MAX_UNITS {
+            return Err(PyValueError::new_err(format!("阵容数组的形状应为 (套数, 位置数 ≤{MAX_UNITS}, 2)")));
+        }
+        let cells = array.as_slice().map_err(|_| PyValueError::new_err("数组要连续存放（np.ascontiguousarray）"))?;
+        let lineup = |row: &[i32]| row.chunks(2).filter(|u| u[0] >= 0).map(|u| [u[0], u[1]]).collect();
+        Ok(if width == 0 { Vec::new() } else { cells.chunks(width * 2).map(lineup).collect() })
     }
 }
 

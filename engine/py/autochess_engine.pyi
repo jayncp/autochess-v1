@@ -34,3 +34,24 @@ class Engine:
     ) -> tuple[npt.NDArray[np.uint8], npt.NDArray[np.uint8], npt.NDArray[np.int32], npt.NDArray[np.int32]]:
         """按编号传阵容：int32 数组，形状 (场数, 位置数 ≤7, 2)，每格 [角色编号, 装备编号]，-1 表示空。
         返回 (winner, reason, p1, p2)：reason 0 = 全灭、1 = 连续无人阵亡；p1、p2 是 (场数, 7) 的幸存者战斗力，后面补 0。"""
+
+    def cross(self, mine: npt.NDArray[np.int32], theirs: npt.NDArray[np.int32]) -> npt.NDArray[np.float64]:
+        """得分矩阵（试验）：mine 里每套对 theirs 里每套，胜 1、平 0.5、负 0。阵容数组的格式同 simulate_ids。"""
+
+    def climb(
+        self,
+        starts: npt.NDArray[np.int32],
+        keeps: list[int],
+        opponents: npt.NDArray[np.int32],
+        weights: list[float],
+        steps: int,
+        mutations: int,
+        seed: int,
+        chars: list[int],
+        equips: list[int],
+        star: list[int],
+        limit: list[int],
+        options: list[tuple[int, int]],
+        max_equips: int,
+    ) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float64]]:
+        """并行爬山（试验）：返回（各起点最后的阵容，一维、每套 7×2 格、空位 -1；各起点的得分）。"""
