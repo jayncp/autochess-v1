@@ -1,6 +1,6 @@
 {
  "minotaur": {
-  "text": "坚固4；交战：自身坚固数值+1",
+  "text": "坚固4；交战：自身的坚固值 +1",
   "special": {
    "sturdy": 4,
    "raise_own": {
@@ -122,7 +122,7 @@
   }
  },
  "parrot": {
-  "text": "战前、入场：额外获得对方交战位基础技能",
+  "text": "战前、入场：额外获得一份对方交战位的基础技能",
   "special": {
    "copy_skills": {
     "timings": [
@@ -140,7 +140,7 @@
   }
  },
  "parrot_puppet": {
-  "text": "战前、入场：额外获得对方交战位基础技能",
+  "text": "战前、入场：额外获得一份对方交战位的基础技能",
   "special": {
    "copy_skills": {
     "timings": [
@@ -151,7 +151,7 @@
   }
  },
  "tiger_tail_whip": {
-  "text": "自身及前一位角色交战多触发1轮",
+  "text": "自身和前一位，交战多触发一轮",
   "special": {
    "extra_round": {
     "scope": "self_and_front",
@@ -160,7 +160,7 @@
   }
  },
  "holy_grail": {
-  "text": "自身及前一位角色入场多触发1轮",
+  "text": "自身和前一位，入场多触发一轮",
   "special": {
    "extra_round": {
     "scope": "self_and_front",
@@ -186,7 +186,7 @@
   "special": null
  },
  "captain": {
-  "text": "己方角色触发集结时，其战斗力额外 +2",
+  "text": "己方角色触发集结时，该角色战斗力 +2",
   "special": {
    "on_trigger_boost": {
     "skill": "rally",
@@ -195,7 +195,7 @@
   }
  },
  "alpha_wolf": {
-  "text": "己方角色触发狂暴时，其战斗力 +4",
+  "text": "己方角色触发狂暴时，该角色战斗力 +4",
   "special": {
    "on_trigger_boost": {
     "skill": "rage",
@@ -239,14 +239,14 @@
   }
  },
  "snow_yak": {
-  "text": "庇护1；战前受到伤害减半",
+  "text": "庇护1；战前时点受到的伤害减半",
   "special": {
    "shelter": 1,
    "halve_pre_battle_damage": null
   }
  },
  "white_wolf_king": {
-  "text": "交战：自身狂暴数值+3",
+  "text": "交战：自身的狂暴值 +3",
   "special": {
    "raise_own": {
     "timings": [
@@ -258,7 +258,7 @@
   }
  },
  "white_wolf_totem": {
-  "text": "战前：己方全体角色获得坚固2",
+  "text": "战前：己方全体获得坚固2",
   "special": {
    "grant": {
     "timings": [
@@ -271,7 +271,7 @@
   }
  },
  "king_cobra": {
-  "text": "致命；入场：若对方战斗力高于自身，将其击杀",
+  "text": "致命；入场：对方交战位战斗力高于自身时，对其造成致命伤害",
   "special": {
    "lethal": null,
    "execute": {
@@ -288,7 +288,7 @@
   }
  },
  "temple_core": {
-  "text": "入场：若对方战斗力高于自身，将其击杀",
+  "text": "入场：对方交战位战斗力高于自身时，对其造成致命伤害",
   "special": {
    "execute": {
     "timings": [
@@ -307,7 +307,7 @@
   }
  },
  "elf_empress": {
-  "text": "自身以及开战时位于己方第二位的角色，战前多触发一轮",
+  "text": "自身和开战时位于己方第 2 位的角色，战前多触发一轮",
   "special": {
    "extra_round": {
     "scope": "self_and_second",
@@ -325,7 +325,7 @@
   }
  },
  "spirit_deer": {
-  "text": "战前:己方全体狂暴值 +3",
+  "text": "战前：己方全体的狂暴值 +3",
   "special": {
    "raise_skills": {
     "timings": [
@@ -337,7 +337,7 @@
   }
  },
  "arbiter": {
-  "text": "入场：对方角色多于己方时，己方全体战力 +15",
+  "text": "入场：对方角色多于己方时，己方全体战斗力 +15",
   "special": {
    "gain_all_if_outnumbered": {
     "timings": [
@@ -354,7 +354,7 @@
   }
  },
  "spider_lily": {
-  "text": "战前：下2位角色获得致命",
+  "text": "战前：下两位获得致命",
   "special": {
    "grant": {
     "timings": [
