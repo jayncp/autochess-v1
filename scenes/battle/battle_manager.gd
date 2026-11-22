@@ -60,6 +60,8 @@ const RALLY_SPARK := Color("ffb66e")
 const PASSIVE_GAINS := ["on_trigger_gain", "on_trigger_boost", "on_resolve_gain", "on_enemy_resolve_gain_all"]
 const ANNIHILATE_ORB := Color("b48cff")
 const BLESS_BEAM := Color("f2c94c")
+## 八咫镜这类给己方全体加战斗力的被动：每个人身上爆开的光
+const PASSIVE_BURST := Color("fff4cc")
 
 ## 烧散用的噪声
 static var _noise: ImageTexture
@@ -494,9 +496,10 @@ func play_beat(e: Dictionary) -> void:
 			"wealth":
 				_spawn(FxEffect.Kind.COINS, 0.7, {to = caster})
 	var last := fly
-	var defended := false
+	var defended := 0.0
 	var raised := {}
-	var named := {}
+	var raises := {}  # 改数值按"角色、技能、第几次"合成一条：[效果, 最晚的时间]
+	var mirrors := {}  # 八咫镜：持有者 -> 这一拍的效果
 	for f in e.effects:
 		var target = _cards[f.unit]
 		# 多一次：多出来的每一下依次晚一点，第一个效果出现时来源弹卡名
@@ -504,14 +507,24 @@ func play_beat(e: Dictionary) -> void:
 		var delay := fly + start
 		if start > 0 and f == e.effects.filter(func(g): return g.get("again") == f.again and g.get("again_by") == f.again_by)[0]:
 			_character_effect_later(start, "extra_resolve", f.again_by, f.by if f.kind == "damage" else f.source)
-		# 萨满这类：触发后改数值，来源弹一次卡名，对象的技能方块更新
+		# 萨满这类：触发后改数值，来源弹一次卡名；同一个角色同时被几个来源改（两个萨满），白字合成一条
 		if f.kind == "raise":
 			var key := "%s/%d" % [f.source, f.get("again", 0)]
 			if not raised.has(key):
 				raised[key] = true
 				_character_effect_later(delay + PACE.extra, "on_trigger_raise", f.source, f.unit)
-			_grant_later(f, delay + PACE.extra)
+			var group := "%s/%s/%d" % [f.unit, f.skill, f.get("again", 0)]
+			if not raises.has(group):
+				raises[group] = [[], 0.0]
+			raises[group][0].append(f)
+			raises[group][1] = maxf(raises[group][1], delay + PACE.extra)
 			last = maxf(last, delay + PACE.extra)
+			continue
+		# 八咫镜：等对方这一拍全部结算完，合起来显示一次
+		if f.kind == "buff" and f.skill == "on_enemy_resolve_gain_all":
+			if not mirrors.has(f.source):
+				mirrors[f.source] = []
+			mirrors[f.source].append(f)
 			continue
 		if skill in ["inspire", "annihilate"] and _detail() == 2:
 			var side_cards: Array = player_battle_fields[_side(target)]
@@ -521,12 +534,6 @@ func play_beat(e: Dictionary) -> void:
 		if f.kind == "buff" and f.skill in PASSIVE_GAINS:
 			delay += PACE.extra
 			last = maxf(last, delay)
-			# 对方结算时己方全体加（八咫镜）：一拍里来源只弹一次卡名，各人的战斗力照常更新
-			var key := "%s/%s" % [f.source, f.skill]
-			if f.skill == "on_enemy_resolve_gain_all" and named.has(key):
-				_apply_later(f, delay)
-				continue
-			named[key] = true
 			# 队长这类：触发技能的是别的卡时，从那张卡连一道白线过来
 			var holder = _cards[f.source]
 			var trigger = casters.filter(func(c): return _side(c) == _side(holder) and c != holder)
@@ -545,11 +552,19 @@ func play_beat(e: Dictionary) -> void:
 		# 蟾蜍这类：出手时特殊技能栏亮起、弹卡名，白线连到被加成的那一下
 		for uid in f.get("boosts", []):
 			_character_effect("on_resolve_bonus", uid, f.unit, 0, "", delay + 0.45)
-		if f.kind == "damage" and (f.shelter or f.sturdy > 0):
-			defended = true
+		if f.kind == "damage":
+			# 庇护、坚固、减半先弹名字，过一会儿才弹扣的数值（坚固和减半都有时等两次）
+			var steps := 1 if f.shelter else int(f.sturdy > 0) + int(f.has("halved"))
+			defended = maxf(defended, PACE.defend * steps)
 		_land(f, delay)
 		last = maxf(last, delay)
-	await wait(last + _read() + (PACE.defend if defended else 0.0))
+	for group in raises.values():
+		_raise_later(group[0], group[1])
+	if not mirrors.is_empty():
+		last += PACE.extra
+		for holder in mirrors:
+			_mirror_later(holder, mirrors[holder], last)
+	await wait(last + _read() + defended)
 	light_skill(casters, "")
 
 
@@ -705,7 +720,7 @@ func _land(f: Dictionary, delay: float, trigger = null) -> void:
 
 
 ## 受到伤害：庇护挡下 → 保护罩亮一圈（还有层数）或碎开（用完），只弹庇护；
-## 坚固 → 金属光、弹坚固，减完还有伤害再弹实际扣的数值；否则直接弹数值，卡泛红抖动
+## 坚固 → 金属光、弹坚固，减完还有伤害再弹实际扣的数值；战前减半同样先弹卡名再弹数值；否则直接弹数值，卡泛红抖动
 func _damage(f: Dictionary) -> void:
 	var card = _cards[f.unit]
 	if f.has("immune"):
@@ -732,11 +747,19 @@ func _damage(f: Dictionary) -> void:
 		if have_been_skipped:
 			return
 	if f.has("halved"):
+		# 战前伤害减半（雪域神牛）：和坚固一样，先弹来源的卡名，过一会儿再弹减半后扣的数值
 		_light_special(card)
+		_badge(card, FloatBadge.card_name(_special_sources[f.unit]))
+		await _after(PACE.defend)
+		if have_been_skipped:
+			return
 	_badge(card, _damage_badge(f))
 	apply_effect(f)
 	if f.dealt > 0:
 		_hurt(card)
+		# 致命伤害命中：和致命对撞一样重震一下
+		if f.source == "execute" and _detail() > 0:
+			_fx.shake(14.0 * _ui.card_scale, 0.22)
 
 
 ## 伤害的飘字：交战是大号数字（致命命中是 −∞），反噬、协战是词条，腐蚀、湮灭是基础技能；没有造成伤害就不带数值
@@ -783,10 +806,37 @@ func _character_effect(effect_id: String, holder: String, target: String, amount
 		_spawn(FxEffect.Kind.THREAD, thread_time, {from = _cards[trigger], to = card})
 
 
-## delay 之后只把效果写到卡面上，不弹飘字
-func _apply_later(f: Dictionary, delay: float) -> void:
+## 萨满这类：同一个角色同时被几个来源改同一个技能（两个萨满），写进卡面后只弹一条白字，数值相加
+func _raise_later(fs: Array, delay: float) -> void:
 	await _after(delay)
-	apply_effect(f)
+	if have_been_skipped:
+		return
+	var total := 0
+	for f in fs:
+		_apply_change(f)
+		total += f.amount
+	var card = _cards[fs[0].unit]
+	card.face.set_base_skills(_base[fs[0].unit])
+	_badge(card, FloatBadge.skill(fs[0].skill, total, true))
+
+
+## 八咫镜：对方这一拍结算完之后合起来显示一次。持有者的特殊技能栏亮起，弹一次卡名和这一拍加的总数；
+## 己方每个角色同时爆开一次光，战斗力更新到这一拍结束时的数
+func _mirror_later(holder: String, fs: Array, delay: float) -> void:
+	await _after(delay)
+	if have_been_skipped:
+		return
+	var latest := {}
+	var total := 0
+	for f in fs:
+		latest[f.unit] = f
+		if f.unit == holder:
+			total += f.amount
+	_light_special(_cards[holder])
+	_badge(_cards[holder], FloatBadge.card_name(_special_sources[holder], total if total != 0 else null))
+	for uid in latest:
+		_spawn(FxEffect.Kind.BURST, 0.35, {to = _cards[uid], color = PASSIVE_BURST})
+		apply_effect(latest[uid])
 
 
 func _character_effect_later(delay: float, effect_id: String, holder: String, target: String) -> void:
