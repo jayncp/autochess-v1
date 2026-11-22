@@ -115,11 +115,21 @@ func _init() -> void:
 	z_index = 100
 
 
+## 加进来的这一帧可能还没轮到 _process 就先画了一次（多数飘字是在计时器回调里加的）：先摆好位置，不然会在图层原点（左上角）闪一下
+func _ready() -> void:
+	_place(0.0)
+
+
 func _process(delta: float) -> void:
 	_time += delta * speed
 	if _time >= LIFE:
 		queue_free()
 		return
+	_place(delta)
+
+
+## 跟着卡、弹出、上浮、淡出
+func _place(delta: float) -> void:
 	var pop := 1.0
 	if _time < POP:
 		pop = lerpf(0.5, 1.15, _time / POP)

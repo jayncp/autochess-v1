@@ -156,7 +156,8 @@ func _run_unit_tests() -> void:
 	_test_skill_text()
 	_test_live_specials()
 	_test_card_checks()
-	print("单元测试：8 组")
+	_test_badge_placed()
+	print("单元测试：9 组")
 
 
 ## 卡牌数据的校验（tests/cases/card_checks.json，和 Rust 版共用）：ok 的要通过，其余每张都要报出问题
@@ -359,6 +360,20 @@ func _test_skill_text() -> void:
 	for c in cases:
 		if c[0] != c[1]:
 			_failures.append("[unit-skill-text] 期望 %s，实际 %s" % [c[1], c[0]])
+
+
+## 飘字一加进场景树就摆在跟着的卡上，不能等到下一帧的 _process（否则会在左上角闪一下）
+func _test_badge_placed() -> void:
+	var card := Node2D.new()
+	card.position = Vector2(600, 400)
+	var badge := FloatBadge.skill("rage", 2)
+	badge.card = card
+	root.add_child(card)
+	root.add_child(badge)
+	if badge.position.distance_to(card.position) > 100:
+		_failures.append("[unit-badge] 飘字加进来时应在卡上（%s 附近），实际在 %s" % [card.position, badge.position])
+	badge.free()
+	card.free()
 
 
 ## 战斗中的特殊技能栏：庇护被消耗还有剩余时显示新的层数（标紫），用完就移除，不显示"庇护0"
@@ -737,6 +752,17 @@ func _check_sandbox(sandbox: Node) -> void:
 	sandbox.select_slot(2, 1)
 	sandbox.pick("holy_shield")
 	expect.call("空卡位不能选装备", 2, 1, [])
+	# 种族只筛角色：勾了种族再切到装备页，装备照常显示；切回角色页种族筛选还在
+	var picker: CardPicker = sandbox.get_node("Picker")
+	var shown := func() -> Array: return picker._cells.keys().filter(func(id): return picker._cells[id].visible)
+	picker._toggle_race("beast")
+	picker.set_tab("equipment")
+	if shown.call().size() != CardDB.ids("equipment").size():
+		_failures.append("[smoke-sandbox] 勾了种族后切到装备页，应显示全部 %d 件装备，实际 %d 件" % [CardDB.ids("equipment").size(), shown.call().size()])
+	picker.set_tab("character")
+	if not shown.call().all(func(id): return "beast" in CardDB.card(id).get("races", [])):
+		_failures.append("[smoke-sandbox] 切回角色页后应只显示动物")
+	picker._toggle_race("beast")
 	var board: Node = sandbox.get_node("board")
 	# 从选卡区拖出的卡不留影子（原卡还在选卡区）
 	board.start_drag_new("soldier")

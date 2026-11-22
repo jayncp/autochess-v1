@@ -229,9 +229,10 @@ func _sync_filters() -> void:
 func refresh_cards() -> void:
 	for id in _cells:
 		var data := CardDB.card(id)
+		# 种族只筛角色：装备页不显示种族按钮，勾选的种族留着，切回角色页照旧生效
 		var shown: bool = data.type == tab \
 			and (stars.is_empty() or data.star in stars) \
-			and (races.is_empty() or races.any(func(r): return r in data.get("races", []))) \
+			and (tab != "character" or races.is_empty() or races.any(func(r): return r in data.get("races", []))) \
 			and load_card.matches_search(data, search)
 		_cells[id].visible = shown
 		_cells[id].modulate.a = 0.4 if data.type == "equipment" and not equipment_enabled else 1.0
