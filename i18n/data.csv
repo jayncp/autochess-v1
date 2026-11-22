@@ -186,23 +186,33 @@ keyword_desc.assist,己方其他角色交战时，对撞之后，对方交战位
 keyword_desc.immune_lethal,对方的致命无效，按普通对撞算
 keyword_desc.bless,下一位角色获得 N 层庇护
 effect.on_trigger_gain,己方角色触发{skill}时，自身战斗力 +{amount}
+effect.on_trigger_boost,己方角色触发{skill}时，该角色战斗力 +{amount}
 effect.on_resolve_bonus,己方角色结算{skill}时，伤害 +{amount}
+effect.on_resolve_gain,己方角色结算{skill}时，自身战斗力 +{amount}
+effect.on_enemy_resolve_gain_all,对方角色结算{skill}时，己方全体战斗力 +{amount}
+effect.halve_pre_battle_damage,战前时点受到的伤害减半
 effect.extra_resolve,{scope}{skill}多结算一次
 effect.extra_round,{scope}{timing}多触发一轮
 scope.self,自身
 scope.allies,己方
 scope.first,开战时位于己方第 1 位的角色，
-effect.on_resolve_raise,己方角色结算{skill}后，己方全体的{skill}值 +{amount}
-effect.double_skills,自身的基础技能数值翻倍
-effect.double_equipment,从装备获得的战斗力和基础技能数值翻倍
-effect.copy_skills,对方交战位有基础技能时，自身的基础技能变成它的基础技能
+scope.self_and_second,自身和开战时位于己方第 2 位的角色，
+scope.self_and_front,自身和前一位，
+effect.on_trigger_raise,己方角色触发{skill}后，己方全体的{skill}值 +{amount}
+effect.double_skills,自身的基础技能数值和开战时的战斗力翻倍
+effect.equipment_times,从装备获得的战斗力和基础技能数值变为 {amount} 倍
+effect.copy_skills,额外获得一份对方交战位的基础技能
 effect.grant,{target}获得{skill}{amount}
 effect.clear_skills,清除{target}的基础技能
 effect.raise_skills,己方全体的{skill}值 +{amount}
-effect.gain_half_skill_sum,自身战斗力 + 己方全体基础技能数值之和的一半
+effect.gain_skill_sum,自身战斗力 + 己方全体基础技能数值之和
 effect.gain_if_outnumbered,对方角色多于己方时，自身战斗力 +{amount}
+effect.gain_all_if_outnumbered,对方角色多于己方时，己方全体战斗力 +{amount}
 effect.damage_half_strength,对方交战位受到其战斗力一半的伤害
+effect.execute,对方交战位战斗力高于自身时，对其造成致命伤害
+target.self,自身
 target.next,下一位角色
+target.next_two,下两位
 target.allies,己方全体
 target.enemies,对方全体
 target.enemy_first_two,对方前两位

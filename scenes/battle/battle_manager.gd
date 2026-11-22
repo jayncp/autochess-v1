@@ -56,6 +56,8 @@ const STALEMATE_REPEATS := 3
 const DISSOLVE := preload("res://scenes/battle/fx/dissolve.gdshader")
 const BEAM_CYAN := Color("29c4d6")
 const RALLY_SPARK := Color("ffb66e")
+## 挂在基础技能结算上、给角色加战斗力的被动（回放时跟在那一下后面）
+const PASSIVE_GAINS := ["on_trigger_gain", "on_trigger_boost", "on_resolve_gain", "on_enemy_resolve_gain_all"]
 const ANNIHILATE_ORB := Color("b48cff")
 const BLESS_BEAM := Color("f2c94c")
 
@@ -406,7 +408,11 @@ func _play_effect(e: Dictionary) -> void:
 		var source: String = f.by if f.kind == "damage" else f.source
 		var target: String = f.from if f.kind == "copy" else f.unit
 		if f.kind == "buff":
-			_land(f, 0.0)
+			# 一个来源给几个角色加战斗力（神裁者）：卡名只弹一次，其余的直接更新战斗力
+			if named.has(source):
+				apply_effect(f)
+			else:
+				_land(f, 0.0)
 			named[source] = true
 			continue
 		if not named.has(source):
@@ -490,6 +496,7 @@ func play_beat(e: Dictionary) -> void:
 	var last := fly
 	var defended := false
 	var raised := {}
+	var named := {}
 	for f in e.effects:
 		var target = _cards[f.unit]
 		# 多一次：多出来的每一下依次晚一点，第一个效果出现时来源弹卡名
@@ -497,12 +504,12 @@ func play_beat(e: Dictionary) -> void:
 		var delay := fly + start
 		if start > 0 and f == e.effects.filter(func(g): return g.get("again") == f.again and g.get("again_by") == f.again_by)[0]:
 			_character_effect_later(start, "extra_resolve", f.again_by, f.by if f.kind == "damage" else f.source)
-		# 萨满这类：每一下之后改数值，来源弹一次卡名，对象的技能方块更新
+		# 萨满这类：触发后改数值，来源弹一次卡名，对象的技能方块更新
 		if f.kind == "raise":
 			var key := "%s/%d" % [f.source, f.get("again", 0)]
 			if not raised.has(key):
 				raised[key] = true
-				_character_effect_later(delay + PACE.extra, "on_resolve_raise", f.source, f.unit)
+				_character_effect_later(delay + PACE.extra, "on_trigger_raise", f.source, f.unit)
 			_grant_later(f, delay + PACE.extra)
 			last = maxf(last, delay + PACE.extra)
 			continue
@@ -511,12 +518,19 @@ func play_beat(e: Dictionary) -> void:
 			# 振奋从发动者向两边扩，湮灭从对方交战位往后
 			var origin: int = side_cards.find(_cards[f.source]) if skill == "inspire" else 0
 			delay += PACE.spread * absi(side_cards.find(target) - origin)
-		if f.get("skill", "") == "on_trigger_gain":
+		if f.kind == "buff" and f.skill in PASSIVE_GAINS:
 			delay += PACE.extra
-			# 队长这类：触发技能的是别的卡时，从那张卡连一道白线过来
-			var trigger = casters.filter(func(c): return _side(c) == _side(target) and c != target)
-			_land(f, delay, trigger[0] if not trigger.is_empty() else null)
 			last = maxf(last, delay)
+			# 对方结算时己方全体加（八咫镜）：一拍里来源只弹一次卡名，各人的战斗力照常更新
+			var key := "%s/%s" % [f.source, f.skill]
+			if f.skill == "on_enemy_resolve_gain_all" and named.has(key):
+				_apply_later(f, delay)
+				continue
+			named[key] = true
+			# 队长这类：触发技能的是别的卡时，从那张卡连一道白线过来
+			var holder = _cards[f.source]
+			var trigger = casters.filter(func(c): return _side(c) == _side(holder) and c != holder)
+			_land(f, delay, trigger[0] if not trigger.is_empty() else null)
 			continue
 		if _detail() == 2:
 			var caster = _cards[f.by] if f.kind == "damage" else _cards[f.source]
@@ -694,6 +708,12 @@ func _land(f: Dictionary, delay: float, trigger = null) -> void:
 ## 坚固 → 金属光、弹坚固，减完还有伤害再弹实际扣的数值；否则直接弹数值，卡泛红抖动
 func _damage(f: Dictionary) -> void:
 	var card = _cards[f.unit]
+	if f.has("immune"):
+		# 致命伤害打在免疫致命的单位上：只弹"免疫致命"
+		_badge(card, FloatBadge.keyword("immune_lethal"))
+		_light_special(card)
+		apply_effect(f)
+		return
 	if f.shelter:
 		var left: int = _specials[f.unit].get("shelter", 1) - 1
 		_spawn(FxEffect.Kind.SHIELD_HIT if left > 0 else FxEffect.Kind.SHIELD_BREAK, 0.55, {to = card})
@@ -711,6 +731,8 @@ func _damage(f: Dictionary) -> void:
 		await _after(PACE.defend)
 		if have_been_skipped:
 			return
+	if f.has("halved"):
+		_light_special(card)
 	_badge(card, _damage_badge(f))
 	apply_effect(f)
 	if f.dealt > 0:
@@ -725,6 +747,8 @@ func _damage_badge(f: Dictionary) -> FloatBadge:
 			return FloatBadge.clash(-INF if f.amount >= BattleSim.LETHAL_ATTACK else -f.dealt)
 		"backlash", "assist":
 			return FloatBadge.keyword(f.source, change)
+	if f.source == "execute":
+		return FloatBadge.clash(-INF) if f.dealt > 0 else FloatBadge.card_name(_special_sources[f.by], null)
 	if f.source in CardDB.DESCRIPTIVE_SPECIALS:
 		return FloatBadge.card_name(_special_sources[f.by], change)
 	return FloatBadge.skill(f.source, change)
@@ -759,6 +783,12 @@ func _character_effect(effect_id: String, holder: String, target: String, amount
 		_spawn(FxEffect.Kind.THREAD, thread_time, {from = _cards[trigger], to = card})
 
 
+## delay 之后只把效果写到卡面上，不弹飘字
+func _apply_later(f: Dictionary, delay: float) -> void:
+	await _after(delay)
+	apply_effect(f)
+
+
 func _character_effect_later(delay: float, effect_id: String, holder: String, target: String) -> void:
 	await _after(delay)
 	if not have_been_skipped:
@@ -781,7 +811,7 @@ func apply_effect(f: Dictionary) -> void:
 
 ## 卡面上显示的战斗力：致命命中后是一个很大的负数（攻击按 LETHAL_ATTACK 算），显示成 0
 func _shown_strength(value: int) -> int:
-	return 0 if value <= -BattleSim.LETHAL_ATTACK / 2 else value
+	return 0 if value <= -BattleSim.LETHAL_ATTACK / 4 else value
 
 
 ## 庇护消耗一层，用完就去掉（和 BattleSim.damage 一致）

@@ -1,13 +1,16 @@
 """对拍：同一批随机对局分别用 Godot 版（cli/sim.gd）和 Rust 版（engine-cli）跑，逐场比较胜负、原因、幸存者的战斗力。
 
 对局一半普通、一半机制密集（见 lineups.py），固定种子。不一致时打印阵容，并用简要轨迹（--trace）找出第一处不同。
-用法：just diff-sim [场数] [--seed N]（先 just rs-build，just diff-sim 会自动做）
+用法：just diff-sim [场数] [--seed N] [--cards 额外卡牌.json]（先 just rs-build，just diff-sim 会自动做）
+--cards：额外的卡（JSON 数组，同 id 覆盖正式卡，路径相对 tools/），用来对拍还没写进正式数据的数值和机制。
 """
 
+import json
 import sys
 import time
 from collections import Counter
 from collections.abc import Sequence
+from pathlib import Path
 
 from autochess_tools.lineups import mixed_battles
 from autochess_tools.sim import run_engine, run_godot
@@ -36,10 +39,10 @@ def first_difference(a: Sequence, b: Sequence) -> int | None:
     return None if len(a) == len(b) else min(len(a), len(b))
 
 
-def explain(battle: dict) -> str:
+def explain(battle: dict, extra_cards: Sequence[dict]) -> str:
     """一场不一致的对局：阵容、两边的结果，以及简要轨迹里第一处不同"""
-    [godot] = run_godot([battle], ["--trace"])
-    [rust], _ = run_engine([battle], ["--trace"])
+    [godot] = run_godot([battle], ["--trace"], extra_cards)
+    [rust], _ = run_engine([battle], ["--trace"], extra_cards)
     lines = [f"  P1 {battle['p1']}", f"  P2 {battle['p2']}", f"  Godot {outcome(godot)}", f"  Rust  {outcome(rust)}"]
     k = first_difference(godot["trace"], rust["trace"])
     if k is not None:
@@ -53,12 +56,13 @@ def explain(battle: dict) -> str:
 def main(argv: list[str]) -> int:
     count = int(argv[0]) if argv and argv[0].isdigit() else COUNT
     seed = int(argv[argv.index("--seed") + 1]) if "--seed" in argv else SEED
-    battles = [{"p1": p1, "p2": p2} for p1, p2 in mixed_battles(count, seed)]
+    extra_cards = json.loads(Path(argv[argv.index("--cards") + 1]).read_text()) if "--cards" in argv else []
+    battles = [{"p1": p1, "p2": p2} for p1, p2 in mixed_battles(count, seed, extra_cards=extra_cards)]
     start = time.perf_counter()
-    godot = run_godot(battles)
+    godot = run_godot(battles, extra_cards=extra_cards)
     godot_seconds = time.perf_counter() - start
     start = time.perf_counter()
-    rust, _ = run_engine(battles)
+    rust, _ = run_engine(battles, extra_cards=extra_cards)
     rust_seconds = time.perf_counter() - start
     mismatches = [i for i, (g, r) in enumerate(zip(godot, rust, strict=True)) if outcome(g) != outcome(r)]
     normal = count - count // 2
@@ -72,7 +76,7 @@ def main(argv: list[str]) -> int:
     dense = sum(i >= normal for i in mismatches)
     print(f"  不一致：{len(mismatches)} 场（普通 {len(mismatches) - dense}，机制密集 {dense}）")
     for i in mismatches[:SHOW]:
-        print(f"第 {i + 1} 场：\n{explain(battles[i])}")
+        print(f"第 {i + 1} 场：\n{explain(battles[i], extra_cards)}")
     return 1 if mismatches else 0
 
 

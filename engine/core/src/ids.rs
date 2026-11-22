@@ -97,64 +97,71 @@ pub enum Special {
     Sturdy,
     Assist,
     ImmuneLethal,
-    OnTriggerGain,
+    /// 己方角色触发〈技能〉时，该角色战斗力 +N
+    OnTriggerBoost,
     Awaken,
     Shelter,
     Bless,
     Lethal,
+    /// 己方角色触发〈技能〉时，自身战斗力 +N
+    OnTriggerGain,
     OnResolveBonus,
-    OnResolveRaise,
+    /// 战前时点里受到的伤害减半（过了庇护、坚固之后，四舍五入）
+    HalvePreBattleDamage,
+    /// 己方角色触发〈技能〉后，己方全体的〈技能〉值 +N
+    OnTriggerRaise,
+    /// 己方角色结算〈技能〉时，自身战斗力 +N
+    OnResolveGain,
+    /// 对方角色结算〈技能〉时，己方全体战斗力 +N
+    OnEnemyResolveGainAll,
     ExtraResolve,
     ExtraRound,
     DoubleSkills,
-    DoubleEquipment,
+    /// 从装备获得的战斗力和基础技能数值变为 N 倍
+    EquipmentTimes,
     CopySkills,
     Grant,
     ClearSkills,
     RaiseSkills,
-    GainHalfSkillSum,
+    GainSkillSum,
     GainIfOutnumbered,
     GainAllIfOutnumbered,
     DamageHalfStrength,
-    OnTriggerBoost,
-    /// 试验：战前时点里受到的伤害减半（过了庇护、坚固之后，四舍五入）
-    HalvePreBattleDamage,
-    /// 试验：〈时机〉对方交战位的战斗力高于自身时，对它造成一次致命的伤害（庇护能挡，免疫致命无效）
+    /// 〈时机〉对方交战位的战斗力高于自身时，对它造成一次致命伤害（庇护能挡，对免疫致命的是 0 点）
     Execute,
-    /// 试验：对方角色结算〈技能〉时，己方全体战斗力 +N
-    OnEnemyTriggerGainAll,
 }
 
 impl Special {
-    pub const COUNT: usize = 27;
+    pub const COUNT: usize = 28;
     pub const ALL: [Special; Special::COUNT] = [
         Special::Backlash,
         Special::Sturdy,
         Special::Assist,
         Special::ImmuneLethal,
-        Special::OnTriggerGain,
+        Special::OnTriggerBoost,
         Special::Awaken,
         Special::Shelter,
         Special::Bless,
         Special::Lethal,
+        Special::OnTriggerGain,
         Special::OnResolveBonus,
-        Special::OnResolveRaise,
+        Special::HalvePreBattleDamage,
+        Special::OnTriggerRaise,
+        Special::OnResolveGain,
+        Special::OnEnemyResolveGainAll,
         Special::ExtraResolve,
         Special::ExtraRound,
         Special::DoubleSkills,
-        Special::DoubleEquipment,
+        Special::EquipmentTimes,
         Special::CopySkills,
         Special::Grant,
         Special::ClearSkills,
         Special::RaiseSkills,
-        Special::GainHalfSkillSum,
+        Special::GainSkillSum,
         Special::GainIfOutnumbered,
         Special::GainAllIfOutnumbered,
         Special::DamageHalfStrength,
-        Special::OnTriggerBoost,
-        Special::HalvePreBattleDamage,
         Special::Execute,
-        Special::OnEnemyTriggerGainAll,
     ];
 
     pub fn id(self) -> &'static str {
@@ -163,29 +170,30 @@ impl Special {
             Special::Sturdy => "sturdy",
             Special::Assist => "assist",
             Special::ImmuneLethal => "immune_lethal",
-            Special::OnTriggerGain => "on_trigger_gain",
             Special::OnTriggerBoost => "on_trigger_boost",
-            Special::HalvePreBattleDamage => "halve_pre_battle_damage",
-            Special::Execute => "execute",
-            Special::OnEnemyTriggerGainAll => "on_enemy_trigger_gain_all",
             Special::Awaken => "awaken",
             Special::Shelter => "shelter",
             Special::Bless => "bless",
             Special::Lethal => "lethal",
+            Special::OnTriggerGain => "on_trigger_gain",
             Special::OnResolveBonus => "on_resolve_bonus",
-            Special::OnResolveRaise => "on_resolve_raise",
+            Special::HalvePreBattleDamage => "halve_pre_battle_damage",
+            Special::OnTriggerRaise => "on_trigger_raise",
+            Special::OnResolveGain => "on_resolve_gain",
+            Special::OnEnemyResolveGainAll => "on_enemy_resolve_gain_all",
             Special::ExtraResolve => "extra_resolve",
             Special::ExtraRound => "extra_round",
             Special::DoubleSkills => "double_skills",
-            Special::DoubleEquipment => "double_equipment",
+            Special::EquipmentTimes => "equipment_times",
             Special::CopySkills => "copy_skills",
             Special::Grant => "grant",
             Special::ClearSkills => "clear_skills",
             Special::RaiseSkills => "raise_skills",
-            Special::GainHalfSkillSum => "gain_half_skill_sum",
+            Special::GainSkillSum => "gain_skill_sum",
             Special::GainIfOutnumbered => "gain_if_outnumbered",
             Special::GainAllIfOutnumbered => "gain_all_if_outnumbered",
             Special::DamageHalfStrength => "damage_half_strength",
+            Special::Execute => "execute",
         }
     }
 
@@ -206,14 +214,14 @@ impl Special {
             Special::Bless => &[Timings, Amount],
             Special::OnTriggerGain
             | Special::OnTriggerBoost
+            | Special::OnTriggerRaise
+            | Special::OnResolveGain
             | Special::OnResolveBonus
-            | Special::OnResolveRaise
-            | Special::OnEnemyTriggerGainAll => &[Skill, Amount],
+            | Special::OnEnemyResolveGainAll => &[Skill, Amount],
             Special::ExtraResolve => &[Scope, Skill],
             Special::ExtraRound => &[Scope, Timing],
-            Special::CopySkills | Special::GainHalfSkillSum | Special::DamageHalfStrength | Special::Execute => {
-                &[Timings]
-            }
+            Special::EquipmentTimes => &[Amount],
+            Special::CopySkills | Special::GainSkillSum | Special::DamageHalfStrength | Special::Execute => &[Timings],
             Special::Grant => &[Timings, Target, Skill, Amount],
             Special::ClearSkills => &[Timings, Target],
             Special::RaiseSkills => &[Timings, Skill, Amount],
@@ -277,21 +285,20 @@ pub enum SkillRef {
     Special(Special),
 }
 
-/// 被动的范围（`CardDB.SCOPES`）：自身、己方全体、开战时位于己方第 1 位的角色
+/// 被动的范围（`CardDB.SCOPES`）：自身、己方全体、开战时位于己方第 1 位的角色、
+/// 自身和开战时位于己方第 2 位的角色、自身和队列里紧挨在前面的那一位
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Scope {
     Itself,
     Allies,
     First,
-    /// 试验：自身，以及开战时位于己方第 2 位的角色
     ItselfAndSecond,
-    /// 试验：自身和队列里紧挨在前面的那一位
     ItselfAndFront,
 }
 
 impl Scope {
     pub const ALL: [Scope; 5] =
-        [Scope::ItselfAndSecond, Scope::Itself, Scope::Allies, Scope::First, Scope::ItselfAndFront];
+        [Scope::Itself, Scope::Allies, Scope::First, Scope::ItselfAndSecond, Scope::ItselfAndFront];
 
     pub fn id(self) -> &'static str {
         match self {
@@ -308,13 +315,11 @@ impl Scope {
     }
 }
 
-/// 对象（`CardDB.TARGETS`）：下一位、己方全体、对方全体、对方前两位
+/// 对象（`CardDB.TARGETS`）：自身、下一位、下两位、己方全体、对方全体、对方前两位
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Target {
-    /// 试验：自身（牛头人、白狼王）
     Own,
     Next,
-    /// 试验：下两位（彼岸花妖）
     NextTwo,
     Allies,
     Enemies,

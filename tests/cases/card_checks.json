@@ -2,7 +2,7 @@
 {"note":"最简的角色","ok":true,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3}},
 {"note":"装备可以不写战斗力；写 \"clear\" 清空角色的格子；技能字典写 {} 等于没写","ok":true,"card":{"id":"t_check","no":0,"type":"equipment","star":1,"skills_1":"clear","skills_2":{},"special_skills":"clear","timing_1":"clear"}},
 {"note":"一格多个时机","ok":true,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter","on_engage"],"skills_1":{"rage":2}}},
-{"note":"不带数值的词条写 null","ok":true,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"lethal":null,"assist":null,"immune_lethal":null,"double_skills":null,"double_equipment":null}}},
+{"note":"不带数值的词条写 null","ok":true,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"lethal":null,"assist":null,"immune_lethal":null,"double_skills":null,"halve_pre_battle_damage":null}}},
 {"note":"不带数值的词条写了数值：只看有没有，不报错","ok":true,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"lethal":3}}},
 {"note":"带数值的词条写正整数","ok":true,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"shelter":2,"sturdy":1,"backlash":3}}},
 {"note":"获得不带数值的词条，amount 写 null","ok":true,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"grant":{"timings":["on_enter"],"target":"next","skill":"lethal","amount":null}}}},
@@ -42,5 +42,13 @@
 {"note":"skill 不能是带参数的特殊技能","ok":false,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"grant":{"timings":["on_enter"],"target":"next","skill":"awaken","amount":1}}}},
 {"note":"获得不带数值的词条，amount 写了数值","ok":false,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"grant":{"timings":["on_enter"],"target":"next","skill":"lethal","amount":1}}}},
 {"note":"获得带数值的词条，amount 写 null","ok":false,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"grant":{"timings":["on_enter"],"target":"next","skill":"shelter","amount":null}}}},
-{"note":"获得基础技能，amount 写 null","ok":false,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"grant":{"timings":["on_enter"],"target":"next","skill":"rally","amount":null}}}}
+{"note":"获得基础技能，amount 写 null","ok":false,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"grant":{"timings":["on_enter"],"target":"next","skill":"rally","amount":null}}}},
+{"note":"倍数写在参数里","ok":true,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"equipment_times":{"amount":3}}}},
+{"note":"新的范围和对象","ok":true,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"extra_round":{"scope":"self_and_front","timing":"on_engage"},"grant":{"timings":["on_engage"],"target":"self","skill":"sturdy","amount":1}}}},
+{"note":"下两位获得词条，第 2 位的范围","ok":true,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"extra_round":{"scope":"self_and_second","timing":"pre_battle"},"grant":{"timings":["pre_battle"],"target":"next_two","skill":"lethal","amount":null}}}},
+{"note":"只带时机的效果","ok":true,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"execute":{"timings":["on_enter"]},"gain_skill_sum":{"timings":["on_enter"]}}}},
+{"note":"听对方结算的被动","ok":true,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"on_enemy_resolve_gain_all":{"skill":"any","amount":1},"on_resolve_gain":{"skill":"corrode","amount":2}}}},
+{"note":"倍数不能写成 null","ok":false,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"equipment_times":null}}},
+{"note":"倍数要是正整数","ok":false,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"equipment_times":{"amount":0}}}},
+{"note":"已经删掉的效果","ok":false,"card":{"id":"t_check","no":0,"type":"character","star":1,"strength":3,"timing_1":["on_enter"],"special_skills":{"double_equipment":null}}}
 ]

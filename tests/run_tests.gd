@@ -206,7 +206,10 @@ func _test_overlay() -> void:
 		[CardDB.card("t_clockwork_witch"), CardDB.card("t_ruyi_staff"), "base_skills", {"rage": 10, "rally": 2}, "千机魔女：从装备获得的基础技能翻倍"],
 		[CardDB.card("t_clockwork_witch"), CardDB.card("t_ruyi_staff"), "strength", 35, "千机魔女：从装备获得的战斗力翻倍"],
 		[CardDB.card("t_clockwork_witch"), CardDB.card("t_void_heart"), "strength", 45, "千机魔女带虚无之心：特殊技能被清空，不翻倍"],
+		[CardDB.card("t_witch_3"), CardDB.card("t_ruyi_staff"), "base_skills", {"rage": 15, "rally": 2}, "千机魔女：倍数是参数，3 倍"],
+		[CardDB.card("t_witch_3"), CardDB.card("t_ruyi_staff"), "strength", 45, "千机魔女：从装备获得的战斗力 3 倍"],
 		[CardDB.card("t_tiger_man"), CardDB.card("t_clockwork_box"), "base_skills", {"rage": 4, "rally": 2}, "千机之匣：自身的基础技能在合并时翻倍"],
+		[CardDB.card("t_tiger_man"), CardDB.card("t_clockwork_box"), "strength", 18, "千机之匣：战斗力在合并时翻倍"],
 	]
 	for c in cases:
 		var got = CardDB.combine_data(c[0], c[1])[c[2]]
@@ -238,10 +241,13 @@ func _event_marks(events: Array) -> Array:
 				marks[f.kind if e.type == "special" else f.kind + "@" + e.type] = true
 			if f.has("again"):
 				marks["again"] = true
-			if f.kind == "damage" and f.source == "damage_half_strength":
-				marks["half"] = true
-			if f.kind == "buff" and f.skill in ["gain_half_skill_sum", "gain_if_outnumbered"]:
+			# 描述型特殊技能加的战斗力、造成的伤害，记效果的 id
+			if f.kind == "buff" and f.skill in CardDB.DESCRIPTIVE_SPECIALS:
 				marks[f.skill] = true
+			if f.kind == "damage" and f.source in CardDB.DESCRIPTIVE_SPECIALS:
+				marks[f.source + "@immune" if f.has("immune") else f.source] = true
+			if f.has("halved"):
+				marks["halved"] = true
 		if e.type == "clash":
 			for k in 2:
 				var attacker: Dictionary = _unit_info(events, e.effects[1 - k].by)
@@ -290,11 +296,28 @@ func _test_event_details() -> void:
 		func(e): return e.effects.map(func(f): return [f.unit, f.skill, f.value]))
 	if raised != [[["1-0", "rally", 3], ["1-0", "inspire", 4], ["1-1", "wealth", 3]]]:
 		_failures.append("[unit-events] 尤姆卡克斯应加集结、振奋、财富，实际 %s" % [raised])
-	# 萨满：每一下腐蚀之后马上加，第二下用新数值；士兵没有腐蚀，不加
-	var beat: Array = events.call("rule-raise-after-resolve").filter(func(e): return e.type == "beat" and e.skill == "corrode")[0].effects
+	# 萨满：两下腐蚀都结算完才加，中间数值不变；士兵没有腐蚀，不加
+	var beat: Array = events.call("rule-raise-after-trigger").filter(func(e): return e.type == "beat" and e.skill == "corrode")[0].effects
 	var order := beat.map(func(f): return [f.kind, f.unit, f.get("value", f.get("amount"))])
-	if order != [["damage", "2-0", 7], ["raise", "1-0", 8], ["raise", "1-1", 7], ["damage", "2-0", 8], ["raise", "1-0", 9], ["raise", "1-1", 8]]:
+	if order != [["damage", "2-0", 7], ["damage", "2-0", 7], ["raise", "1-0", 8], ["raise", "1-1", 7]]:
 		_failures.append("[unit-events] 萨满的腐蚀加成顺序不对：%s" % [order])
+	# 对方结算时己方全体加：多一次的那一下带 again，来源是带镜子的单位
+	var mirror: Array = events.call("rule-enemy-resolve").filter(func(e): return e.type == "beat" and e.skill == "corrode")[0].effects
+	var gains := mirror.filter(func(f): return f.kind == "buff").map(func(f): return [f.source, f.unit, f.skill, f.get("again", 0)])
+	var by_mirror := "on_enemy_resolve_gain_all"
+	if gains != [["1-0", "1-0", by_mirror, 0], ["1-0", "1-1", by_mirror, 0], ["1-0", "1-0", by_mirror, 1], ["1-0", "1-1", by_mirror, 1]]:
+		_failures.append("[unit-events] 镜子的加成应是每一下己方全体各一条，实际 %s" % [gains])
+	# 致命伤害打在免疫致命的单位上：0 点，带 immune；战前减半的伤害带 halved
+	var immune: Dictionary = events.call("rule-execute-immune").filter(func(e): return e.type == "special" and e.skill == "execute")[0].effects[0]
+	if [immune.amount, immune.dealt, immune.get("immune")] != [0, 0, true]:
+		_failures.append("[unit-events] 致命伤害打免疫致命应是 0 点、带 immune，实际 %s" % [immune])
+	var halved: Dictionary = events.call("rule-halve").filter(func(e): return e.type == "beat")[0].effects[0]
+	if [halved.amount, halved.sturdy, halved.dealt, halved.get("halved")] != [10, 3, 4, true]:
+		_failures.append("[unit-events] 战前减半应记 10、坚固 3、实际 4、带 halved，实际 %s" % [halved])
+	# 鹦鹉：copy 记下获得之后自己的基础技能
+	var copied: Dictionary = events.call("rule-copy").filter(func(e): return e.type == "special" and e.skill == "copy_skills")[0].effects[0]
+	if [copied.from, copied.skills] != ["2-0", {"rage": 5, "corrode": 2}]:
+		_failures.append("[unit-events] 鹦鹉应从 2-0 获得后是狂暴5、腐蚀2，实际 %s" % [copied])
 
 
 ## 卡面文字：带时机的特殊技能、描述型特殊技能、按结算顺序排列
@@ -313,8 +336,22 @@ func _test_skill_text() -> void:
 		[load_card.special_skill_text({"grant": {"timings": ["on_enter"], "target": "allies", "skill": "rally", "amount": 1}}), "入场：己方全体获得集结1"],
 		[load_card.special_skill_text({"clear_skills": {"timings": ["on_enter", "on_engage"], "target": "enemy_first_two"}}), "入场、交战：清除对方前两位的基础技能"],
 		[load_card.special_skill_text({"raise_skills": {"timings": ["on_enter"], "skill": "any", "amount": 2}}), "入场：己方全体的基础技能值 +2"],
-		[load_card.special_skill_text({"on_trigger_gain": {"skill": "any", "amount": 2}}), "己方角色触发基础技能时，自身战斗力 +2"],
-		[load_card.special_skill_text({"double_skills": null}), "自身的基础技能数值翻倍"],
+		[load_card.special_skill_text({"on_resolve_gain": {"skill": "any", "amount": 2}}), "己方角色结算基础技能时，自身战斗力 +2"],
+		[load_card.special_skill_text({"on_enemy_resolve_gain_all": {"skill": "any", "amount": 1}}), "对方角色结算基础技能时，己方全体战斗力 +1"],
+		[load_card.special_skill_text({"on_trigger_boost": {"skill": "rally", "amount": 2}}), "己方角色触发集结时，该角色战斗力 +2"],
+		[load_card.special_skill_text({"on_trigger_raise": {"skill": "corrode", "amount": 1}}), "己方角色触发腐蚀后，己方全体的腐蚀值 +1"],
+		[load_card.special_skill_text({"lethal": null, "on_trigger_gain": {"skill": "corrode", "amount": 4}}), "致命；己方角色触发腐蚀时，自身战斗力 +4"],
+		[load_card.special_skill_text({"double_skills": null}), "自身的基础技能数值和开战时的战斗力翻倍"],
+		[load_card.special_skill_text({"equipment_times": {"amount": 3}}), "从装备获得的战斗力和基础技能数值变为 3 倍"],
+		[load_card.special_skill_text({"copy_skills": {"timings": ["pre_battle", "on_enter"]}}), "战前、入场：额外获得一份对方交战位的基础技能"],
+		[load_card.special_skill_text({"gain_skill_sum": {"timings": ["on_enter"]}}), "入场：自身战斗力 + 己方全体基础技能数值之和"],
+		[load_card.special_skill_text({"gain_all_if_outnumbered": {"timings": ["on_enter"], "amount": 15}}), "入场：对方角色多于己方时，己方全体战斗力 +15"],
+		[load_card.special_skill_text({"lethal": null, "execute": {"timings": ["on_enter"]}}), "致命；入场：对方交战位战斗力高于自身时，对其造成致命伤害"],
+		[load_card.special_skill_text({"shelter": 1, "halve_pre_battle_damage": null}), "庇护1；战前时点受到的伤害减半"],
+		[load_card.special_skill_text({"extra_round": {"scope": "self_and_second", "timing": "pre_battle"}}), "自身和开战时位于己方第 2 位的角色，战前多触发一轮"],
+		[load_card.special_skill_text({"extra_round": {"scope": "self_and_front", "timing": "on_engage"}}), "自身和前一位，交战多触发一轮"],
+		[load_card.special_skill_text({"sturdy": 4, "grant": {"timings": ["on_engage"], "target": "self", "skill": "sturdy", "amount": 1}}), "坚固4；交战：自身获得坚固1"],
+		[load_card.special_skill_text({"grant": {"timings": ["pre_battle"], "target": "next_two", "skill": "lethal", "amount": null}}), "战前：下两位获得致命"],
 		[load_card.base_skill_text({"wealth": 1, "support": 3, "rage": 2}), "狂暴2、支援3、财富1"],
 		[load_card.special_skill_text({"shelter": 1, "sturdy": 4}), "坚固4；庇护1"],
 	]
@@ -361,7 +398,12 @@ func _run_replay_checks() -> void:
 			["round", "assist", "grant", "again", "immune"]],
 		["mechanics-3", [["shaman", ""], ["chanter", ""], ["alchemist", ""], ["arbiter", ""]],
 			[["vulture", ""], ["parrot", ""], ["medusa", ""], ["swamp_king", ""], ["tumbleweed", ""], ["soldier", ""]], -1,
-			["copy", "clear", "raise", "raise@beat", "grant", "half", "gain_half_skill_sum", "gain_if_outnumbered"]],
+			["copy", "clear", "raise", "raise@beat", "grant", "damage_half_strength", "gain_skill_sum", "gain_if_outnumbered"]],
+		# 正式数据还没有用到的新机制，先用测试卡
+		["mechanics-4", [["t_dryad", ""], ["t_soldier", "t_mirror"], ["t_leader", ""], ["t_star_mage", ""], ["t_pure_sage", ""], ["t_tiger", "t_whip"], ["t_judge", ""]],
+			[["t_yak", ""], ["t_executioner", ""], ["t_forest_archer", ""], ["t_executioner", "t_iron_sword"], ["t_executioner", ""],
+				["t_wolf_king", "t_iron_sword"], ["t_tiger", "t_iron_sword"]], -1,
+			["on_trigger_boost", "on_resolve_gain", "on_enemy_resolve_gain_all", "gain_all_if_outnumbered", "execute", "execute@immune", "halved", "round", "grant"]],
 	]
 	for c in cases:
 		if c.size() > 4:
