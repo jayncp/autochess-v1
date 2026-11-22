@@ -12,6 +12,7 @@ from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
 
+from autochess_tools.data import Card
 from autochess_tools.lineups import mixed_battles
 from autochess_tools.sim import run_engine, run_godot
 
@@ -39,7 +40,7 @@ def first_difference(a: Sequence, b: Sequence) -> int | None:
     return None if len(a) == len(b) else min(len(a), len(b))
 
 
-def explain(battle: dict, extra_cards: Sequence[dict]) -> str:
+def explain(battle: dict, extra_cards: Sequence[Card]) -> str:
     """一场不一致的对局：阵容、两边的结果，以及简要轨迹里第一处不同"""
     [godot] = run_godot([battle], ["--trace"], extra_cards)
     [rust], _ = run_engine([battle], ["--trace"], extra_cards)
@@ -56,7 +57,7 @@ def explain(battle: dict, extra_cards: Sequence[dict]) -> str:
 def main(argv: list[str]) -> int:
     count = int(argv[0]) if argv and argv[0].isdigit() else COUNT
     seed = int(argv[argv.index("--seed") + 1]) if "--seed" in argv else SEED
-    extra_cards = json.loads(Path(argv[argv.index("--cards") + 1]).read_text()) if "--cards" in argv else []
+    extra_cards: list[Card] = json.loads(Path(argv[argv.index("--cards") + 1]).read_text()) if "--cards" in argv else []
     battles = [{"p1": p1, "p2": p2} for p1, p2 in mixed_battles(count, seed, extra_cards=extra_cards)]
     start = time.perf_counter()
     godot = run_godot(battles, extra_cards=extra_cards)

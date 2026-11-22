@@ -194,7 +194,7 @@
 
 ## 6. 试验里新增和改动的规则
 
-这些只在 Rust 版里实现了，用来跑试验；GDScript 版和正式数据都没动。
+这一节是试验当时的写法。之后它们都写进了正式规则（issue #36，[`balance-port.md`](balance-port.md)），现行的口径和 id 以 `docs/design/battle-rules.md` 为准：试验开关没有了，`on_enemy_trigger_gain_all` 改名 `on_enemy_resolve_gain_all`，萨满用 `on_trigger_raise`，星辰法师用 `on_resolve_gain`，炼药师用 `gain_skill_sum`，千机魔女用 `equipment_times`。
 
 **新的效果**（`engine/core/src/ids.rs`、`battle.rs`）
 
