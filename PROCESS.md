@@ -18,9 +18,11 @@
 - 阶段 3 第二轮开发（issue #25，PR #26–#29，计划和执行记录 `docs/plans/stage-3-high-stars-dev.md`）：结算结构改造（时点内七步、被动挂在事件上、用例迁到 `tests/cases/`），神佑、协战、免疫致命、多一次、多一轮，全部描述型特殊技能，98 张新卡（现在共 87 张角色、57 件装备），回放表现和节奏，回放时长工具 `just replay-time`。
 - Rust 版结算（issue #30，PR #31–#33，计划和执行记录 `docs/plans/rust-engine.md`）：`engine/` 的核心库（和 GDScript 版逐函数对应）、命令行 `engine-cli`、Python 绑定 `autochess_engine`（`tools/` 的批量模拟默认用它）；对拍 `just diff-sim` 100 万场零差异，单线程约为 Godot 版的 130 倍；顺带收紧了卡牌数据的校验（`tests/cases/card_checks.json`）。
 
+- 数值校正（记录 `docs/plans/balance-tuning.md`，经验 `docs/design/balance-notes.md`）：按对局阶段搜索均衡阵容，校正到"没有废卡、没有一家独大"；试验数值在 `docs/design/balance-trial.xlsx`，测试工具在 `tools/autochess_tools/balance/`（`just balance`）。试验里新增的机制只在 Rust 版里，正式数据还没改。
+
 ## 待办
 
-- [ ] 强度测试、迭代数值（方向见 `docs/plans/stage-3-high-stars.md` 第 8 节，到时再写计划）
+- [ ] 把数值校正的结果写进正式数据：新机制先在 GDScript 版实现，卡面文字按规范统一，再对齐 Rust 版（清单见 `docs/plans/balance-tuning.md` 第 7 节，到时再写计划）
 - [ ] 卡图
 - 之后再定：构筑阶段的拖放反馈、音效；Android 的存档导入导出；正式发布前定 Android 包名（现在是占位的 `com.example.autochess`，改了存档会丢）
   - 备选工具（用户需要时再做）：设计表导入脚本（"设计中"的行 → `data/cards.json` + 中文名）；草稿评估实验（直接测"设计中"行的有效战力）

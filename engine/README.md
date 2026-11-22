@@ -16,9 +16,10 @@ Cargo 工作区，目录里有 `.gdignore`，Godot 不扫描它。
 | `core/src/ids.rs` | 各种 id（时机、基础技能、特殊技能、范围、对象……）和它们的顺序，对应 `CardDB` 开头的常量 |
 | `core/src/cards.rs` | 读取和校验卡牌数据、按 id 查询、装备合并，对应 `CardDB` |
 | `core/src/battle.rs` | 战斗结算，对应 `BattleSim` |
+| `core/src/trial.rs` | 试验开关：数值试验里改了口径、还没进正式规则的几条，用环境变量打开（见下面"和 GDScript 版不同的地方"） |
 | `core/tests/cases.rs` | 共用用例：`tests/cases/` 的规则用例和冒烟用例，都检查交换左右后对称；`VERSION` 和 `BattleSim.VERSION` 一致 |
 | `cli/`（crate `autochess-cli`，程序 `engine-cli`） | 批量模拟的命令行，输入输出同 `cli/sim.gd`，多核并行 |
-| `py/`（crate `autochess-py`，Python 模块 `autochess_engine`） | Python 绑定（PyO3），`tools/` 通过它批量模拟；`pyproject.toml` 是 maturin 的配置，`autochess_engine.pyi` 是给类型检查看的接口说明 |
+| `py/`（crate `autochess-py`，Python 模块 `autochess_engine`） | Python 绑定（PyO3），`tools/` 通过它批量模拟；`pyproject.toml` 是 maturin 的配置，`autochess_engine.pyi` 是给类型检查看的接口说明；`src/search.rs` 是数值试验用的阵容搜索（爬山，多核） |
 | `rust-toolchain.toml` | 固定 Rust 版本和组件，换机器时自动安装同一版 |
 | `rustfmt.toml` | 排版：行宽 120 |
 | `Cargo.lock` | 依赖的确切版本，提交进仓库 |
@@ -79,6 +80,8 @@ rust.simulate([([["tiger_man", ""]], [["vulture", "iron_sword"]])])  # [(2, 'wip
 - `simulate(对局列表, threads=0)`：字符串 id，返回 `[(winner, reason, P1 幸存者的战斗力, P2 幸存者的战斗力), ...]`。
 - `simulate_ids(p1, p2, threads=0)`：按编号传 numpy 数组，形状 `(场数, 位置数 ≤7, 2)`，每格 `[角色编号, 装备编号]`，`-1` 表示空位、不带装备；编号见 `ids()`、`index(id)`。
   返回 `winner`、`reason`（0 = 全灭、1 = 连续无人阵亡）和双方幸存者的战斗力（`(场数, 7)`，后面补 0）四个数组。大批量时用它：省掉 Python 字符串的转换，快 5 倍以上。
+- `cross(mine, theirs)`：两批阵容（编号数组）两两对战的得分矩阵，胜 1、平 0.5、负 0。
+- `climb(...)`：数值试验的爬山（`tools/autochess_tools/balance/meta.py` 的 `Meta.climb` 调它，参数见 `autochess_engine.pyi`）：每个起点反复试几个变异，对一批带权重的对手得分不降就换过去。
 - 结算时释放 GIL、多核并行，结果顺序和输入一致；`threads` 为 0 时用全部核心。阵容或卡牌数据有误时报 `ValueError`。
 
 速度（`just bench`，12 核 Mac，30 万场随机对局）：
@@ -117,7 +120,14 @@ Godot 版单进程约 4300 场/秒。
 ## 和 GDScript 版不同的地方
 
 卡牌数据的校验和 `CardDB.problems` 完全一致（共用 `tests/cases/card_checks.json`，规则见 [data/README.md](../data/README.md)），结算结果逐场一致。
-只有阵容的检查更严：角色的位置放了装备、装备的位置放了角色，或者一方超过 7 个单位（游戏里最多 7 个卡位），都直接报错。
+阵容的检查更严：角色的位置放了装备、装备的位置放了角色，或者一方超过 7 个单位（游戏里最多 7 个卡位），都直接报错。
+
+**数值试验留下的、只在 Rust 版里有的东西**（[docs/plans/balance-tuning.md](../docs/plans/balance-tuning.md) 第 6 节）：
+
+- 六种新效果（`on_trigger_boost`、`raise_own`、`execute`、`halve_pre_battle_damage`、`gain_all_if_outnumbered`、`on_enemy_trigger_gain_all`）和多一轮的两个新范围（`self_and_second`、`self_and_front`）。正式数据没有用到它们，GDScript 版也不认识；`ids.rs`、`battle.rs` 里都标了"试验"。
+- 六个试验开关（`core/src/trial.rs`），用环境变量打开，都不设时结算和 GDScript 版逐场一致，`just diff-sim` 不受影响。
+
+这些转正时按下面的流程补到 GDScript 版，开关删掉。
 
 ## 改规则的流程
 

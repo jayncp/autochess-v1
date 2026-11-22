@@ -5,7 +5,7 @@
 
 ## 现状
 
-- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；阶段 3 第二轮（3★/4★/5★）已完成：设计记录 `docs/plans/stage-3-high-stars.md`，开发记录 `docs/plans/stage-3-high-stars-dev.md`，现在共 87 张角色、57 件装备（3★ 以上还没有卡图）。Rust 版结算已完成（计划和执行记录 `docs/plans/rust-engine.md`，PR #31–#33）；接下来是强度测试和卡图。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；阶段 3 第二轮（3★/4★/5★）已完成：设计记录 `docs/plans/stage-3-high-stars.md`，开发记录 `docs/plans/stage-3-high-stars-dev.md`，现在共 87 张角色、57 件装备（3★ 以上还没有卡图）。Rust 版结算已完成（计划和执行记录 `docs/plans/rust-engine.md`，PR #31–#33）；数值校正已做完一轮（记录 `docs/plans/balance-tuning.md`，经验 `docs/design/balance-notes.md`）：候选数值在 `docs/design/balance-trial.xlsx`，还没写进正式数据，试验里新增的机制只在 Rust 版里（带"试验"标记和环境变量开关，默认关闭）；接下来是把候选数值和新机制写进正式数据，以及卡图。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
 - 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关，记录通关）、图鉴、战斗演出（速度/跳过）、设置。冒险、线下对战未实现。
 - 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并和各种显示顺序在 `CardDB`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。Rust 版结算在 `engine/`，只算结果、供批量模拟（命令行和 Python 绑定，`tools/` 默认用它），GDScript 版是规则的基准实现。
 - 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
@@ -37,7 +37,7 @@
 - `assets/`：`cards/<id>.png`（没有卡图的卡，卡面上显示淡显的种族图标）、`backgrounds/`、`ui/`（主题 `theme.tres`、图标、卡牌边框和法阵、控件贴图、飘字的饰板 `ui/fx/`，都由脚本生成）、`fonts/`（子集化的字体和字体变体）
 - `tests/`：测试。规则用例和测试卡在 `tests/cases/`（只用测试卡，Rust 版共用），说明见 `tests/README.md`
 - `engine/`：Rust 版结算（Cargo 工作区，带 `.gdignore`），和 GDScript 版逐函数对应、逐场一致，说明见 `engine/README.md`
-- `tools/`：Python 分析和平衡实验、美术素材生成（uv 管理，带 `.gdignore`；批量模拟通过 Rust 版的 Python 绑定，第一次运行时自动编译），说明见 `tools/README.md`
+- `tools/`：Python 分析和平衡实验、美术素材生成（uv 管理，带 `.gdignore`；批量模拟通过 Rust 版的 Python 绑定，第一次运行时自动编译），说明见 `tools/README.md`；数值试验（分阶段的阵容搜索）在 `tools/autochess_tools/balance/`，数据在 `tools/balance/`
 
 ## 命令
 
@@ -45,7 +45,7 @@
 - Rust 版：`just rs-test`（测试，含共用用例）、`just rs-check`（`cargo fmt --check` 和 `cargo clippy`，含 Python 绑定，警告当错误）
 - 批量模拟：`just sim <输入.jsonl> <输出.jsonl> [--cards <额外卡牌.json>] [--trace] [--threads N]`（Rust 版，单线程约 57 万场/秒，默认用全部核心）；`just sim-godot`（Godot 版 `cli/sim.gd`，格式相同，单进程约 4300 场/秒，`--log` 带事件日志）
 - 对拍和测速：`just diff-sim [场数]`（同一批随机对局分别用 Godot 和 Rust 跑，逐场比较，默认 100 万场）、`just bench`；`just rs-build` 构建 Rust 版的命令行并更新 Python 绑定（上面几条会自动先做）
-- 关卡检查：`just level-check [关卡文件.json]`；回放时长：`just replay-time [场数] [--stars 1,2]`（1 倍速，随机对局的平均、P90、各段落和最长的时点）；平衡实验：`just experiment <名字>`；Python 检查：`just tools-check`
+- 关卡检查：`just level-check [关卡文件.json]`；回放时长：`just replay-time [场数] [--stars 1,2]`（1 倍速，随机对局的平均、P90、各段落和最长的时点）；平衡实验：`just experiment <名字>`；数值试验：`just balance <模块> [参数]`（`run` 六个阶段的阵容搜索、`check` 复核一张卡、`compare` 比较报告、`sheet` 读写试验表，流程见 `tools/README.md`）；Python 检查：`just tools-check`
 - 美术素材：`just fonts`（字体子集）、`just art`（图标、卡框、法阵、控件贴图、飘字饰板，之后重建主题）、`just theme`（只重建主题）；截图：`just shots <目录> [宽度] [高度]`（需要窗口；画在固定大小的视口里，手机宽度 2376 也是原尺寸）。规范见 `docs/design/art-direction.md`
 - Godot：`/Applications/Godot.app/Contents/MacOS/Godot`（`justfile` 里可用环境变量 `GODOT` 覆盖）
 - 无头脚本：`... --headless --path . --script <file.gd>`
@@ -56,7 +56,7 @@
 
 - `docs/decisions.md`：决策记录，已拍板的事项以它为准
 - `docs/roadmap.md`：路线图和功能待办
-- `docs/design/`：设计总纲、战斗规则、卡牌数值（活文档）；`balance-report-*` 是带时效的快照
+- `docs/design/`：设计总纲、战斗规则、卡牌数值、调数值的经验 `balance-notes.md`（活文档）；`balance-report-*` 是带时效的快照；`balance-trial.xlsx` 是数值试验表
 - `docs/takeover/`：接手调查快照，不再更新
 - `docs/plans/`：各阶段计划
 
