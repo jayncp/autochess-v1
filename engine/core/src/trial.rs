@@ -16,7 +16,7 @@ macro_rules! switch {
 }
 
 switch!(
-    /// 萨满：己方角色"触发"腐蚀后才加腐蚀值，多结算一次的那几下不再加
+    /// 萨满：己方角色"触发"腐蚀后才加腐蚀值：这个角色一轮里的腐蚀全部结算完（含多一次）之后加一次
     raise_per_trigger,
     "AUTOCHESS_RAISE_PER_TRIGGER"
 );

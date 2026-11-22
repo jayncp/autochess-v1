@@ -1,12 +1,13 @@
 {
  "minotaur": {
-  "text": "坚固4；交战：自身的坚固值 +1",
+  "text": "坚固4；交战：自身获得坚固1",
   "special": {
    "sturdy": 4,
-   "raise_own": {
+   "grant": {
     "timings": [
      "on_engage"
     ],
+    "target": "self",
     "skill": "sturdy",
     "amount": 1
    }
@@ -246,12 +247,13 @@
   }
  },
  "white_wolf_king": {
-  "text": "交战：自身的狂暴值 +3",
+  "text": "交战：自身获得狂暴3",
   "special": {
-   "raise_own": {
+   "grant": {
     "timings": [
      "on_engage"
     ],
+    "target": "self",
     "skill": "rage",
     "amount": 3
    }

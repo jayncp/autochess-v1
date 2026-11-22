@@ -119,8 +119,6 @@ pub enum Special {
     OnTriggerBoost,
     /// 试验：战前时点里受到的伤害减半（过了庇护、坚固之后，四舍五入）
     HalvePreBattleDamage,
-    /// 试验：〈时机〉自身的〈技能〉值 +N（只在自己有这个技能时）
-    RaiseOwn,
     /// 试验：〈时机〉对方交战位的战斗力高于自身时，对它造成一次致命的伤害（庇护能挡，免疫致命无效）
     Execute,
     /// 试验：对方角色结算〈技能〉时，己方全体战斗力 +N
@@ -128,7 +126,7 @@ pub enum Special {
 }
 
 impl Special {
-    pub const COUNT: usize = 28;
+    pub const COUNT: usize = 27;
     pub const ALL: [Special; Special::COUNT] = [
         Special::Backlash,
         Special::Sturdy,
@@ -155,7 +153,6 @@ impl Special {
         Special::DamageHalfStrength,
         Special::OnTriggerBoost,
         Special::HalvePreBattleDamage,
-        Special::RaiseOwn,
         Special::Execute,
         Special::OnEnemyTriggerGainAll,
     ];
@@ -169,7 +166,6 @@ impl Special {
             Special::OnTriggerGain => "on_trigger_gain",
             Special::OnTriggerBoost => "on_trigger_boost",
             Special::HalvePreBattleDamage => "halve_pre_battle_damage",
-            Special::RaiseOwn => "raise_own",
             Special::Execute => "execute",
             Special::OnEnemyTriggerGainAll => "on_enemy_trigger_gain_all",
             Special::Awaken => "awaken",
@@ -220,7 +216,7 @@ impl Special {
             }
             Special::Grant => &[Timings, Target, Skill, Amount],
             Special::ClearSkills => &[Timings, Target],
-            Special::RaiseSkills | Special::RaiseOwn => &[Timings, Skill, Amount],
+            Special::RaiseSkills => &[Timings, Skill, Amount],
             Special::GainIfOutnumbered | Special::GainAllIfOutnumbered => &[Timings, Amount],
             _ => &[],
         }
@@ -315,6 +311,8 @@ impl Scope {
 /// 对象（`CardDB.TARGETS`）：下一位、己方全体、对方全体、对方前两位
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Target {
+    /// 试验：自身（牛头人、白狼王）
+    Own,
     Next,
     /// 试验：下两位（彼岸花妖）
     NextTwo,
@@ -324,11 +322,12 @@ pub enum Target {
 }
 
 impl Target {
-    pub const ALL: [Target; 5] =
-        [Target::Next, Target::NextTwo, Target::Allies, Target::Enemies, Target::EnemyFirstTwo];
+    pub const ALL: [Target; 6] =
+        [Target::Own, Target::Next, Target::NextTwo, Target::Allies, Target::Enemies, Target::EnemyFirstTwo];
 
     pub fn id(self) -> &'static str {
         match self {
+            Target::Own => "self",
             Target::Next => "next",
             Target::NextTwo => "next_two",
             Target::Allies => "allies",

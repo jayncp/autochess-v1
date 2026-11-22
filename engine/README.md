@@ -124,7 +124,7 @@ Godot 版单进程约 4300 场/秒。
 
 **数值试验留下的、只在 Rust 版里有的东西**（[docs/plans/balance-tuning.md](../docs/plans/balance-tuning.md) 第 6 节）：
 
-- 六种新效果（`on_trigger_boost`、`raise_own`、`execute`、`halve_pre_battle_damage`、`gain_all_if_outnumbered`、`on_enemy_trigger_gain_all`）和多一轮的两个新范围（`self_and_second`、`self_and_front`）。正式数据没有用到它们，GDScript 版也不认识；`ids.rs`、`battle.rs` 里都标了"试验"。
+- 五种新效果（`on_trigger_boost`、`execute`、`halve_pre_battle_damage`、`gain_all_if_outnumbered`、`on_enemy_trigger_gain_all`）、多一轮的两个新范围（`self_and_second`、`self_and_front`）、两个新对象（`self`、`next_two`）。正式数据没有用到它们，GDScript 版也不认识；`ids.rs`、`battle.rs` 里都标了"试验"。
 - 六个试验开关（`core/src/trial.rs`），用环境变量打开，都不设时结算和 GDScript 版逐场一致，`just diff-sim` 不受影响。
 
 这些转正时按下面的流程补到 GDScript 版，开关删掉。

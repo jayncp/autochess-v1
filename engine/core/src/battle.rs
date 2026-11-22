@@ -38,7 +38,7 @@ const STEPS: [(Step, &[Special]); 7] = [
     ),
     (Step::Grant, &[Special::Bless, Special::Grant, Special::CopySkills]),
     (Step::Clear, &[Special::ClearSkills]),
-    (Step::Raise, &[Special::RaiseSkills, Special::RaiseOwn]),
+    (Step::Raise, &[Special::RaiseSkills]),
     (Step::Gain, &[Special::GainHalfSkillSum, Special::GainIfOutnumbered, Special::GainAllIfOutnumbered]),
     (Step::Damage, &[Special::DamageHalfStrength, Special::Execute]),
     (Step::Awaken, &[Special::Awaken]),
@@ -560,7 +560,8 @@ impl Battle {
                 };
                 let side = self.unit(u).side;
                 self.apply_skill(u, skill, value);
-                if self.holders[side].has(Special::OnResolveRaise) {
+                // 试验：AUTOCHESS_RAISE_PER_TRIGGER 打开时，萨满按轮算，等这个角色的这个技能全部结算完（含多一次）再加
+                if self.holders[side].has(Special::OnResolveRaise) && !raise_per_trigger() {
                     self.after_resolve(u, skill);
                 }
                 // 试验：己方角色触发〈技能〉时，其战斗力额外 +N（on_trigger_boost，加给触发的那个角色）
@@ -592,11 +593,13 @@ impl Battle {
                                 }
                             }
                         }
-                        // 试验：环境变量 AUTOCHESS_RAISE_PER_TRIGGER 打开时，萨满按轮算，多一次的那几下不加
                         if self.holders[side].has(Special::OnResolveRaise) && !raise_per_trigger() {
                             self.after_resolve(u, skill);
                         }
                     }
+                }
+                if self.holders[side].has(Special::OnResolveRaise) && raise_per_trigger() {
+                    self.after_resolve(u, skill);
                 }
             }
         }
@@ -685,6 +688,12 @@ impl Battle {
     fn targets(&self, u: UnitId, target: Target) -> Line {
         let side = self.unit(u).side;
         match target {
+            // 试验（牛头人、白狼王）：自身
+            Target::Own => {
+                let mut line = Line::default();
+                line.push(u);
+                line
+            }
             Target::Next => {
                 let mut line = Line::default();
                 if let Some(next) = self.next_unit(u) {
@@ -746,15 +755,6 @@ impl Battle {
                 // 美杜莎女王：清除对方前两位的基础技能（特殊技能不受影响）
                 for t in self.targets(u, params.target.expect("校验过")) {
                     self.unit_mut(t).base_skills = BaseSkills::default();
-                }
-            }
-            Special::RaiseOwn => {
-                // 试验（白狼王）：自身的〈技能〉值 +N
-                match params.skill {
-                    Some(SkillRef::Base(s)) if self.unit(u).base_skills.has(s) => self.raise(u, s, params.amount()),
-                    // 带数值的词条（坚固）：直接加层数
-                    Some(skill @ SkillRef::Special(_)) => self.grant(u, skill, params.amount),
-                    _ => {}
                 }
             }
             Special::RaiseSkills => {

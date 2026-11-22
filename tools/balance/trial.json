@@ -351,10 +351,11 @@
   },
   "special_skills": {
    "sturdy": 4,
-   "raise_own": {
+   "grant": {
     "timings": [
      "on_engage"
     ],
+    "target": "self",
     "skill": "sturdy",
     "amount": 1
    }
@@ -1060,10 +1061,11 @@
    "rage": 14
   },
   "special_skills": {
-   "raise_own": {
+   "grant": {
     "timings": [
      "on_engage"
     ],
+    "target": "self",
     "skill": "rage",
     "amount": 3
    }

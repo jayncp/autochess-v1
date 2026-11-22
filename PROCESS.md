@@ -22,7 +22,10 @@
 
 ## 待办
 
-- [ ] 把数值校正的结果写进正式数据：新机制先在 GDScript 版实现，卡面文字按规范统一，再对齐 Rust 版（清单见 `docs/plans/balance-tuning.md` 第 7 节，到时再写计划）
+- [ ] 把数值校正的结果写进正式数据（计划 `docs/plans/balance-port.md`，清单见 `docs/plans/balance-tuning.md` 第 7 节），分三个 PR：
+  - [ ] 规则：新机制在 GDScript 版实现，Rust 版对齐、去掉试验开关
+  - [ ] 数据：`data/cards.json`、改名的装备、卡面文字和翻译、冒烟用例
+  - [ ] 收尾：回放表现、有效战力重测、文档
 - [ ] 卡图
 - 之后再定：构筑阶段的拖放反馈、音效；Android 的存档导入导出；正式发布前定 Android 包名（现在是占位的 `com.example.autochess`，改了存档会丢）
   - 备选工具（用户需要时再做）：设计表导入脚本（"设计中"的行 → `data/cards.json` + 中文名）；草稿评估实验（直接测"设计中"行的有效战力）
