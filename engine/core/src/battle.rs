@@ -692,6 +692,19 @@ impl Battle {
                 }
                 line
             }
+            Target::NextTwo => {
+                // 试验（彼岸花妖）：队列里排在自己后面的两位
+                let mut line = Line::default();
+                let own = self.fields[side];
+                if let Some(position) = own.position(u) {
+                    for k in 1..=2 {
+                        if let Some(next) = own.get(position + k) {
+                            line.push(next);
+                        }
+                    }
+                }
+                line
+            }
             Target::Allies => self.fields[side],
             Target::Enemies => self.fields[1 - side],
             Target::EnemyFirstTwo => self.fields[1 - side].take(2),

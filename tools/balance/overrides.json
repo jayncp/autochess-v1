@@ -352,5 +352,18 @@
   "special": {
    "backlash": 3
   }
+ },
+ "spider_lily": {
+  "text": "战前：下2位角色获得致命",
+  "special": {
+   "grant": {
+    "timings": [
+     "pre_battle"
+    ],
+    "target": "next_two",
+    "skill": "lethal",
+    "amount": null
+   }
+  }
  }
 }

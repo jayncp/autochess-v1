@@ -1020,7 +1020,7 @@
     "timings": [
      "pre_battle"
     ],
-    "target": "next",
+    "target": "next_two",
     "skill": "lethal",
     "amount": null
    }

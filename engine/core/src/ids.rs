@@ -316,17 +316,21 @@ impl Scope {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Target {
     Next,
+    /// 试验：下两位（彼岸花妖）
+    NextTwo,
     Allies,
     Enemies,
     EnemyFirstTwo,
 }
 
 impl Target {
-    pub const ALL: [Target; 4] = [Target::Next, Target::Allies, Target::Enemies, Target::EnemyFirstTwo];
+    pub const ALL: [Target; 5] =
+        [Target::Next, Target::NextTwo, Target::Allies, Target::Enemies, Target::EnemyFirstTwo];
 
     pub fn id(self) -> &'static str {
         match self {
             Target::Next => "next",
+            Target::NextTwo => "next_two",
             Target::Allies => "allies",
             Target::Enemies => "enemies",
             Target::EnemyFirstTwo => "enemy_first_two",
