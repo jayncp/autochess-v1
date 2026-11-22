@@ -73,6 +73,11 @@ tools-check:
 experiment name:
     cd tools && uv run python -m autochess_tools.experiments.{{name}}
 
+# 数值试验（tools/autochess_tools/balance/<模块>.py）：run 六个阶段的阵容搜索，stage 单个阶段，check 复核一张卡，
+# compare 比较两份报告，trend 趋势页，sheet 读写试验表。用法见 tools/README.md
+balance module *args:
+    cd tools && uv run --group balance python -m autochess_tools.balance.{{module}} {{args}}
+
 # 字体子集化：从 Google Fonts 下载源字体，裁到常用字加翻译表用到的字，写到 assets/fonts/
 fonts:
     cd tools && uv run --group art python -m autochess_tools.art.fonts

@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>各阶段出场率和带卡得分</title>
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --hover: #f0efec;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --hover: #2c2c2a;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  header { padding: 16px 24px 4px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .note { color: var(--ink2); font-size: 13px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 10px 24px; position: sticky; top: 0; background: var(--page); z-index: 5; border-bottom: 1px solid var(--grid); }
+  .group { display: flex; gap: 6px; align-items: center; }
+  .group > span { color: var(--ink2); font-size: 13px; }
+  button.chip { font: inherit; font-size: 13px; padding: 3px 10px; border-radius: 14px; border: 1px solid var(--axis); background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  button.chip[aria-pressed="false"] { color: var(--muted); background: transparent; }
+  button.chip[aria-pressed="false"] i { opacity: .25; }
+  button.chip i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  input[type=search] { font: inherit; padding: 4px 8px; border: 1px solid var(--axis); border-radius: 6px; background: var(--surface); color: var(--ink); width: 150px; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 500px; gap: 16px; padding: 16px 24px 32px; align-items: start; }
+  .panel { background: var(--surface); border: 1px solid var(--grid); border-radius: 8px; padding: 12px 14px; }
+  .panel h2 { font-size: 15px; margin: 0; }
+  .panel p { margin: 2px 0 6px; color: var(--ink2); font-size: 12.5px; }
+  .charts { display: grid; gap: 16px; }
+  svg { display: block; width: 100%; height: auto; }
+  svg text { fill: var(--muted); font-size: 12px; }
+  svg .stage { fill: var(--ink2); font-size: 13px; }
+  .line { fill: none; stroke-width: 1.5; opacity: .38; stroke-linejoin: round; stroke-linecap: round; }
+  .dim .line { opacity: .1; }
+  .dim .line.on, .line.on { opacity: 1; stroke-width: 3; }
+  .dot { stroke: var(--surface); stroke-width: 2; }
+  .label { fill: var(--ink); font-size: 13px; font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+  .side { position: sticky; top: 58px; max-height: calc(100vh - 74px); display: flex; flex-direction: column; }
+  .tablewrap { overflow: auto; margin-top: 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th { position: sticky; top: 0; background: var(--surface); text-align: right; font-weight: 500; color: var(--ink2); padding: 4px 6px; border-bottom: 1px solid var(--axis); cursor: pointer; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  td { padding: 3px 6px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  td i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: -1px; }
+  tr.row { cursor: pointer; }
+  tr.row:hover, tr.row.hot { background: var(--hover); }
+  tr.row.pin td:first-child { font-weight: 700; }
+  tr.row.pin td:first-child::after { content: " ●"; color: var(--ink2); font-size: 10px; }
+  #tip { position: fixed; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--axis); border-radius: 6px; padding: 8px 10px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.18); max-width: 440px; display: none; z-index: 10; }
+  #tip b { font-size: 14px; }
+  #tip .sub { color: var(--ink2); font-size: 12.5px; }
+  #tip .more { color: var(--ink2); margin-top: 4px; border-top: 1px solid var(--grid); padding-top: 4px; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>各阶段出场率和带卡得分</h1>
+  <div class="note" id="note"></div>
+</header>
+<div class="controls">
+  <div class="group" id="kinds"><span>类型</span></div>
+  <div class="group" id="stars"><span>星级</span></div>
+  <div class="group" id="quick"><span>筛选</span></div>
+  <div class="group"><input type="search" id="search" placeholder="搜卡名"></div>
+  <div class="group"><button class="chip" id="clear">取消固定</button></div>
+</div>
+<main>
+  <div class="charts">
+    <div class="panel">
+      <h2>出场率</h2>
+      <p>均衡分布里带这张卡的阵容占比。一条线是一张卡，颜色是星级；鼠标移到线上看卡名，点击固定。</p>
+      <svg id="usage"></svg>
+    </div>
+    <div class="panel">
+      <h2>带卡得分</h2>
+      <p>必须带这张卡时，最强阵容对均衡分布的得分。0.50 是持平，明显低于 0.50 是带上就吃亏。</p>
+      <svg id="score"></svg>
+    </div>
+  </div>
+  <div class="panel side">
+    <h2 id="count"></h2>
+    <p>点表头排序；鼠标移到某行会在图上高亮，点击固定。</p>
+    <div class="tablewrap"><table id="table"></table></div>
+  </div>
+</main>
+<div id="tip"></div>
+<script>
+const DATA = __DATA__;
+const STAGES = DATA.stages, CARDS = DATA.cards;
+const $ = id => document.getElementById(id);
+const node = (tag, props = {}, ...children) => {
+  const e = document.createElement(tag);
+  for (const k in props) k === "style" ? e.style.cssText = props[k] : k in e ? e[k] = props[k] : e.setAttribute(k, props[k]);
+  e.append(...children);
+  return e;
+};
+$("note").textContent = DATA.note;
+const color = star => `var(--s${star})`;
+const stat = (values, fn) => { const v = values.filter(x => x !== null); return v.length ? fn(...v) : null; };
+CARDS.forEach((c, i) => {
+  c.id = i;
+  c.peak = stat(c.usage, Math.max); c.low = stat(c.usage, Math.min);
+  c.best = stat(c.score, Math.max); c.worst = stat(c.score, Math.min);
+});
+
+const state = { kind: "角色", stars: new Set([1, 2, 3, 4, 5]), quick: "全部", search: "", pins: new Set(), hot: null, sort: "peak", desc: true };
+const QUICK = {
+  "全部": () => true,
+  "一直没人用（峰值 <3%）": c => c.peak < 3,
+  "带上就亏（最好 <0.47）": c => c.best < 0.47,
+  "出场偏高（峰值 ≥30%）": c => c.peak >= 30,
+};
+const visible = () => CARDS.filter(c => c.kind === state.kind && state.stars.has(c.star) && QUICK[state.quick](c) && c.name.includes(state.search));
+
+function chips(host, values, pressed, onClick, swatch) {
+  const buttons = values.map(value => {
+    const b = node("button", { className: "chip", onclick: () => { onClick(value); render(); } });
+    if (swatch) b.append(node("i", { style: `background:${swatch(value)}` }), `${value}★`); else b.append(value);
+    host.appendChild(b);
+    return [b, value];
+  });
+  host.sync = () => buttons.forEach(([b, value]) => b.setAttribute("aria-pressed", pressed(value)));
+}
+const kinds = $("kinds"), stars = $("stars"), quick = $("quick");
+chips(kinds, ["角色", "装备"], v => state.kind === v, v => { state.kind = v; });
+chips(stars, [1, 2, 3, 4, 5], v => state.stars.has(v), v => { state.stars.has(v) ? state.stars.delete(v) : state.stars.add(v); }, color);
+chips(quick, Object.keys(QUICK), v => state.quick === v, v => { state.quick = v; });
+$("search").oninput = e => { state.search = e.target.value.trim(); render(); };
+$("clear").onclick = () => { state.pins.clear(); render(); };
+
+const W = 1000, H = 400, M = { l: 48, r: 96, t: 14, b: 32 };
+const STEP = (W - M.l - M.r) / (STAGES.length - 1);
+const x = i => M.l + i * STEP;
+const CHARTS = [
+  { id: "usage", key: "usage", min: 0, max: 60, ticks: [0, 20, 40, 60, 80, 100], fmt: v => v + "%" },
+  { id: "score", key: "score", min: 0.2, max: 0.65, ticks: [0.2, 0.3, 0.4, 0.5, 0.6], fmt: v => v.toFixed(1), ref: 0.5 },
+];
+const NS = "http://www.w3.org/2000/svg";
+const el = (name, attrs, parent, text) => {
+  const e = document.createElementNS(NS, name);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  parent?.appendChild(e);
+  return e;
+};
+
+function draw(chart, cards) {
+  const svg = $(chart.id);
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.replaceChildren();
+  const top = Math.max(0, ...cards.flatMap(c => c[chart.key].filter(v => v !== null)));
+  const max = chart.key === "usage" ? Math.min(100, Math.max(chart.max, Math.ceil(top / 20) * 20)) : chart.max;
+  const y = v => M.t + (max - Math.max(chart.min, Math.min(max, v))) * (H - M.t - M.b) / (max - chart.min);
+  chart.y = y;
+  for (const t of chart.ticks.filter(t => t <= max)) {
+    const ref = t === chart.ref;
+    el("line", { x1: M.l, x2: W - M.r, y1: y(t), y2: y(t), stroke: ref ? "var(--axis)" : "var(--grid)", "stroke-width": ref ? 2 : 1 }, svg);
+    el("text", { x: M.l - 8, y: y(t) + 4, "text-anchor": "end" }, svg, chart.fmt(t));
+  }
+  STAGES.forEach((s, i) => el("text", { x: x(i), y: H - 8, "text-anchor": "middle", class: "stage" }, svg, s));
+  chart.lines = el("g", {}, svg);
+  chart.paths = new Map();
+  for (const c of cards) {
+    const points = c[chart.key].map((v, i) => v === null ? null : [x(i), y(v)]).filter(Boolean);
+    const d = points.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join("");
+    chart.paths.set(c.id, el("path", { d: points.length > 1 ? d : d + "h0.01", class: "line", stroke: color(c.star) }, chart.lines));
+  }
+  chart.marks = el("g", {}, svg);
+  svg.onmousemove = e => hover(chart, e);
+  svg.onmouseleave = () => { setHot(null); $("tip").style.display = "none"; };
+  svg.onclick = () => { if (state.hot !== null) togglePin(state.hot); };
+}
+
+function highlight() {
+  const active = new Set(state.pins);
+  if (state.hot !== null) active.add(state.hot);
+  for (const chart of CHARTS) {
+    chart.lines.setAttribute("class", active.size ? "dim" : "");
+    chart.paths.forEach((path, id) => path.classList.toggle("on", active.has(id)));
+    chart.marks.replaceChildren();
+    const labels = [];
+    for (const id of active) {
+      const c = CARDS[id], path = chart.paths.get(id);
+      if (!path) continue;
+      chart.lines.appendChild(path);
+      let last = null;
+      c[chart.key].forEach((v, i) => {
+        if (v === null) return;
+        el("circle", { cx: x(i), cy: chart.y(v), r: 4.5, fill: color(c.star), class: "dot" }, chart.marks);
+        last = [x(i), chart.y(v)];
+      });
+      if (last) labels.push({ name: c.name, x: last[0], y: last[1] });
+    }
+    labels.sort((a, b) => a.y - b.y);
+    labels.forEach((l, i) => { if (i && l.y - labels[i - 1].y < 15) l.y = labels[i - 1].y + 15; });
+    for (const l of labels.slice(0, 14)) el("text", { x: l.x + 9, y: l.y + 4, class: "label" }, chart.marks, l.name);
+  }
+  rows.forEach((row, id) => { row.classList.toggle("hot", id === state.hot); row.classList.toggle("pin", state.pins.has(id)); });
+}
+function setHot(id) { if (state.hot !== id) { state.hot = id; highlight(); } }
+function togglePin(id) { state.pins.has(id) ? state.pins.delete(id) : state.pins.add(id); highlight(); }
+
+function hover(chart, e) {
+  const box = e.currentTarget.getBoundingClientRect();
+  const px = (e.clientX - box.left) * W / box.width, py = (e.clientY - box.top) * H / box.height;
+  const stage = Math.max(0, Math.min(STAGES.length - 1, Math.round((px - M.l) / STEP)));
+  const near = current.filter(c => c[chart.key][stage] !== null)
+    .map(c => ({ c, d: Math.abs(chart.y(c[chart.key][stage]) - py) })).sort((a, b) => a.d - b.d);
+  const tip = $("tip");
+  if (!near.length || near[0].d > 22 || Math.abs(px - x(stage)) > STEP / 2) { setHot(null); tip.style.display = "none"; return; }
+  const c = near[0].c, same = near.filter(n => n.d - near[0].d < 5 && n.c !== c).map(n => n.c);
+  setHot(c.id);
+  tip.replaceChildren(
+    node("b", {}, c.name), " ", node("span", { className: "sub" }, `${c.star}★ ${c.kind} · ${STAGES[stage]}`), node("br"),
+    `出场率 ${c.usage[stage].toFixed(1)}%　带卡得分 ${c.score[stage].toFixed(2)}`,
+    node("div", { className: "sub" }, `带卡最强阵容：${c.lineup[stage]}`),
+  );
+  if (same.length) tip.append(node("div", { className: "more" }, `同一位置还有 ${same.length} 张：${same.slice(0, 12).map(s => s.name).join("、")}${same.length > 12 ? "…" : ""}`));
+  tip.style.display = "block";
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  tip.style.left = Math.min(window.innerWidth - tw - 8, e.clientX + 16) + "px";
+  tip.style.top = Math.max(8, Math.min(window.innerHeight - th - 8, e.clientY - th - 12)) + "px";
+}
+
+const COLUMNS = [["name", "卡"], ["star", "星"], ["peak", "出场峰值"], ["low", "出场最低"], ["best", "得分最好"], ["worst", "得分最差"]];
+let rows = new Map();
+function table(cards) {
+  const sorted = [...cards].sort((a, b) => {
+    const p = a[state.sort], q = b[state.sort];
+    return (typeof p === "string" ? p.localeCompare(q, "zh") : p - q) * (state.desc ? -1 : 1);
+  });
+  const head = node("tr", {}, ...COLUMNS.map(([k, label]) => node("th", {
+    onclick: () => { state.desc = state.sort === k ? !state.desc : k !== "name"; state.sort = k; render(); },
+  }, label + (state.sort === k ? (state.desc ? " ↓" : " ↑") : ""))));
+  rows = new Map(sorted.map(c => [c.id, node("tr", {
+    className: "row", onmouseenter: () => setHot(c.id), onmouseleave: () => setHot(null), onclick: () => togglePin(c.id),
+  },
+    node("td", {}, node("i", { style: `background:${color(c.star)}` }), c.name), node("td", {}, `${c.star}★`),
+    node("td", {}, `${c.peak.toFixed(0)}%`), node("td", {}, `${c.low.toFixed(0)}%`),
+    node("td", {}, c.best.toFixed(2)), node("td", {}, c.worst.toFixed(2)))]));
+  $("table").replaceChildren(node("thead", {}, head), node("tbody", {}, ...rows.values()));
+  $("count").textContent = `${state.kind} ${cards.length} 张`;
+}
+
+let current = [];
+function render() {
+  [kinds, stars, quick].forEach(h => h.sync());
+  current = visible();
+  CHARTS.forEach(chart => draw(chart, current));
+  table(current);
+  highlight();
+}
+render();
+</script>
+</body>
+</html>

@@ -14,6 +14,8 @@ art = [
     "fonttools>=4.68.0",
     "resvg-py>=0.5.0",
 ]
+# 数值试验表（autochess_tools/balance/sheet.py）读写 Excel
+balance = ["openpyxl>=3.1"]
 dev = ["pytest>=8", "ruff>=0.8", "ty>=0.0.1a1"]
 
 [tool.ruff]

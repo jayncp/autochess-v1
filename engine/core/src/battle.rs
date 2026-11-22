@@ -9,6 +9,7 @@
 
 use crate::cards::{BaseSkills, CardIdx, Deck, Params, Pick, SpecialValue, Specials};
 use crate::ids::{BaseSkill, Scope, SkillRef, Special, SpecialSet, Target, Timing, Timings};
+use crate::trial::{any_per_resolve, box_strength, copy_adds, full_skill_sum, raise_per_trigger};
 
 /// 和 `BattleSim.VERSION` 相同（测试会检查），规则变化时 GDScript 版先加一
 pub const VERSION: i32 = 8;
@@ -26,13 +27,20 @@ pub const MAX_UNITS: usize = 7;
 const STEPS: [(Step, &[Special]); 7] = [
     (
         Step::Record,
-        &[Special::CopySkills, Special::GainHalfSkillSum, Special::GainIfOutnumbered, Special::DamageHalfStrength],
+        &[
+            Special::CopySkills,
+            Special::GainHalfSkillSum,
+            Special::GainIfOutnumbered,
+            Special::GainAllIfOutnumbered,
+            Special::DamageHalfStrength,
+            Special::Execute,
+        ],
     ),
     (Step::Grant, &[Special::Bless, Special::Grant, Special::CopySkills]),
     (Step::Clear, &[Special::ClearSkills]),
-    (Step::Raise, &[Special::RaiseSkills]),
-    (Step::Gain, &[Special::GainHalfSkillSum, Special::GainIfOutnumbered]),
-    (Step::Damage, &[Special::DamageHalfStrength]),
+    (Step::Raise, &[Special::RaiseSkills, Special::RaiseOwn]),
+    (Step::Gain, &[Special::GainHalfSkillSum, Special::GainIfOutnumbered, Special::GainAllIfOutnumbered]),
+    (Step::Damage, &[Special::DamageHalfStrength, Special::Execute]),
     (Step::Awaken, &[Special::Awaken]),
 ];
 
@@ -48,8 +56,10 @@ enum Step {
 }
 
 /// 按方记下持有者的特殊技能：被动（不带时机的描述型特殊技能，挂在事件上）和协战
-const INDEXED: [Special; 6] = [
+const INDEXED: [Special; 8] = [
+    Special::OnEnemyTriggerGainAll,
     Special::OnTriggerGain,
+    Special::OnTriggerBoost,
     Special::OnResolveBonus,
     Special::OnResolveRaise,
     Special::ExtraResolve,
@@ -183,7 +193,12 @@ impl Unit {
             side,
             index,
             card: pick.card,
-            strength: stats.strength,
+            // 试验：AUTOCHESS_BOX_STRENGTH 打开时，千机之匣把开战时的战斗力也翻倍
+            strength: if box_strength() && stats.special_skills.has(Special::DoubleSkills) {
+                stats.strength * 2
+            } else {
+                stats.strength
+            },
             timings: stats.timings,
             base_skills: stats.base_skills,
             special_skills: stats.special_skills,
@@ -225,6 +240,8 @@ struct Records {
     outnumbered: bool,
     /// 沼泽之王：对方交战位，和它此刻战斗力的一半
     half_strength: Option<(UnitId, i32)>,
+    /// 试验（眼镜王蛇）：对方交战位，此刻战斗力高于自身时才有
+    execute: Option<UnitId>,
 }
 
 /// 幸存的一个单位
@@ -285,6 +302,8 @@ pub struct Battle {
     pub reason: Reason,
     no_death_engages: u32,
     holders: [Holders; 2],
+    /// 试验：正在结算战前时点（雪域神牛的伤害减半只在这时生效）
+    pre_battle: bool,
     /// 简要轨迹，打开时才记（`simulate_traced`）
     trace: Option<Vec<TraceStep>>,
 }
@@ -299,6 +318,7 @@ impl Battle {
             reason: Reason::Wipe,
             no_death_engages: 0,
             holders: [Holders::default(); 2],
+            pre_battle: false,
             trace: None,
         };
         for (side, lineup) in [p1, p2].into_iter().enumerate() {
@@ -480,6 +500,7 @@ impl Battle {
     /// 每组都按拍结算，每拍双方同时，拍的顺序就是 `BaseSkill::ALL`。中途不判死。
     /// 多一轮：有多一轮的单位把整轮再走一遍（来源相加），别的单位等着（`BattleSim.resolve_timing`）
     fn resolve_timing(&mut self, actors: Line, timing: Timing) {
+        self.pre_battle = timing == Timing::PreBattle;
         let mut extra = [0; MAX_UNITS]; // 第 i 个单位多几轮
         let mut rounds = 1;
         if self.holders[0].has(Special::ExtraRound) || self.holders[1].has(Special::ExtraRound) {
@@ -500,6 +521,7 @@ impl Battle {
             let own = group.filter(|u| self.unit(u).timings.has(timing));
             self.resolve_beats(own);
         }
+        self.pre_battle = false;
     }
 
     /// 被动：〈范围〉〈时机〉多触发一轮（extra_round），返回给 u 带来几轮（每个持有者一轮）。
@@ -516,6 +538,8 @@ impl Battle {
                 Scope::Itself => holder == u,
                 Scope::Allies => true,
                 Scope::First => unit.index == 0 && holder != u,
+                Scope::ItselfAndSecond => holder == u || unit.index == 1,
+                Scope::ItselfAndFront => holder == u || self.next_unit(u) == Some(holder),
             };
             if counts {
                 count += 1;
@@ -539,9 +563,18 @@ impl Battle {
                 if self.holders[side].has(Special::OnResolveRaise) {
                     self.after_resolve(u, skill);
                 }
+                // 试验：己方角色触发〈技能〉时，其战斗力额外 +N（on_trigger_boost，加给触发的那个角色）
+                for holder in self.holders[side].of(Special::OnTriggerBoost) {
+                    let params = self.passive(holder, Special::OnTriggerBoost);
+                    if params.skill == Some(SkillRef::Base(skill)) {
+                        self.buff(u, params.amount());
+                    }
+                }
+                self.on_enemy_trigger(side, skill);
                 if self.holders[side].has(Special::OnTriggerGain) {
+                    // 试验：AUTOCHESS_ANY_PER_RESOLVE 打开时，星辰法师每结算一下都算（不限一轮一次）
                     let first = !triggered.contains(u);
-                    self.on_trigger(u, skill, first);
+                    self.on_trigger(u, skill, first || any_per_resolve());
                     if first {
                         triggered.push(u);
                     }
@@ -550,7 +583,17 @@ impl Battle {
                     for _ in 0..self.extra_resolves(u, skill) {
                         let value = self.unit(u).base_skills.get(skill).expect("结算中不会失去基础技能");
                         self.apply_skill(u, skill, value);
-                        if self.holders[side].has(Special::OnResolveRaise) {
+                        self.on_enemy_trigger(side, skill);
+                        if any_per_resolve() {
+                            for holder in self.holders[side].of(Special::OnTriggerGain) {
+                                let params = self.passive(holder, Special::OnTriggerGain);
+                                if params.skill == Some(SkillRef::Any) {
+                                    self.buff(holder, params.amount());
+                                }
+                            }
+                        }
+                        // 试验：环境变量 AUTOCHESS_RAISE_PER_TRIGGER 打开时，萨满按轮算，多一次的那几下不加
+                        if self.holders[side].has(Special::OnResolveRaise) && !raise_per_trigger() {
                             self.after_resolve(u, skill);
                         }
                     }
@@ -620,14 +663,19 @@ impl Battle {
             Special::GainHalfSkillSum => {
                 // 炼药师：己方全体基础技能数值之和（含财富）的一半，四舍五入
                 let total: i32 = self.fields[side].into_iter().map(|p| self.unit(p).base_skills.sum()).sum();
-                records.half_skill_sum = round_half(total);
+                // 试验：AUTOCHESS_FULL_SKILL_SUM 打开时加全部而不是一半
+                records.half_skill_sum = if full_skill_sum() { total } else { round_half(total) };
             }
-            Special::GainIfOutnumbered => {
+            Special::GainIfOutnumbered | Special::GainAllIfOutnumbered => {
                 records.outnumbered = enemies.len() > self.fields[side].len();
             }
             Special::DamageHalfStrength => {
                 // 沼泽之王：对方交战位此刻战斗力的一半，四舍五入
                 records.half_strength = enemies.first().map(|e| (e, round_half(self.unit(e).strength.max(0))));
+            }
+            Special::Execute => {
+                let own = self.unit(u).strength;
+                records.execute = enemies.first().filter(|&e| self.unit(e).strength > own);
             }
             _ => unreachable!("{} 没有记录", skill.id()),
         }
@@ -641,6 +689,19 @@ impl Battle {
                 let mut line = Line::default();
                 if let Some(next) = self.next_unit(u) {
                     line.push(next);
+                }
+                line
+            }
+            Target::NextTwo => {
+                // 试验（彼岸花妖）：队列里排在自己后面的两位
+                let mut line = Line::default();
+                let own = self.fields[side];
+                if let Some(position) = own.position(u) {
+                    for k in 1..=2 {
+                        if let Some(next) = own.get(position + k) {
+                            line.push(next);
+                        }
+                    }
                 }
                 line
             }
@@ -669,13 +730,31 @@ impl Battle {
             Special::CopySkills => {
                 // 鹦鹉：对方交战位有基础技能时，自身的基础技能变成它的（整体换掉）
                 if !records.copy_skills.is_empty() {
-                    self.unit_mut(u).base_skills = records.copy_skills;
+                    if copy_adds() {
+                        // 试验：AUTOCHESS_COPY_ADD 打开时不是换掉，而是额外获得一份（和已有的相加）
+                        for skill in BaseSkill::ALL {
+                            if let Some(value) = records.copy_skills.get(skill) {
+                                self.grant(u, SkillRef::Base(skill), Some(value));
+                            }
+                        }
+                    } else {
+                        self.unit_mut(u).base_skills = records.copy_skills;
+                    }
                 }
             }
             Special::ClearSkills => {
                 // 美杜莎女王：清除对方前两位的基础技能（特殊技能不受影响）
                 for t in self.targets(u, params.target.expect("校验过")) {
                     self.unit_mut(t).base_skills = BaseSkills::default();
+                }
+            }
+            Special::RaiseOwn => {
+                // 试验（白狼王）：自身的〈技能〉值 +N
+                match params.skill {
+                    Some(SkillRef::Base(s)) if self.unit(u).base_skills.has(s) => self.raise(u, s, params.amount()),
+                    // 带数值的词条（坚固）：直接加层数
+                    Some(skill @ SkillRef::Special(_)) => self.grant(u, skill, params.amount),
+                    _ => {}
                 }
             }
             Special::RaiseSkills => {
@@ -699,9 +778,24 @@ impl Battle {
                     self.buff(u, params.amount());
                 }
             }
+            Special::GainAllIfOutnumbered => {
+                // 试验：神裁者改成己方全体
+                if records.outnumbered {
+                    for t in self.fields[side] {
+                        self.buff(t, params.amount());
+                    }
+                }
+            }
             Special::DamageHalfStrength => {
                 if let Some((target, amount)) = records.half_strength {
                     self.damage(target, amount);
+                }
+            }
+            Special::Execute => {
+                if let Some(target) = records.execute
+                    && !self.unit(target).special_skills.has(Special::ImmuneLethal)
+                {
+                    self.damage(target, 10000);
                 }
             }
             Special::Awaken => {
@@ -741,6 +835,18 @@ impl Battle {
             let params = self.passive(holder, Special::OnTriggerGain);
             if params.skill == Some(SkillRef::Base(skill)) || (params.skill == Some(SkillRef::Any) && first) {
                 self.buff(holder, params.amount());
+            }
+        }
+    }
+
+    /// 试验（八咫镜）：side 方的角色结算了一下〈技能〉，对方带 on_enemy_trigger_gain_all 的，其己方全体战斗力 +N
+    fn on_enemy_trigger(&mut self, side: usize, skill: BaseSkill) {
+        for holder in self.holders[1 - side].of(Special::OnEnemyTriggerGainAll) {
+            let params = self.passive(holder, Special::OnEnemyTriggerGainAll);
+            if params.skill == Some(SkillRef::Any) || params.skill == Some(SkillRef::Base(skill)) {
+                for t in self.fields[1 - side] {
+                    self.buff(t, params.amount());
+                }
             }
         }
     }
@@ -855,6 +961,7 @@ impl Battle {
 
     /// 伤害流程：有庇护就挡下这次伤害、消耗一层（先于坚固）→ 否则减去坚固（最低 0）→ 扣战力（`BattleSim.damage`）
     fn damage(&mut self, target: UnitId, amount: i32) {
+        let pre_battle = self.pre_battle;
         let t = self.unit_mut(target);
         let sheltered = amount > 0 && t.special_skills.has(Special::Shelter);
         let mut dealt = 0;
@@ -868,6 +975,9 @@ impl Battle {
         } else {
             let sturdy = t.special_skills.value(Special::Sturdy).unwrap_or(0); // 没有坚固是 0
             dealt = (amount - sturdy).max(0);
+            if pre_battle && t.special_skills.has(Special::HalvePreBattleDamage) {
+                dealt = round_half(dealt);
+            }
         }
         t.strength -= dealt;
     }

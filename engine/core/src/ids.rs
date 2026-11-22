@@ -114,11 +114,21 @@ pub enum Special {
     RaiseSkills,
     GainHalfSkillSum,
     GainIfOutnumbered,
+    GainAllIfOutnumbered,
     DamageHalfStrength,
+    OnTriggerBoost,
+    /// 试验：战前时点里受到的伤害减半（过了庇护、坚固之后，四舍五入）
+    HalvePreBattleDamage,
+    /// 试验：〈时机〉自身的〈技能〉值 +N（只在自己有这个技能时）
+    RaiseOwn,
+    /// 试验：〈时机〉对方交战位的战斗力高于自身时，对它造成一次致命的伤害（庇护能挡，免疫致命无效）
+    Execute,
+    /// 试验：对方角色结算〈技能〉时，己方全体战斗力 +N
+    OnEnemyTriggerGainAll,
 }
 
 impl Special {
-    pub const COUNT: usize = 22;
+    pub const COUNT: usize = 28;
     pub const ALL: [Special; Special::COUNT] = [
         Special::Backlash,
         Special::Sturdy,
@@ -141,7 +151,13 @@ impl Special {
         Special::RaiseSkills,
         Special::GainHalfSkillSum,
         Special::GainIfOutnumbered,
+        Special::GainAllIfOutnumbered,
         Special::DamageHalfStrength,
+        Special::OnTriggerBoost,
+        Special::HalvePreBattleDamage,
+        Special::RaiseOwn,
+        Special::Execute,
+        Special::OnEnemyTriggerGainAll,
     ];
 
     pub fn id(self) -> &'static str {
@@ -151,6 +167,11 @@ impl Special {
             Special::Assist => "assist",
             Special::ImmuneLethal => "immune_lethal",
             Special::OnTriggerGain => "on_trigger_gain",
+            Special::OnTriggerBoost => "on_trigger_boost",
+            Special::HalvePreBattleDamage => "halve_pre_battle_damage",
+            Special::RaiseOwn => "raise_own",
+            Special::Execute => "execute",
+            Special::OnEnemyTriggerGainAll => "on_enemy_trigger_gain_all",
             Special::Awaken => "awaken",
             Special::Shelter => "shelter",
             Special::Bless => "bless",
@@ -167,6 +188,7 @@ impl Special {
             Special::RaiseSkills => "raise_skills",
             Special::GainHalfSkillSum => "gain_half_skill_sum",
             Special::GainIfOutnumbered => "gain_if_outnumbered",
+            Special::GainAllIfOutnumbered => "gain_all_if_outnumbered",
             Special::DamageHalfStrength => "damage_half_strength",
         }
     }
@@ -186,14 +208,20 @@ impl Special {
         match self {
             Special::Awaken => &[Timings],
             Special::Bless => &[Timings, Amount],
-            Special::OnTriggerGain | Special::OnResolveBonus | Special::OnResolveRaise => &[Skill, Amount],
+            Special::OnTriggerGain
+            | Special::OnTriggerBoost
+            | Special::OnResolveBonus
+            | Special::OnResolveRaise
+            | Special::OnEnemyTriggerGainAll => &[Skill, Amount],
             Special::ExtraResolve => &[Scope, Skill],
             Special::ExtraRound => &[Scope, Timing],
-            Special::CopySkills | Special::GainHalfSkillSum | Special::DamageHalfStrength => &[Timings],
+            Special::CopySkills | Special::GainHalfSkillSum | Special::DamageHalfStrength | Special::Execute => {
+                &[Timings]
+            }
             Special::Grant => &[Timings, Target, Skill, Amount],
             Special::ClearSkills => &[Timings, Target],
-            Special::RaiseSkills => &[Timings, Skill, Amount],
-            Special::GainIfOutnumbered => &[Timings, Amount],
+            Special::RaiseSkills | Special::RaiseOwn => &[Timings, Skill, Amount],
+            Special::GainIfOutnumbered | Special::GainAllIfOutnumbered => &[Timings, Amount],
             _ => &[],
         }
     }
@@ -259,16 +287,23 @@ pub enum Scope {
     Itself,
     Allies,
     First,
+    /// 试验：自身，以及开战时位于己方第 2 位的角色
+    ItselfAndSecond,
+    /// 试验：自身和队列里紧挨在前面的那一位
+    ItselfAndFront,
 }
 
 impl Scope {
-    pub const ALL: [Scope; 3] = [Scope::Itself, Scope::Allies, Scope::First];
+    pub const ALL: [Scope; 5] =
+        [Scope::ItselfAndSecond, Scope::Itself, Scope::Allies, Scope::First, Scope::ItselfAndFront];
 
     pub fn id(self) -> &'static str {
         match self {
             Scope::Itself => "self",
             Scope::Allies => "allies",
             Scope::First => "first",
+            Scope::ItselfAndSecond => "self_and_second",
+            Scope::ItselfAndFront => "self_and_front",
         }
     }
 
@@ -281,17 +316,21 @@ impl Scope {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Target {
     Next,
+    /// 试验：下两位（彼岸花妖）
+    NextTwo,
     Allies,
     Enemies,
     EnemyFirstTwo,
 }
 
 impl Target {
-    pub const ALL: [Target; 4] = [Target::Next, Target::Allies, Target::Enemies, Target::EnemyFirstTwo];
+    pub const ALL: [Target; 5] =
+        [Target::Next, Target::NextTwo, Target::Allies, Target::Enemies, Target::EnemyFirstTwo];
 
     pub fn id(self) -> &'static str {
         match self {
             Target::Next => "next",
+            Target::NextTwo => "next_two",
             Target::Allies => "allies",
             Target::Enemies => "enemies",
             Target::EnemyFirstTwo => "enemy_first_two",

@@ -10,3 +10,6 @@
 
 # Rust 版结算的构建产物
 /engine/target/
+
+# 数值试验每一轮的结果（tools/balance/run.py 的输出）
+/tools/balance/runs/

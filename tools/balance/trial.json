@@ -1,0 +1,2054 @@
+[
+ {
+  "id": "tiger",
+  "no": 1101,
+  "type": "character",
+  "races": [
+   "beast"
+  ],
+  "star": 1,
+  "strength": 4,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 3
+  }
+ },
+ {
+  "id": "pixie",
+  "no": 1103,
+  "type": "character",
+  "races": [
+   "elf"
+  ],
+  "star": 1,
+  "strength": 8,
+  "timing_1": [
+   "pre_battle"
+  ]
+ },
+ {
+  "id": "butterfly",
+  "no": 1104,
+  "type": "character",
+  "races": [
+   "elf"
+  ],
+  "star": 1,
+  "strength": 3,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "support": 4
+  }
+ },
+ {
+  "id": "angel",
+  "no": 1105,
+  "type": "character",
+  "races": [
+   "divine"
+  ],
+  "star": 1,
+  "strength": 4,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "inspire": 1
+  }
+ },
+ {
+  "id": "tiger_man",
+  "no": 1201,
+  "type": "character",
+  "races": [
+   "beast",
+   "human"
+  ],
+  "star": 2,
+  "strength": 8,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 2,
+   "rally": 1
+  }
+ },
+ {
+  "id": "fey_tiger",
+  "no": 1202,
+  "type": "character",
+  "races": [
+   "beast",
+   "elf"
+  ],
+  "star": 2,
+  "strength": 7,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "rage": 10
+  }
+ },
+ {
+  "id": "pegasus",
+  "no": 1203,
+  "type": "character",
+  "races": [
+   "beast",
+   "divine"
+  ],
+  "star": 2,
+  "strength": 8,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 3,
+   "inspire": 1
+  }
+ },
+ {
+  "id": "vulture",
+  "no": 1204,
+  "type": "character",
+  "races": [
+   "beast",
+   "nature"
+  ],
+  "star": 2,
+  "strength": 8,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 3,
+   "corrode": 2
+  }
+ },
+ {
+  "id": "marksman",
+  "no": 1206,
+  "type": "character",
+  "races": [
+   "human",
+   "divine"
+  ],
+  "star": 2,
+  "strength": 10,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 2,
+   "inspire": 1
+  }
+ },
+ {
+  "id": "naga",
+  "no": 1207,
+  "type": "character",
+  "races": [
+   "human",
+   "nature"
+  ],
+  "star": 2,
+  "strength": 7,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 1,
+   "corrode": 8
+  }
+ },
+ {
+  "id": "dryad",
+  "no": 1209,
+  "type": "character",
+  "races": [
+   "elf",
+   "nature"
+  ],
+  "star": 2,
+  "strength": 8,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "corrode": 5
+  }
+ },
+ {
+  "id": "fairy_vine",
+  "no": 1210,
+  "type": "character",
+  "races": [
+   "divine",
+   "nature"
+  ],
+  "star": 2,
+  "strength": 10,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "inspire": 1,
+   "corrode": 5
+  }
+ },
+ {
+  "id": "porcupine",
+  "no": 1211,
+  "type": "character",
+  "races": [
+   "beast"
+  ],
+  "star": 2,
+  "strength": 20,
+  "timing_1": [
+   "on_engage"
+  ],
+  "special_skills": {
+   "backlash": 3
+  }
+ },
+ {
+  "id": "shield_guard",
+  "no": 1212,
+  "type": "character",
+  "races": [
+   "human"
+  ],
+  "star": 2,
+  "strength": 8,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 2
+  },
+  "special_skills": {
+   "sturdy": 4
+  }
+ },
+ {
+  "id": "wisp",
+  "no": 1213,
+  "type": "character",
+  "races": [
+   "elf"
+  ],
+  "star": 2,
+  "strength": 7,
+  "timing_1": [
+   "on_enter"
+  ],
+  "special_skills": {
+   "awaken": {
+    "timings": [
+     "on_enter"
+    ]
+   }
+  }
+ },
+ {
+  "id": "paladin",
+  "no": 1214,
+  "type": "character",
+  "races": [
+   "divine"
+  ],
+  "star": 2,
+  "strength": 9,
+  "timing_1": [
+   "on_enter"
+  ],
+  "special_skills": {
+   "shelter": 1
+  }
+ },
+ {
+  "id": "maneater",
+  "no": 1215,
+  "type": "character",
+  "races": [
+   "nature"
+  ],
+  "star": 2,
+  "strength": 6,
+  "timing_1": [
+   "on_enter"
+  ],
+  "special_skills": {
+   "lethal": null
+  }
+ },
+ {
+  "id": "captain",
+  "no": 1217,
+  "type": "character",
+  "races": [
+   "human"
+  ],
+  "star": 2,
+  "strength": 8,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 1
+  },
+  "special_skills": {
+   "on_trigger_boost": {
+    "skill": "rally",
+    "amount": 2
+   }
+  }
+ },
+ {
+  "id": "toad",
+  "no": 1220,
+  "type": "character",
+  "races": [
+   "nature"
+  ],
+  "star": 2,
+  "strength": 8,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "corrode": 6
+  },
+  "special_skills": {
+   "on_resolve_bonus": {
+    "skill": "corrode",
+    "amount": 1
+   }
+  }
+ },
+ {
+  "id": "minotaur",
+  "no": 1301,
+  "type": "character",
+  "races": [
+   "beast",
+   "human"
+  ],
+  "star": 3,
+  "strength": 15,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 4
+  },
+  "special_skills": {
+   "sturdy": 4,
+   "raise_own": {
+    "timings": [
+     "on_engage"
+    ],
+    "skill": "sturdy",
+    "amount": 1
+   }
+  }
+ },
+ {
+  "id": "spirit_deer",
+  "no": 1302,
+  "type": "character",
+  "races": [
+   "beast",
+   "elf"
+  ],
+  "star": 3,
+  "strength": 13,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "rage": 4,
+   "support": 4
+  },
+  "special_skills": {
+   "raise_skills": {
+    "timings": [
+     "pre_battle"
+    ],
+    "skill": "rage",
+    "amount": 3
+   }
+  }
+ },
+ {
+  "id": "holy_lion",
+  "no": 1303,
+  "type": "character",
+  "races": [
+   "beast",
+   "divine"
+  ],
+  "star": 3,
+  "strength": 10,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 5
+  },
+  "special_skills": {
+   "shelter": 1,
+   "raise_skills": {
+    "timings": [
+     "on_engage"
+    ],
+    "skill": "rage",
+    "amount": 2
+   }
+  }
+ },
+ {
+  "id": "scorpion",
+  "no": 1304,
+  "type": "character",
+  "races": [
+   "beast",
+   "nature"
+  ],
+  "star": 3,
+  "strength": 16,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "corrode": 6
+  }
+ },
+ {
+  "id": "celestial_soldier",
+  "no": 1306,
+  "type": "character",
+  "races": [
+   "human",
+   "divine"
+  ],
+  "star": 3,
+  "strength": 15,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 3
+  },
+  "special_skills": {
+   "shelter": 1
+  }
+ },
+ {
+  "id": "assassin",
+  "no": 1307,
+  "type": "character",
+  "races": [
+   "human",
+   "nature"
+  ],
+  "star": 3,
+  "strength": 15,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 2
+  },
+  "special_skills": {
+   "sturdy": 2,
+   "lethal": null
+  }
+ },
+ {
+  "id": "elf_priestess",
+  "no": 1308,
+  "type": "character",
+  "races": [
+   "elf",
+   "divine"
+  ],
+  "star": 3,
+  "strength": 6,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "inspire": 1
+  },
+  "special_skills": {
+   "bless": {
+    "timings": [
+     "pre_battle"
+    ],
+    "amount": 1
+   }
+  }
+ },
+ {
+  "id": "forest_archer",
+  "no": 1309,
+  "type": "character",
+  "races": [
+   "elf",
+   "nature"
+  ],
+  "star": 3,
+  "strength": 6,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "corrode": 4
+  },
+  "special_skills": {
+   "extra_resolve": {
+    "scope": "self",
+    "skill": "corrode"
+   }
+  }
+ },
+ {
+  "id": "temple_guard",
+  "no": 1310,
+  "type": "character",
+  "races": [
+   "divine",
+   "nature"
+  ],
+  "star": 3,
+  "strength": 13,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "corrode": 9
+  },
+  "special_skills": {
+   "shelter": 1
+  }
+ },
+ {
+  "id": "mammoth",
+  "no": 1311,
+  "type": "character",
+  "races": [
+   "beast"
+  ],
+  "star": 3,
+  "strength": 26,
+  "timing_1": [
+   "on_engage"
+  ]
+ },
+ {
+  "id": "ninja",
+  "no": 1312,
+  "type": "character",
+  "races": [
+   "human"
+  ],
+  "star": 3,
+  "strength": 6,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 1
+  },
+  "special_skills": {
+   "assist": null
+  }
+ },
+ {
+  "id": "elf_princess",
+  "no": 1313,
+  "type": "character",
+  "races": [
+   "elf"
+  ],
+  "star": 4,
+  "strength": 8,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "support": 2
+  },
+  "special_skills": {
+   "extra_round": {
+    "scope": "first",
+    "timing": "pre_battle"
+   }
+  }
+ },
+ {
+  "id": "swamp_tentacle",
+  "no": 1315,
+  "type": "character",
+  "races": [
+   "nature"
+  ],
+  "star": 3,
+  "strength": 8,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "corrode": 2
+  },
+  "special_skills": {
+   "lethal": null,
+   "on_trigger_gain": {
+    "skill": "corrode",
+    "amount": 4
+   }
+  }
+ },
+ {
+  "id": "alpha_wolf",
+  "no": 1316,
+  "type": "character",
+  "races": [
+   "beast"
+  ],
+  "star": 3,
+  "strength": 12,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 4
+  },
+  "special_skills": {
+   "on_trigger_boost": {
+    "skill": "rage",
+    "amount": 4
+   }
+  }
+ },
+ {
+  "id": "vanguard",
+  "no": 1317,
+  "type": "character",
+  "races": [
+   "human"
+  ],
+  "star": 3,
+  "strength": 14,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 4
+  },
+  "special_skills": {
+   "raise_skills": {
+    "timings": [
+     "on_enter"
+    ],
+    "skill": "rally",
+    "amount": 1
+   }
+  }
+ },
+ {
+  "id": "wind_sprite",
+  "no": 1318,
+  "type": "character",
+  "races": [
+   "elf"
+  ],
+  "star": 3,
+  "strength": 11,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "support": 13
+  }
+ },
+ {
+  "id": "archangel",
+  "no": 1319,
+  "type": "character",
+  "races": [
+   "divine"
+  ],
+  "star": 3,
+  "strength": 12,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "inspire": 3
+  },
+  "special_skills": {
+   "shelter": 1
+  }
+ },
+ {
+  "id": "tumbleweed",
+  "no": 1320,
+  "type": "character",
+  "races": [
+   "nature"
+  ],
+  "star": 3,
+  "strength": 12,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "corrode": 4
+  },
+  "special_skills": {
+   "raise_skills": {
+    "timings": [
+     "on_enter"
+    ],
+    "skill": "corrode",
+    "amount": 3
+   }
+  }
+ },
+ {
+  "id": "parrot",
+  "no": 1321,
+  "type": "character",
+  "races": [
+   "beast",
+   "elf"
+  ],
+  "star": 3,
+  "strength": 14,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 2
+  },
+  "special_skills": {
+   "copy_skills": {
+    "timings": [
+     "pre_battle",
+     "on_enter"
+    ]
+   }
+  }
+ },
+ {
+  "id": "swamp_king",
+  "no": 1322,
+  "type": "character",
+  "races": [
+   "beast",
+   "nature"
+  ],
+  "star": 3,
+  "strength": 10,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 3
+  },
+  "special_skills": {
+   "damage_half_strength": {
+    "timings": [
+     "on_engage"
+    ]
+   }
+  }
+ },
+ {
+  "id": "holy_monk",
+  "no": 1323,
+  "type": "character",
+  "races": [
+   "human",
+   "divine"
+  ],
+  "star": 3,
+  "strength": 14,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "inspire": 1
+  },
+  "special_skills": {
+   "sturdy": 4,
+   "shelter": 1
+  }
+ },
+ {
+  "id": "alchemist",
+  "no": 1324,
+  "type": "character",
+  "races": [
+   "human",
+   "nature"
+  ],
+  "star": 3,
+  "strength": 10,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "corrode": 2
+  },
+  "special_skills": {
+   "gain_half_skill_sum": {
+    "timings": [
+     "on_enter"
+    ]
+   }
+  }
+ },
+ {
+  "id": "wind_envoy",
+  "no": 1325,
+  "type": "character",
+  "races": [
+   "elf",
+   "divine"
+  ],
+  "star": 3,
+  "strength": 10,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "inspire": 1
+  },
+  "special_skills": {
+   "raise_skills": {
+    "timings": [
+     "pre_battle",
+     "on_enter"
+    ],
+    "skill": "inspire",
+    "amount": 1
+   }
+  }
+ },
+ {
+  "id": "griffin_knight",
+  "no": 1401,
+  "type": "character",
+  "races": [
+   "beast",
+   "human"
+  ],
+  "star": 4,
+  "strength": 17,
+  "timing_1": [
+   "on_enter",
+   "on_engage"
+  ],
+  "skills_1": {
+   "rally": 3
+  }
+ },
+ {
+  "id": "snow_yak",
+  "no": 1403,
+  "type": "character",
+  "races": [
+   "beast",
+   "divine"
+  ],
+  "star": 4,
+  "strength": 24,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 2
+  },
+  "special_skills": {
+   "shelter": 1,
+   "halve_pre_battle_damage": null
+  }
+ },
+ {
+  "id": "king_cobra",
+  "no": 1404,
+  "type": "character",
+  "races": [
+   "beast",
+   "nature"
+  ],
+  "star": 4,
+  "strength": 14,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 8
+  },
+  "special_skills": {
+   "lethal": null,
+   "execute": {
+    "timings": [
+     "on_enter"
+    ]
+   }
+  }
+ },
+ {
+  "id": "phantom_blade",
+  "no": 1405,
+  "type": "character",
+  "races": [
+   "human",
+   "elf"
+  ],
+  "star": 4,
+  "strength": 8,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "rally": 2
+  },
+  "special_skills": {
+   "assist": null
+  }
+ },
+ {
+  "id": "chanter",
+  "no": 1406,
+  "type": "character",
+  "races": [
+   "human",
+   "divine"
+  ],
+  "star": 4,
+  "strength": 14,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "inspire": 2
+  },
+  "special_skills": {
+   "grant": {
+    "timings": [
+     "on_enter"
+    ],
+    "target": "allies",
+    "skill": "rally",
+    "amount": 2
+   }
+  }
+ },
+ {
+  "id": "shaman",
+  "no": 1407,
+  "type": "character",
+  "races": [
+   "human",
+   "nature"
+  ],
+  "star": 4,
+  "strength": 12,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "corrode": 4
+  },
+  "special_skills": {
+   "on_resolve_raise": {
+    "skill": "corrode",
+    "amount": 1
+   }
+  }
+ },
+ {
+  "id": "holy_elf",
+  "no": 1408,
+  "type": "character",
+  "races": [
+   "elf",
+   "divine"
+  ],
+  "star": 4,
+  "strength": 16,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "inspire": 4
+  },
+  "special_skills": {
+   "shelter": 1
+  }
+ },
+ {
+  "id": "spider_lily",
+  "no": 1409,
+  "type": "character",
+  "races": [
+   "elf",
+   "nature"
+  ],
+  "star": 4,
+  "strength": 13,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "corrode": 3
+  },
+  "special_skills": {
+   "grant": {
+    "timings": [
+     "pre_battle"
+    ],
+    "target": "next_two",
+    "skill": "lethal",
+    "amount": null
+   }
+  }
+ },
+ {
+  "id": "jungle_temple",
+  "no": 1410,
+  "type": "character",
+  "races": [
+   "divine",
+   "nature"
+  ],
+  "star": 4,
+  "strength": 17,
+  "timing_1": [
+   "on_enter"
+  ],
+  "special_skills": {
+   "shelter": 1,
+   "lethal": null
+  }
+ },
+ {
+  "id": "white_wolf_king",
+  "no": 1411,
+  "type": "character",
+  "races": [
+   "beast"
+  ],
+  "star": 4,
+  "strength": 16,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 14
+  },
+  "special_skills": {
+   "raise_own": {
+    "timings": [
+     "on_engage"
+    ],
+    "skill": "rage",
+    "amount": 3
+   }
+  }
+ },
+ {
+  "id": "general",
+  "no": 1412,
+  "type": "character",
+  "races": [
+   "human"
+  ],
+  "star": 4,
+  "strength": 20,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 6
+  }
+ },
+ {
+  "id": "moon_envoy",
+  "no": 1413,
+  "type": "character",
+  "races": [
+   "elf"
+  ],
+  "star": 4,
+  "strength": 8,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "support": 5
+  },
+  "special_skills": {
+   "awaken": {
+    "timings": [
+     "pre_battle"
+    ]
+   }
+  }
+ },
+ {
+  "id": "high_priest",
+  "no": 1414,
+  "type": "character",
+  "races": [
+   "divine"
+  ],
+  "star": 4,
+  "strength": 8,
+  "timing_1": [
+   "on_enter"
+  ],
+  "special_skills": {
+   "bless": {
+    "timings": [
+     "on_enter"
+    ],
+    "amount": 2
+   }
+  }
+ },
+ {
+  "id": "rafflesia",
+  "no": 1415,
+  "type": "character",
+  "races": [
+   "nature"
+  ],
+  "star": 4,
+  "strength": 12,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "corrode": 6
+  },
+  "special_skills": {
+   "on_resolve_bonus": {
+    "skill": "corrode",
+    "amount": 3
+   }
+  }
+ },
+ {
+  "id": "panda_hero",
+  "no": 1416,
+  "type": "character",
+  "races": [
+   "beast"
+  ],
+  "star": 4,
+  "strength": 12,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 4
+  },
+  "special_skills": {
+   "extra_round": {
+    "scope": "self",
+    "timing": "on_engage"
+   }
+  }
+ },
+ {
+  "id": "pure_sage",
+  "no": 1417,
+  "type": "character",
+  "races": [
+   "human"
+  ],
+  "star": 4,
+  "strength": 20,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 3
+  },
+  "special_skills": {
+   "sturdy": 4,
+   "immune_lethal": null
+  }
+ },
+ {
+  "id": "star_mage",
+  "no": 1418,
+  "type": "character",
+  "races": [
+   "elf"
+  ],
+  "star": 3,
+  "strength": 15,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "support": 5
+  },
+  "special_skills": {
+   "on_trigger_gain": {
+    "skill": "any",
+    "amount": 3
+   }
+  }
+ },
+ {
+  "id": "arbiter",
+  "no": 1419,
+  "type": "character",
+  "races": [
+   "divine"
+  ],
+  "star": 4,
+  "strength": 15,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "inspire": 1
+  },
+  "special_skills": {
+   "gain_all_if_outnumbered": {
+    "timings": [
+     "on_enter"
+    ],
+    "amount": 15
+   }
+  }
+ },
+ {
+  "id": "scarecrow",
+  "no": 1420,
+  "type": "character",
+  "races": [
+   "nature"
+  ],
+  "star": 4,
+  "strength": 14,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "corrode": 4
+  },
+  "special_skills": {
+   "grant": {
+    "timings": [
+     "on_enter"
+    ],
+    "target": "enemies",
+    "skill": "backlash",
+    "amount": 11
+   }
+  }
+ },
+ {
+  "id": "erlang",
+  "no": 1501,
+  "type": "character",
+  "races": [
+   "beast",
+   "human",
+   "divine"
+  ],
+  "star": 5,
+  "strength": 22,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 6,
+   "rally": 3,
+   "inspire": 2
+  },
+  "special_skills": {
+   "sturdy": 5
+  }
+ },
+ {
+  "id": "phoenix",
+  "no": 1502,
+  "type": "character",
+  "races": [
+   "beast",
+   "elf",
+   "divine"
+  ],
+  "star": 5,
+  "strength": 18,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "support": 4,
+   "inspire": 2
+  },
+  "special_skills": {
+   "bless": {
+    "timings": [
+     "on_engage"
+    ],
+    "amount": 1
+   }
+  }
+ },
+ {
+  "id": "hydra",
+  "no": 1503,
+  "type": "character",
+  "races": [
+   "beast",
+   "elf",
+   "nature"
+  ],
+  "star": 5,
+  "strength": 15,
+  "timing_1": [
+   "pre_battle",
+   "on_enter",
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 4,
+   "corrode": 4
+  }
+ },
+ {
+  "id": "yao_bikuni",
+  "no": 1504,
+  "type": "character",
+  "races": [
+   "human",
+   "elf",
+   "nature"
+  ],
+  "star": 5,
+  "strength": 14,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 1,
+   "corrode": 4
+  },
+  "special_skills": {
+   "awaken": {
+    "timings": [
+     "pre_battle",
+     "on_enter"
+    ]
+   }
+  }
+ },
+ {
+  "id": "yum_kaax",
+  "no": 1505,
+  "type": "character",
+  "races": [
+   "human",
+   "divine",
+   "nature"
+  ],
+  "star": 5,
+  "strength": 16,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 1,
+   "inspire": 2
+  },
+  "special_skills": {
+   "raise_skills": {
+    "timings": [
+     "on_enter"
+    ],
+    "skill": "any",
+    "amount": 2
+   }
+  }
+ },
+ {
+  "id": "monkey_king",
+  "no": 1506,
+  "type": "character",
+  "races": [
+   "beast",
+   "divine"
+  ],
+  "star": 5,
+  "strength": 12,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 6
+  },
+  "special_skills": {
+   "shelter": 3
+  }
+ },
+ {
+  "id": "medusa",
+  "no": 1507,
+  "type": "character",
+  "races": [
+   "beast",
+   "nature"
+  ],
+  "star": 5,
+  "strength": 18,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 4
+  },
+  "special_skills": {
+   "clear_skills": {
+    "timings": [
+     "on_enter",
+     "on_engage"
+    ],
+    "target": "enemy_first_two"
+   }
+  }
+ },
+ {
+  "id": "clockwork_witch",
+  "no": 1508,
+  "type": "character",
+  "races": [
+   "human",
+   "elf"
+  ],
+  "star": 5,
+  "strength": 15,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "special_skills": {
+   "double_equipment": null
+  }
+ },
+ {
+  "id": "archdruid",
+  "no": 1510,
+  "type": "character",
+  "races": [
+   "elf",
+   "nature"
+  ],
+  "star": 5,
+  "strength": 13,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "corrode": 13
+  }
+ },
+ {
+  "id": "tiger_king",
+  "no": 1511,
+  "type": "character",
+  "races": [
+   "beast"
+  ],
+  "star": 5,
+  "strength": 14,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_1": {
+   "rage": 4
+  },
+  "special_skills": {
+   "extra_round": {
+    "scope": "allies",
+    "timing": "on_engage"
+   }
+  }
+ },
+ {
+  "id": "knight_king",
+  "no": 1512,
+  "type": "character",
+  "races": [
+   "human"
+  ],
+  "star": 5,
+  "strength": 12,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "rally": 1
+  },
+  "special_skills": {
+   "extra_round": {
+    "scope": "allies",
+    "timing": "on_enter"
+   }
+  }
+ },
+ {
+  "id": "elf_empress",
+  "no": 1513,
+  "type": "character",
+  "races": [
+   "elf"
+  ],
+  "star": 5,
+  "strength": 12,
+  "timing_1": [
+   "pre_battle"
+  ],
+  "skills_1": {
+   "support": 3
+  },
+  "special_skills": {
+   "extra_round": {
+    "scope": "self_and_second",
+    "timing": "pre_battle"
+   }
+  }
+ },
+ {
+  "id": "seraph",
+  "no": 1514,
+  "type": "character",
+  "races": [
+   "divine"
+  ],
+  "star": 5,
+  "strength": 15,
+  "timing_1": [
+   "on_enter"
+  ],
+  "skills_1": {
+   "inspire": 8
+  }
+ },
+ {
+  "id": "dream_mushroom",
+  "no": 1515,
+  "type": "character",
+  "races": [
+   "nature"
+  ],
+  "star": 5,
+  "strength": 13,
+  "timing_1": [
+   "on_enter"
+  ],
+  "special_skills": {
+   "extra_resolve": {
+    "scope": "allies",
+    "skill": "corrode"
+   }
+  }
+ },
+ {
+  "id": "lionheart",
+  "no": 2101,
+  "type": "equipment",
+  "star": 1,
+  "skills_2": {
+   "rage": 3
+  }
+ },
+ {
+  "id": "wooden_sword",
+  "no": 2106,
+  "type": "equipment",
+  "star": 1,
+  "strength": 4
+ },
+ {
+  "id": "war_banner",
+  "no": 2201,
+  "type": "equipment",
+  "star": 2,
+  "skills_2": {
+   "rally": 3
+  }
+ },
+ {
+  "id": "venom_sac",
+  "no": 2202,
+  "type": "equipment",
+  "star": 2,
+  "skills_2": {
+   "corrode": 5
+  }
+ },
+ {
+  "id": "spiked_gauntlet",
+  "no": 2203,
+  "type": "equipment",
+  "star": 2,
+  "strength": 16,
+  "special_skills": {
+   "backlash": 3
+  }
+ },
+ {
+  "id": "riot_helmet",
+  "no": 2204,
+  "type": "equipment",
+  "star": 2,
+  "strength": 2,
+  "special_skills": {
+   "sturdy": 4
+  }
+ },
+ {
+  "id": "flash_orb",
+  "no": 2205,
+  "type": "equipment",
+  "star": 2,
+  "strength": 2,
+  "special_skills": {
+   "awaken": {
+    "timings": [
+     "on_enter"
+    ]
+   }
+  }
+ },
+ {
+  "id": "venom_fang",
+  "no": 2207,
+  "type": "equipment",
+  "star": 2,
+  "strength": 5,
+  "special_skills": {
+   "lethal": null
+  }
+ },
+ {
+  "id": "iron_sword",
+  "no": 2208,
+  "type": "equipment",
+  "star": 2,
+  "strength": 12
+ },
+ {
+  "id": "hollow",
+  "no": 2209,
+  "type": "equipment",
+  "star": 2,
+  "strength": 13,
+  "skills_1": "clear"
+ },
+ {
+  "id": "holy_water",
+  "no": 2210,
+  "type": "equipment",
+  "star": 2,
+  "strength": 2,
+  "skills_2": {
+   "inspire": 2
+  }
+ },
+ {
+  "id": "wolf_fang_necklace",
+  "no": 2301,
+  "type": "equipment",
+  "star": 3,
+  "strength": 7,
+  "skills_2": {
+   "rage": 8
+  }
+ },
+ {
+  "id": "war_drum",
+  "no": 2302,
+  "type": "equipment",
+  "star": 3,
+  "strength": 6,
+  "skills_2": {
+   "rally": 4
+  }
+ },
+ {
+  "id": "lyre",
+  "no": 2303,
+  "type": "equipment",
+  "star": 3,
+  "strength": 4,
+  "skills_2": {
+   "rally": 2,
+   "support": 8
+  }
+ },
+ {
+  "id": "angel_wings",
+  "no": 2304,
+  "type": "equipment",
+  "star": 3,
+  "strength": 6,
+  "skills_2": {
+   "inspire": 3
+  }
+ },
+ {
+  "id": "scorpion_stinger",
+  "no": 2305,
+  "type": "equipment",
+  "star": 3,
+  "strength": 2,
+  "skills_2": {
+   "corrode": 6
+  }
+ },
+ {
+  "id": "horned_helmet",
+  "no": 2307,
+  "type": "equipment",
+  "star": 3,
+  "strength": 5,
+  "special_skills": {
+   "sturdy": 7
+  }
+ },
+ {
+  "id": "prayer_beads",
+  "no": 2309,
+  "type": "equipment",
+  "star": 3,
+  "strength": 4,
+  "special_skills": {
+   "damage_half_strength": {
+    "timings": [
+     "on_engage"
+    ]
+   }
+  }
+ },
+ {
+  "id": "lute",
+  "no": 2310,
+  "type": "equipment",
+  "star": 3,
+  "strength": 6,
+  "skills_2": {
+   "rally": 3
+  },
+  "special_skills": {
+   "awaken": {
+    "timings": [
+     "on_enter"
+    ]
+   }
+  }
+ },
+ {
+  "id": "oracle_book",
+  "no": 2311,
+  "type": "equipment",
+  "star": 3,
+  "strength": 6,
+  "special_skills": {
+   "bless": {
+    "timings": [
+     "on_enter"
+    ],
+    "amount": 1
+   }
+  }
+ },
+ {
+  "id": "parrot_puppet",
+  "no": 2312,
+  "type": "equipment",
+  "star": 3,
+  "strength": 8,
+  "special_skills": {
+   "copy_skills": {
+    "timings": [
+     "pre_battle",
+     "on_enter"
+    ]
+   }
+  }
+ },
+ {
+  "id": "silver_sword",
+  "no": 2313,
+  "type": "equipment",
+  "star": 3,
+  "strength": 18
+ },
+ {
+  "id": "dust_boots",
+  "no": 2314,
+  "type": "equipment",
+  "star": 3,
+  "strength": 6,
+  "timing_1": [
+   "pre_battle"
+  ]
+ },
+ {
+  "id": "berserker_axe",
+  "no": 2315,
+  "type": "equipment",
+  "star": 3,
+  "strength": 8,
+  "timing_1": [
+   "on_engage"
+  ],
+  "skills_2": {
+   "rage": 4
+  }
+ },
+ {
+  "id": "white_wolf_totem",
+  "no": 2401,
+  "type": "equipment",
+  "star": 4,
+  "strength": 6,
+  "special_skills": {
+   "grant": {
+    "timings": [
+     "pre_battle"
+    ],
+    "target": "allies",
+    "skill": "sturdy",
+    "amount": 2
+   }
+  }
+ },
+ {
+  "id": "general_token",
+  "no": 2402,
+  "type": "equipment",
+  "star": 4,
+  "strength": 4,
+  "skills_2": {
+   "rally": 6
+  }
+ },
+ {
+  "id": "holy_hymn",
+  "no": 2403,
+  "type": "equipment",
+  "star": 4,
+  "skills_2": {
+   "inspire": 4
+  }
+ },
+ {
+  "id": "rafflesia_bud",
+  "no": 2404,
+  "type": "equipment",
+  "star": 4,
+  "skills_2": {
+   "corrode": 8
+  }
+ },
+ {
+  "id": "omniscient_robe",
+  "no": 2405,
+  "type": "equipment",
+  "star": 4,
+  "skills_2": {
+   "rage": 2,
+   "rally": 1,
+   "inspire": 1,
+   "corrode": 2
+  }
+ },
+ {
+  "id": "moon_dial",
+  "no": 2406,
+  "type": "equipment",
+  "star": 4,
+  "skills_2": {
+   "support": 10
+  },
+  "special_skills": {
+   "awaken": {
+    "timings": [
+     "pre_battle"
+    ]
+   }
+  }
+ },
+ {
+  "id": "cross_emblem",
+  "no": 2407,
+  "type": "equipment",
+  "star": 4,
+  "strength": 6,
+  "special_skills": {
+   "shelter": 2
+  }
+ },
+ {
+  "id": "temple_core",
+  "no": 2408,
+  "type": "equipment",
+  "star": 4,
+  "strength": 4,
+  "special_skills": {
+   "execute": {
+    "timings": [
+     "on_enter"
+    ]
+   }
+  }
+ },
+ {
+  "id": "golden_sword",
+  "no": 2409,
+  "type": "equipment",
+  "star": 4,
+  "strength": 24
+ },
+ {
+  "id": "elf_veil",
+  "no": 2410,
+  "type": "equipment",
+  "star": 4,
+  "strength": 6,
+  "timing_2": [
+   "pre_battle"
+  ]
+ },
+ {
+  "id": "tiger_tally",
+  "no": 2411,
+  "type": "equipment",
+  "star": 4,
+  "strength": 10,
+  "timing_2": [
+   "on_enter"
+  ],
+  "skills_2": {
+   "rally": 2
+  }
+ },
+ {
+  "id": "berserk_serum",
+  "no": 2412,
+  "type": "equipment",
+  "star": 4,
+  "strength": 5,
+  "timing_2": [
+   "on_engage"
+  ]
+ },
+ {
+  "id": "ruyi_staff",
+  "no": 2501,
+  "type": "equipment",
+  "star": 5,
+  "strength": 15,
+  "skills_2": {
+   "rage": 13
+  }
+ },
+ {
+  "id": "tiger_tail_whip",
+  "no": 2502,
+  "type": "equipment",
+  "star": 5,
+  "strength": 10,
+  "timing_2": [
+   "on_engage"
+  ],
+  "special_skills": {
+   "extra_round": {
+    "scope": "self_and_front",
+    "timing": "on_engage"
+   }
+  }
+ },
+ {
+  "id": "petrifying_eye",
+  "no": 2503,
+  "type": "equipment",
+  "star": 5,
+  "strength": 15,
+  "special_skills": {
+   "clear_skills": {
+    "timings": [
+     "on_enter",
+     "on_engage"
+    ],
+    "target": "enemy_first_two"
+   }
+  }
+ },
+ {
+  "id": "holy_grail",
+  "no": 2504,
+  "type": "equipment",
+  "star": 5,
+  "strength": 10,
+  "timing_2": [
+   "on_enter"
+  ],
+  "special_skills": {
+   "extra_round": {
+    "scope": "self_and_front",
+    "timing": "on_enter"
+   }
+  }
+ },
+ {
+  "id": "elf_scepter",
+  "no": 2507,
+  "type": "equipment",
+  "star": 5,
+  "special_skills": {
+   "on_enemy_trigger_gain_all": {
+    "skill": "any",
+    "amount": 1
+   }
+  }
+ },
+ {
+  "id": "holy_sword",
+  "no": 2508,
+  "type": "equipment",
+  "star": 5,
+  "strength": 37
+ },
+ {
+  "id": "void_heart",
+  "no": 2509,
+  "type": "equipment",
+  "star": 5,
+  "strength": 10,
+  "special_skills": {
+   "shelter": 4
+  }
+ }
+]
