@@ -29,7 +29,6 @@ const STEPS: [(Step, &[Special]); 7] = [
         &[
             Special::CopySkills,
             Special::GainSkillSum,
-            Special::GainIfOutnumbered,
             Special::GainAllIfOutnumbered,
             Special::DamageHalfStrength,
             Special::Execute,
@@ -38,7 +37,7 @@ const STEPS: [(Step, &[Special]); 7] = [
     (Step::Grant, &[Special::Bless, Special::Grant, Special::CopySkills]),
     (Step::Clear, &[Special::ClearSkills]),
     (Step::Raise, &[Special::RaiseSkills]),
-    (Step::Gain, &[Special::GainSkillSum, Special::GainIfOutnumbered, Special::GainAllIfOutnumbered]),
+    (Step::Gain, &[Special::GainSkillSum, Special::GainAllIfOutnumbered]),
     (Step::Damage, &[Special::DamageHalfStrength, Special::Execute]),
     (Step::Awaken, &[Special::Awaken]),
 ];
@@ -632,7 +631,7 @@ impl Battle {
                 // 炼药师：己方全体基础技能数值之和（含财富）
                 records.skill_sum = self.fields[side].into_iter().map(|p| self.unit(p).base_skills.sum()).sum();
             }
-            Special::GainIfOutnumbered | Special::GainAllIfOutnumbered => {
+            Special::GainAllIfOutnumbered => {
                 records.outnumbered = enemies.len() > self.fields[side].len();
             }
             Special::DamageHalfStrength => {
@@ -725,11 +724,6 @@ impl Battle {
             Special::GainSkillSum => {
                 if records.skill_sum > 0 {
                     self.buff(u, records.skill_sum);
-                }
-            }
-            Special::GainIfOutnumbered => {
-                if records.outnumbered {
-                    self.buff(u, params.amount());
                 }
             }
             Special::GainAllIfOutnumbered => {

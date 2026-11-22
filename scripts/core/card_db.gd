@@ -13,13 +13,12 @@ const BASE_SKILLS := ["rage", "rally", "support", "inspire", "corrode", "annihil
 const SPECIAL_SKILLS := ["backlash", "sturdy", "assist", "immune_lethal", "on_trigger_boost", "awaken", "shelter", "bless",
 	"lethal", "on_trigger_gain", "on_resolve_bonus", "halve_pre_battle_damage", "on_trigger_raise", "on_resolve_gain",
 	"on_enemy_resolve_gain_all", "extra_resolve", "extra_round", "double_skills", "equipment_times", "copy_skills", "grant",
-	"clear_skills", "raise_skills", "gain_skill_sum", "gain_if_outnumbered", "gain_all_if_outnumbered", "damage_half_strength",
-	"execute"]
+	"clear_skills", "raise_skills", "gain_skill_sum", "gain_all_if_outnumbered", "damage_half_strength", "execute"]
 ## 描述型特殊技能：一种效果一个 id 加参数，不起词条名，卡面写整句（翻译 key 是 effect.<id>，{参数名} 换成参数）
 const DESCRIPTIVE_SPECIALS := ["on_trigger_boost", "on_trigger_gain", "on_resolve_bonus", "halve_pre_battle_damage",
 	"on_trigger_raise", "on_resolve_gain", "on_enemy_resolve_gain_all", "extra_resolve", "extra_round", "double_skills",
-	"equipment_times", "copy_skills", "grant", "clear_skills", "raise_skills", "gain_skill_sum", "gain_if_outnumbered",
-	"gain_all_if_outnumbered", "damage_half_strength", "execute"]
+	"equipment_times", "copy_skills", "grant", "clear_skills", "raise_skills", "gain_skill_sum", "gain_all_if_outnumbered",
+	"damage_half_strength", "execute"]
 ## 写成参数字典的特殊技能和它们的参数；不在这里的写数值（如庇护的层数）或 null（如致命、千机之匣）。
 ## timings：带时机的特殊技能在哪些时机生效（属于特殊技能本身，和卡牌的时机无关）；
 ## skill：基础技能（"any" 是任意 / 所有基础技能；获得的可以是词条）；amount：数值（获得没有数值的词条时是 null）；
@@ -41,7 +40,6 @@ const SPECIAL_PARAMS := {
 	"clear_skills": ["timings", "target"],
 	"raise_skills": ["timings", "skill", "amount"],
 	"gain_skill_sum": ["timings"],
-	"gain_if_outnumbered": ["timings", "amount"],
 	"gain_all_if_outnumbered": ["timings", "amount"],
 	"damage_half_strength": ["timings"],
 	"execute": ["timings"],

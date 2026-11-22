@@ -43,11 +43,11 @@ const NO_DEATH_ENGAGES := 20
 ## （_on_resolve、_on_trigger、_after_trigger、_hit、resolve_beats 里的多一次、resolve_timing 里的多一轮、damage 里的减半）
 ## "记"这一步只读取场面（record_special），后面的步骤按记录结算，所以记下的效果也列在它生效的那一步里
 const STEPS := {
-	"record": ["copy_skills", "gain_skill_sum", "gain_if_outnumbered", "gain_all_if_outnumbered", "damage_half_strength", "execute"],
+	"record": ["copy_skills", "gain_skill_sum", "gain_all_if_outnumbered", "damage_half_strength", "execute"],
 	"grant": ["bless", "grant", "copy_skills"],
 	"clear": ["clear_skills"],
 	"raise": ["raise_skills"],
-	"gain": ["gain_skill_sum", "gain_if_outnumbered", "gain_all_if_outnumbered"],
+	"gain": ["gain_skill_sum", "gain_all_if_outnumbered"],
 	"damage": ["damage_half_strength", "execute"],
 	"awaken": ["awaken"],
 }
@@ -367,7 +367,7 @@ func record_special(u: Unit, skill: String) -> Variant:
 				for s in partner.base_skills:
 					total += partner.base_skills[s]
 			return total
-		"gain_if_outnumbered", "gain_all_if_outnumbered":
+		"gain_all_if_outnumbered":
 			return enemies.size() > fields[u.side].size()
 		"execute":
 			# 眼镜王蛇：对方交战位此刻的战斗力高于自身时才有
@@ -441,8 +441,6 @@ func apply_special(u: Unit, skill: String, params: Dictionary, woken: Array) -> 
 		"gain_skill_sum":
 			var amount: int = _record(u, skill)
 			return [buff(u, u, amount, skill)] if amount > 0 else []
-		"gain_if_outnumbered":
-			return [buff(u, u, params.amount, skill)] if _record(u, skill) else []
 		"gain_all_if_outnumbered":
 			# 神裁者：对方角色多于己方时，己方全体战斗力 +N
 			if not _record(u, skill):

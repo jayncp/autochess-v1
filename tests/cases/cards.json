@@ -64,7 +64,6 @@
 {"id": "t_parrot_puppet", "no": 0, "type": "equipment", "star": 3, "special_skills": {"copy_skills": {"timings": ["pre_battle"]}}},
 {"id": "t_swamp_king", "no": 0, "type": "character", "star": 3, "races": ["beast", "nature"], "strength": 10, "timing_1": ["on_engage"], "special_skills": {"damage_half_strength": {"timings": ["on_engage"]}}},
 {"id": "t_alchemist", "no": 0, "type": "character", "star": 3, "races": ["human", "nature"], "strength": 5, "timing_1": ["on_enter"], "special_skills": {"gain_skill_sum": {"timings": ["on_enter"]}}},
-{"id": "t_arbiter", "no": 0, "type": "character", "star": 4, "races": ["divine"], "strength": 15, "timing_1": ["on_enter"], "special_skills": {"gain_if_outnumbered": {"timings": ["on_enter"], "amount": 40}}},
 {"id": "t_alpha_wolf", "no": 0, "type": "character", "star": 3, "races": ["beast"], "strength": 8, "timing_1": ["on_engage"], "skills_1": {"rage": 2}, "special_skills": {"on_trigger_gain": {"skill": "rage", "amount": 2}}},
 {"id": "t_swamp_tentacle", "no": 0, "type": "character", "star": 3, "races": ["nature"], "strength": 6, "timing_1": ["on_enter"], "skills_1": {"corrode": 3}, "special_skills": {"on_trigger_gain": {"skill": "corrode", "amount": 3}}},
 {"id": "t_star_mage", "no": 0, "type": "character", "star": 4, "races": ["elf"], "strength": 12, "timing_1": ["pre_battle"], "skills_1": {"support": 3}, "special_skills": {"on_resolve_gain": {"skill": "any", "amount": 2}}},

@@ -52,15 +52,14 @@
 
 数据在 `tools/balance/`：
 
-- `trial.json`：试验数值里和正式数据不同的卡（整张卡的数组）。搜索默认用它；想测别的改动，另写一份用 `--change` 指定。
-- `overrides.json`：试验表里特殊技能的文字对应的数据。设计者通常只改文字，读表时按这份对照表补数据。
+- `trial.json`：试验数值里和正式数据不同的卡（整张卡的数组）。搜索默认用它；想测别的改动，另写一份用 `--change` 指定。上一轮的候选数值已经写进正式数据，现在是 `[]`。
 - `pools/`：上一轮留下的阵容，作为搜索的起点。
 - `runs/`：每一轮的结果，不进 git。
 
 **一轮的流程**
 
 1. 设计者改 `docs/design/balance-trial.xlsx`。
-2. `just balance sheet read ../docs/design/balance-trial.xlsx balance/trial.json balance/overrides.json`：读回改动。先核对它列出的差别和"要留意的"几处；文字改了的特殊技能要在对照表里补上数据（新效果要先按改规则的流程实现，见 `engine/README.md`）。
+2. `just balance sheet read ../docs/design/balance-trial.xlsx balance/trial.json`：读回改动，特殊技能按"数据"列算。先核对它列出的差别；设计者只改了文字的特殊技能，要在数据列里补上对应的数据（新效果要先按改规则的流程实现，见 `engine/README.md`）。改的卡多时，也可以把"文字 → 数据"写成一份对照表（`{卡 id: {"text": 文字, "special": 数据}}`），作为第三个参数传进去：文字和对照表一致的按对照表的数据算，不一致的会提示。
 3. `just balance run <名字> --warm balance/pools balance/runs/<上一轮>/pools ...`：起点写上最近三四轮的阵容目录。
 4. `just balance compare balance/runs/<名字>/report.md balance/runs/<上一轮>/report.md --changed 5`：看哪些卡变了。
 5. 出场率很低、带卡得分又明显低于 0.5 的卡，下结论之前用 `check` 复核；带 `--save` 存下找到的阵容，把那个目录加进下一次的 `--warm` 重跑，才是这些卡真实的出场率。
@@ -74,6 +73,6 @@
 - 用 rsync 同步代码时不要保留修改时间（`rsync -rlzc`）：Rust 源码的时间比上次编译早的话，Python 绑定不会重新编译。
 - 远程连接不稳定时，用 `nohup` 在后台跑，再隔一会儿看 `runs/<名字>/` 下的日志；`report.md` 出现就是跑完了。
 
-**按正式数据搜索**：`stage` 加 `--official`（`run`、`check` 用 `--change` 指向一个内容是 `[]` 的文件）。规则只有一套，候选数值和正式数据只是卡不同。
+**按正式数据搜索**：`trial.json` 是空的时候默认就是；有候选数值时，`stage` 加 `--official`（`run`、`check` 用 `--change` 指向一个内容是 `[]` 的文件）。规则只有一套，候选数值和正式数据只是卡不同。
 
 **对拍候选数值**：`just diff-sim 1000000 --cards balance/trial.json`，随机对局从套用候选数值之后的卡里抽，Godot 版和 Rust 版逐场比较。
