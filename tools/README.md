@@ -21,6 +21,7 @@
 | `diff_sim.py` | 对拍（`just diff-sim`）：同一批随机对局分别用两个版本跑，逐场比较，不一致时用简要轨迹找出第一处不同 |
 | `bench.py` | 测速（`just bench`）：Rust 版单线程、多线程和 Godot 版单进程的场/秒 |
 | `effective.py` | 有效战力：与被测卡（或装备）表现相同的白板战力 |
+| `balance/` | 数值试验：分阶段的阵容搜索（见下面"数值试验"） |
 | `art/` | 美术素材生成（依赖组 `art`：fonttools、resvg-py）：`fonts.py` 字体子集，`icons.py` 图标，`ornaments.py` 卡牌边框和法阵，`ui.py` 控件和卡面面板贴图，`fx.py` 战斗飘字的饰板。用 `just fonts`、`just art` 运行，规范见 `docs/design/art-direction.md` |
 
 ## 实验
@@ -33,3 +34,44 @@
 | `holy_water` | 装备有效战力，以及圣水 +0 到 +4 各版本按宿主的价值 |
 
 实验结果写成 `docs/design/balance-report-<日期>.md`（带时效的快照）。
+
+## 数值试验
+
+按对局阶段搜索互相克制后的均衡阵容，看每张卡的出场率和带卡得分。方法、指标的读法和踩过的坑见 [`docs/plans/balance-tuning.md`](../docs/plans/balance-tuning.md)，调数值的经验见 [`docs/design/balance-notes.md`](../docs/design/balance-notes.md)。
+
+都用 `just balance <模块> [参数]` 运行（等于在 `tools/` 下 `uv run --group balance python -m autochess_tools.balance.<模块>`）：
+
+| 模块 | 内容 |
+|---|---|
+| `run <名字>` | 六个阶段各开一个进程同时搜索。结果在 `tools/balance/runs/<名字>/`：`report.md`、各阶段的报告和进度日志、`pools/`（这次的阵容） |
+| `stage <阶段>` | 只搜一个阶段，报告打印到终端 |
+| `check --cards id,id` | 复核一张卡是不是真的弱：把它挂到均衡里每套阵容的每个位置上再搜 |
+| `compare <新报告> [旧报告]` | 汇总一份报告，或者列出两份报告之间每张卡的变化 |
+| `trend <输出.html> <说明> <报告>` | 把报告做成一页趋势图：每张卡各阶段的出场率和带卡得分 |
+| `sheet read/write` | 试验表（Excel）和"改过的卡"之间互转 |
+
+数据在 `tools/balance/`：
+
+- `trial.json`：试验数值里和正式数据不同的卡（整张卡的数组）。搜索默认用它；想测别的改动，另写一份用 `--change` 指定。
+- `overrides.json`：试验表里特殊技能的文字对应的数据。设计者通常只改文字，读表时按这份对照表补数据。
+- `pools/`：上一轮留下的阵容，作为搜索的起点。
+- `runs/`：每一轮的结果，不进 git。
+
+**一轮的流程**
+
+1. 设计者改 `docs/design/balance-trial.xlsx`。
+2. `just balance sheet read ../docs/design/balance-trial.xlsx balance/trial.json balance/overrides.json`：读回改动。先核对它列出的差别和"要留意的"几处；文字改了的特殊技能要在对照表里补上数据（新效果还要先在 Rust 版里实现）。
+3. `just balance run <名字> --warm balance/pools balance/runs/<上一轮>/pools ...`：起点写上最近三四轮的阵容目录。
+4. `just balance compare balance/runs/<名字>/report.md balance/runs/<上一轮>/report.md --changed 5`：看哪些卡变了。
+5. 出场率很低、带卡得分又明显低于 0.5 的卡，下结论之前用 `check` 复核；带 `--save` 存下找到的阵容，把那个目录加进下一次的 `--warm` 重跑，才是这些卡真实的出场率。
+6. 一轮定下来后，把 `runs/<名字>/pools/` 复制成 `balance/pools/`。
+
+**在哪里跑**
+
+- 时间几乎都花在模拟上，只吃 CPU，核心越多越快。12 核的笔记本上开局、前期各十几秒，后三个阶段要几分钟到十几分钟；192 核的服务器上六个阶段一共 2–5 分钟。
+- `run` 默认把核心平分给各个阶段（`--threads` 可以改）。只想跑几个阶段用 `--stages`。
+- 在别的机器上跑：把仓库拷过去（`engine/`、`tools/`、`data/`、`i18n/`），装好 Rust 和 uv，在 `tools/` 下 `uv sync --all-groups`，之后命令相同。没有 `just` 就直接用上面那条 `uv run` 命令。
+- 用 rsync 同步代码时不要保留修改时间（`rsync -rlzc`）：Rust 源码的时间比上次编译早的话，Python 绑定不会重新编译。
+- 远程连接不稳定时，用 `nohup` 在后台跑，再隔一会儿看 `runs/<名字>/` 下的日志；`report.md` 出现就是跑完了。
+
+**规则开关**：试验里有六条规则的口径和正式规则不同（`engine/core/src/trial.rs`），导入 `autochess_tools.balance` 时会全部打开。想按正式规则搜索，先设环境变量 `AUTOCHESS_OFFICIAL_RULES=1`。

@@ -1,0 +1,356 @@
+{
+ "minotaur": {
+  "text": "坚固4；交战：自身坚固数值+1",
+  "special": {
+   "sturdy": 4,
+   "raise_own": {
+    "timings": [
+     "on_engage"
+    ],
+    "skill": "sturdy",
+    "amount": 1
+   }
+  }
+ },
+ "wind_envoy": {
+  "text": "战前、入场：己方全体的振奋值 +1",
+  "special": {
+   "raise_skills": {
+    "timings": [
+     "pre_battle",
+     "on_enter"
+    ],
+    "skill": "inspire",
+    "amount": 1
+   }
+  }
+ },
+ "rafflesia": {
+  "text": "己方角色结算腐蚀时，伤害 +3",
+  "special": {
+   "on_resolve_bonus": {
+    "skill": "corrode",
+    "amount": 3
+   }
+  }
+ },
+ "pure_sage": {
+  "text": "坚固4；免疫致命",
+  "special": {
+   "sturdy": 4,
+   "immune_lethal": null
+  }
+ },
+ "star_mage": {
+  "text": "己方角色结算基础技能时，自身战斗力 +3",
+  "special": {
+   "on_trigger_gain": {
+    "skill": "any",
+    "amount": 3
+   }
+  }
+ },
+ "scarecrow": {
+  "text": "入场：对方全体获得反噬11",
+  "special": {
+   "grant": {
+    "timings": [
+     "on_enter"
+    ],
+    "target": "enemies",
+    "skill": "backlash",
+    "amount": 11
+   }
+  }
+ },
+ "phoenix": {
+  "text": "交战：神佑1",
+  "special": {
+   "bless": {
+    "timings": [
+     "on_engage"
+    ],
+    "amount": 1
+   }
+  }
+ },
+ "monkey_king": {
+  "text": "庇护3",
+  "special": {
+   "shelter": 3
+  }
+ },
+ "chanter": {
+  "text": "入场：己方全体获得集结2",
+  "special": {
+   "grant": {
+    "timings": [
+     "on_enter"
+    ],
+    "target": "allies",
+    "skill": "rally",
+    "amount": 2
+   }
+  }
+ },
+ "erlang": {
+  "text": "坚固5",
+  "special": {
+   "sturdy": 5
+  }
+ },
+ "horned_helmet": {
+  "text": "坚固7",
+  "special": {
+   "sturdy": 7
+  }
+ },
+ "prayer_beads": {
+  "text": "交战：对方交战位受到其战斗力一半的伤害",
+  "special": {
+   "damage_half_strength": {
+    "timings": [
+     "on_engage"
+    ]
+   }
+  }
+ },
+ "porcupine": {
+  "text": "反噬3",
+  "special": {
+   "backlash": 3
+  }
+ },
+ "parrot": {
+  "text": "战前、入场：额外获得对方交战位基础技能",
+  "special": {
+   "copy_skills": {
+    "timings": [
+     "pre_battle",
+     "on_enter"
+    ]
+   }
+  }
+ },
+ "holy_monk": {
+  "text": "坚固4；庇护1",
+  "special": {
+   "sturdy": 4,
+   "shelter": 1
+  }
+ },
+ "parrot_puppet": {
+  "text": "战前、入场：额外获得对方交战位基础技能",
+  "special": {
+   "copy_skills": {
+    "timings": [
+     "pre_battle",
+     "on_enter"
+    ]
+   }
+  }
+ },
+ "tiger_tail_whip": {
+  "text": "自身及前一位角色交战多触发1轮",
+  "special": {
+   "extra_round": {
+    "scope": "self_and_front",
+    "timing": "on_engage"
+   }
+  }
+ },
+ "holy_grail": {
+  "text": "自身及前一位角色入场多触发1轮",
+  "special": {
+   "extra_round": {
+    "scope": "self_and_front",
+    "timing": "on_enter"
+   }
+  }
+ },
+ "assassin": {
+  "text": "坚固2；致命",
+  "special": {
+   "sturdy": 2,
+   "lethal": null
+  }
+ },
+ "archangel": {
+  "text": "庇护1",
+  "special": {
+   "shelter": 1
+  }
+ },
+ "seraph": {
+  "text": null,
+  "special": null
+ },
+ "captain": {
+  "text": "己方角色触发集结时，其战斗力额外 +2",
+  "special": {
+   "on_trigger_boost": {
+    "skill": "rally",
+    "amount": 2
+   }
+  }
+ },
+ "alpha_wolf": {
+  "text": "己方角色触发狂暴时，其战斗力 +4",
+  "special": {
+   "on_trigger_boost": {
+    "skill": "rage",
+    "amount": 4
+   }
+  }
+ },
+ "swamp_tentacle": {
+  "text": "致命；己方角色触发腐蚀时，自身战斗力 +4",
+  "special": {
+   "lethal": null,
+   "on_trigger_gain": {
+    "skill": "corrode",
+    "amount": 4
+   }
+  }
+ },
+ "holy_lion": {
+  "text": "庇护1；交战：己方全体的狂暴值 +2",
+  "special": {
+   "shelter": 1,
+   "raise_skills": {
+    "timings": [
+     "on_engage"
+    ],
+    "skill": "rage",
+    "amount": 2
+   }
+  }
+ },
+ "vanguard": {
+  "text": "入场：己方全体的集结值 +1",
+  "special": {
+   "raise_skills": {
+    "timings": [
+     "on_enter"
+    ],
+    "skill": "rally",
+    "amount": 1
+   }
+  }
+ },
+ "snow_yak": {
+  "text": "庇护1；战前受到伤害减半",
+  "special": {
+   "shelter": 1,
+   "halve_pre_battle_damage": null
+  }
+ },
+ "white_wolf_king": {
+  "text": "交战：自身狂暴数值+3",
+  "special": {
+   "raise_own": {
+    "timings": [
+     "on_engage"
+    ],
+    "skill": "rage",
+    "amount": 3
+   }
+  }
+ },
+ "white_wolf_totem": {
+  "text": "战前：己方全体角色获得坚固2",
+  "special": {
+   "grant": {
+    "timings": [
+     "pre_battle"
+    ],
+    "target": "allies",
+    "skill": "sturdy",
+    "amount": 2
+   }
+  }
+ },
+ "king_cobra": {
+  "text": "致命；入场：若对方战斗力高于自身，将其击杀",
+  "special": {
+   "lethal": null,
+   "execute": {
+    "timings": [
+     "on_enter"
+    ]
+   }
+  }
+ },
+ "void_heart": {
+  "text": "庇护4",
+  "special": {
+   "shelter": 4
+  }
+ },
+ "temple_core": {
+  "text": "入场：若对方战斗力高于自身，将其击杀",
+  "special": {
+   "execute": {
+    "timings": [
+     "on_enter"
+    ]
+   }
+  }
+ },
+ "elf_scepter": {
+  "text": "对方角色结算基础技能时，己方全体战斗力 +1",
+  "special": {
+   "on_enemy_trigger_gain_all": {
+    "skill": "any",
+    "amount": 1
+   }
+  }
+ },
+ "elf_empress": {
+  "text": "自身以及开战时位于己方第二位的角色，战前多触发一轮",
+  "special": {
+   "extra_round": {
+    "scope": "self_and_second",
+    "timing": "pre_battle"
+   }
+  }
+ },
+ "toad": {
+  "text": "己方角色结算腐蚀时，伤害 +1",
+  "special": {
+   "on_resolve_bonus": {
+    "skill": "corrode",
+    "amount": 1
+   }
+  }
+ },
+ "spirit_deer": {
+  "text": "战前:己方全体狂暴值 +3",
+  "special": {
+   "raise_skills": {
+    "timings": [
+     "pre_battle"
+    ],
+    "skill": "rage",
+    "amount": 3
+   }
+  }
+ },
+ "arbiter": {
+  "text": "入场：对方角色多于己方时，己方全体战力 +15",
+  "special": {
+   "gain_all_if_outnumbered": {
+    "timings": [
+     "on_enter"
+    ],
+    "amount": 15
+   }
+  }
+ },
+ "spiked_gauntlet": {
+  "text": "反噬3",
+  "special": {
+   "backlash": 3
+  }
+ }
+}
