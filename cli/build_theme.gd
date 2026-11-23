@@ -141,7 +141,7 @@ func build() -> Theme:
 	t.set_stylebox("pressed", "TagButton", _outlined(Color(GOLD, 0.1), GOLD, 1, 20, 14))
 	t.set_stylebox("focus", "TagButton", StyleBoxEmpty.new())
 
-	# 只有图标的方形按钮（返回、速度、跳过）
+	# 只有图标的方形按钮（返回、速度、跳过、关闭）
 	t.set_type_variation("IconButton", "Button")
 	for state in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
 		var source: String = "button" if state == "normal" else "button_" + ("pressed" if state == "hover_pressed" else state)
@@ -200,6 +200,19 @@ func build() -> Theme:
 	t.set_color("font_placeholder_color", "LineEdit", Color(1, 1, 1, 0.42))
 	t.set_color("caret_color", "LineEdit", GOLD)
 	t.set_color("selection_color", "LineEdit", Color(GOLD, 0.35))
+	# 多行输入框（阵容码）：同输入框，上下多留一点
+	for state in ["normal", "focus", "read_only"]:
+		var edit := _box("input_focus" if state == "focus" else "input", 10, 18)
+		edit.content_margin_top = 12
+		edit.content_margin_bottom = 12
+		t.set_stylebox(state, "TextEdit", edit)
+	t.set_font_size("font_size", "TextEdit", 24)
+	t.set_color("font_color", "TextEdit", Color.WHITE)
+	t.set_color("font_readonly_color", "TextEdit", Color(1, 1, 1, 0.85))
+	t.set_color("font_placeholder_color", "TextEdit", Color(1, 1, 1, 0.42))
+	t.set_color("caret_color", "TextEdit", GOLD)
+	t.set_color("selection_color", "TextEdit", Color(GOLD, 0.35))
+	t.set_constant("line_spacing", "TextEdit", 8)
 	t.set_font("font", "OptionButton", fonts.sans)
 	t.set_font_size("font_size", "OptionButton", 24)
 	_button_colors(t, "OptionButton", Color.WHITE, Color.WHITE, Color.WHITE, TEXT_DIM)

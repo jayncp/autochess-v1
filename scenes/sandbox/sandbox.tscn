@@ -115,6 +115,14 @@ theme_type_variation = &"SmallButton"
 text = "ui.sandbox.clear"
 script = ExtResource("8_button")
 
+[node name="LineupCode" type="Button" parent="RightColumn"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"SmallButton"
+text = "ui.lineup_code.title"
+script = ExtResource("8_button")
+
 [node name="Compact" type="CheckButton" parent="RightColumn"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -125,3 +133,4 @@ text = "ui.board.compact"
 [connection signal="pressed" from="RightColumn/StartBattle" to="." method="_on_start_battle_pressed"]
 [connection signal="pressed" from="RightColumn/Swap" to="." method="swap_sides"]
 [connection signal="pressed" from="RightColumn/Clear" to="." method="_on_clear_pressed"]
+[connection signal="pressed" from="RightColumn/LineupCode" to="." method="open_lineup_code"]

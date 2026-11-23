@@ -5,8 +5,8 @@
 
 ## 现状
 
-- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；阶段 3 第二轮（3★/4★/5★）已完成：设计记录 `docs/plans/stage-3-high-stars.md`，开发记录 `docs/plans/stage-3-high-stars-dev.md`，现在共 87 张角色、57 件装备（3★ 以上还没有卡图）。Rust 版结算已完成（计划和执行记录 `docs/plans/rust-engine.md`，PR #31–#33）；数值校正已做完一轮（记录 `docs/plans/balance-tuning.md`，经验 `docs/design/balance-notes.md`），校正的结果已经写进正式版（新机制、数据、回放表现，计划和执行记录 `docs/plans/balance-port.md`，issue #36）；两个关卡因此待重做（`docs/design/levels.md`）；平衡指标只用阶段搜索，有效战力的工具和目标已去掉（issue #39）；接下来是卡图。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
-- 可用：科研模式（自由摆阵对战）、闯关（2 个解谜关，记录通关；数值校正后待重做）、图鉴、战斗演出（速度/跳过）、设置。冒险、线下对战未实现。
+- 阶段：阶段 3（卡牌补全）第一轮完成：1★/2★ 共 27 张角色、19 件装备（新卡还没有卡图），记录见 `docs/plans/stage-3-cards.md`。UI 重做已完成（计划 `docs/plans/ui-redesign.md`，规范 `docs/design/art-direction.md`，设计稿在仓库外的 `../design-workspace/`）；战斗特效和回放节奏已完成（计划和执行记录 `docs/plans/effects-pacing.md`，样稿和节奏原型也在 `../design-workspace/`）；设置和存档已完成（计划 `docs/plans/settings-save.md`，存档格式 `docs/design/save-data.md`）；阶段 3 第二轮（3★/4★/5★）已完成：设计记录 `docs/plans/stage-3-high-stars.md`，开发记录 `docs/plans/stage-3-high-stars-dev.md`，现在共 87 张角色、57 件装备（3★ 以上还没有卡图）。Rust 版结算已完成（计划和执行记录 `docs/plans/rust-engine.md`，PR #31–#33）；数值校正已做完一轮（记录 `docs/plans/balance-tuning.md`，经验 `docs/design/balance-notes.md`），校正的结果已经写进正式版（新机制、数据、回放表现，计划和执行记录 `docs/plans/balance-port.md`，issue #36）；两个关卡因此待重做（`docs/design/levels.md`）；平衡指标只用阶段搜索，有效战力的工具和目标已去掉（issue #39）；阵容码（一方阵容写成一段文字，科研模式里导出、导入）已完成，规范 `docs/design/lineup-code.md`（issue #44）；接下来是卡图。卡牌设计表在 `docs/design/card-workbook.xlsx`。仓库 `main`，远程 `jayncp/autochess-v1`（公开）。进度见 `PROCESS.md`，路线图见 `docs/roadmap.md`。
+- 可用：科研模式（自由摆阵对战，阵容码导出、导入）、闯关（2 个解谜关，记录通关；数值校正后待重做）、图鉴、战斗演出（速度/跳过）、设置。冒险、线下对战未实现。
 - 战斗结算在纯逻辑模块 `scripts/core/battle_sim.gd`（`BattleSim`），输出结果和事件日志；装备合并和各种显示顺序在 `CardDB`。战斗场景 `scenes/battle/battle_manager.gd` 只按事件日志回放动画。Rust 版结算在 `engine/`，只算结果、供批量模拟（命令行和 Python 绑定，`tools/` 默认用它），GDScript 版是规则的基准实现。
 - 已知 bug 都已修复；规则的待实现项见 `docs/design/battle-rules.md`。
 
@@ -31,11 +31,11 @@
 - `scenes/`：场景和脚本放在一起
   - `app/`：启动场景
   - `menu/`、`sandbox/`（科研模式）、`level/`（关卡选择和布阵）、`battle/`（战斗界面、点卡查看 `CardDetail`；`battle/fx/` 是战斗特效：飘字 `FloatBadge` 和飘字层 `BadgeLayer`，特效 `FxEffect` 和特效层 `FxLayer`，阵亡烧散的着色器）、`book/`（图鉴）、`settings/`（设置）
-  - `components/`：卡牌、卡位（`CardSlot`）等共用组件；`components/card/`：卡牌根节点 `card.tscn` 管拖放和悬停，卡面由 `CardFace`（`card_face.gd`）画，`load_card.gd` 按 id 生成卡牌、给出卡面文字，`UnitPortrait` 是关卡详情里的圆形头像；`components/board/` 是布阵界面共用的布局、拖放（`BoardDrag`）、阵营旗帜、放大查看；`components/ui/` 是界面控件（`UiButton`、`MenuItem`、`Dialog`、`FilterOption`、`TabButton`、金色标题着色器）
-- `scripts/`：`core/`（`CardDB`、`LevelDB`、`BattleSim`；设置 `GameSettings`、进度存档 `SaveData`）、`global_var.gd`（场景之间共享的静态变量：开战的阵容和来自哪个关卡、当次的紧凑模式）
+  - `components/`：卡牌、卡位（`CardSlot`）等共用组件；`components/card/`：卡牌根节点 `card.tscn` 管拖放和悬停，卡面由 `CardFace`（`card_face.gd`）画，`load_card.gd` 按 id 生成卡牌、给出卡面文字，`UnitPortrait` 是关卡详情里的圆形头像；`components/board/` 是布阵界面共用的布局、拖放（`BoardDrag`）、阵营旗帜、放大查看；`components/ui/` 是界面控件（`UiButton`、`MenuItem`、`Dialog`、`FilterOption`、`TabButton`、阵容码面板 `LineupCodePanel`、金色标题着色器）
+- `scripts/`：`core/`（`CardDB`、`LevelDB`、`BattleSim`；阵容码的读写 `LineupCode`；设置 `GameSettings`、进度存档 `SaveData`）、`global_var.gd`（场景之间共享的静态变量：开战的阵容和来自哪个关卡、当次的紧凑模式）
 - `cli/`：GDScript 无头命令，如 `sim.gd`（批量模拟）、`build_theme.gd`（生成主题）
 - `assets/`：`cards/<id>.png`（没有卡图的卡，卡面上显示淡显的种族图标）、`backgrounds/`、`ui/`（主题 `theme.tres`、图标、卡牌边框和法阵、控件贴图、飘字的饰板 `ui/fx/`，都由脚本生成）、`fonts/`（子集化的字体和字体变体）
-- `tests/`：测试。规则用例和测试卡在 `tests/cases/`（只用测试卡，Rust 版共用），说明见 `tests/README.md`
+- `tests/`：测试。规则用例和测试卡在 `tests/cases/`（规则用例只用测试卡，Rust 版共用；阵容码的用例用正式卡），说明见 `tests/README.md`
 - `engine/`：Rust 版结算（Cargo 工作区，带 `.gdignore`），和 GDScript 版逐函数对应、逐场一致，说明见 `engine/README.md`
 - `tools/`：Python 分析和平衡实验、美术素材生成（uv 管理，带 `.gdignore`；批量模拟通过 Rust 版的 Python 绑定，第一次运行时自动编译），说明见 `tools/README.md`；数值试验（分阶段的阵容搜索）在 `tools/autochess_tools/balance/`，数据在 `tools/balance/`
 
@@ -73,7 +73,7 @@
   - 内部一律用英文 id，显示文字一律走翻译表：场景里写 key，代码里用 `tr()`；
   - 给开发者看的报错信息可以直接写中文；
   - 改了 CSV 后要重新导入（`godot --import`），生成的 `*.translation` 一起提交。
-- 新增卡牌：在 `data/cards.json` 按序号加数据，`i18n/data.csv` 加中文名，`assets/cards/<id>.png` 放卡图（没有就先不放）；新词条还要加 `keyword.<id>` 和 `keyword_desc.<id>`；描述型特殊技能一种效果一个 id 加参数（先在 `docs/design/battle-rules.md` 6.3 找同类），新效果加 `effect.<id>`。测试的数据检查会核对翻译是否齐全，并列出还没有卡图的卡。
+- 新增卡牌：在 `data/cards.json` 按序号加数据，`i18n/data.csv` 加中文名（阵容码按卡名认卡：卡名不能和别的卡重复，不能含 `+`、`/` 和全角的 `＋`、`／`），`assets/cards/<id>.png` 放卡图（没有就先不放）；新词条还要加 `keyword.<id>` 和 `keyword_desc.<id>`；描述型特殊技能一种效果一个 id 加参数（先在 `docs/design/battle-rules.md` 6.3 找同类），新效果加 `effect.<id>`。测试的数据检查会核对翻译是否齐全，并列出还没有卡图的卡。
 - 存档在 `user://`（目录 `niuma_autochess`），文件和字段见 `docs/design/save-data.md`；改存档格式时按那里的规则升版本。测试和截图用各自的文件名，不读写玩家的存档。
 - 协议暂定：代码 AGPL-3.0-or-later，美术/数据/文档 CC BY-SA 4.0。
 - 开发流程：阶段性任务先在 `docs/plans/` 写计划，用户确认后开 issue，在分支上开发，通过 PR 合并；小修改直接提交到 main。

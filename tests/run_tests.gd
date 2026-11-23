@@ -12,6 +12,8 @@ const TIMEOUT_SEC := 300.0
 const WINNING := {"tiger_gale": [["tiger_man", "lionheart"], ["half_elf", "venom_fang"], ["shield_guard", ""], ["tiger_man", ""]]}
 ## 卡牌数据的校验用例：合法和不合法的写法各一张卡
 const CARD_CHECKS_PATH := "res://tests/cases/card_checks.json"
+## 阵容码的用例（正式卡）：docs/plans/lineup-code.md 第 3 节
+const LINEUP_CODES_PATH := "res://tests/cases/lineup_codes.json"
 const TEST_FILES := ["test_settings.cfg", "test_save.json", "test_save.json.bak", "test_save.json.tmp", "test_save.json.broken"]
 
 
@@ -35,6 +37,7 @@ func _initialize() -> void:
 	_remove_test_files()
 	await process_frame
 	_check_data()
+	_run_lineup_codes()
 	# 测试卡（tests/cases/cards.json）只在规则用例、单元测试、回放检查里用，之后移除，不影响数据检查和冒烟流程
 	Harness.add_test_cards()
 	_run_battle_cases()
@@ -88,10 +91,24 @@ func _check_data() -> void:
 		if tr(key) == key:
 			_failures.append("[data] 缺少中文名：%s" % key)
 	TranslationServer.set_locale(locale)
+	_check_card_names()
 	_check_font_coverage()
 	print("数据检查：%d 张卡，%d 个关卡" % [CardDB.all().size(), LevelDB.all().size()])
 	if not no_art.is_empty():
 		print("  还没有卡图的卡：%s" % ", ".join(no_art))
+
+
+## 阵容码按卡名认卡：卡名互不重复、不和别的卡的 id 相同，卡名里没有分隔符（+ / 和全角的 ＋ ／）
+func _check_card_names() -> void:
+	var names := {}
+	for id in CardDB.all():
+		var name := tr("card." + id)
+		for mark in ["+", "/", "＋", "／"]:
+			if mark in name:
+				_failures.append("[data] 卡名里不能有 %s：%s（%s）" % [mark, name, id])
+		if names.has(name) or name != id and CardDB.all().has(name):
+			_failures.append("[data] 卡名重复：%s（%s、%s）" % [name, id, names.get(name, name)])
+		names[name] = id
 
 
 ## 字体是子集化的（just fonts）：翻译表里的每个字都要在两种字体里，缺了就重新子集化
@@ -108,6 +125,85 @@ func _check_font_coverage() -> void:
 					missing[line[i]] = true
 	if not missing.is_empty():
 		_failures.append("[data] 字体缺字（运行 just fonts 重新子集化）：%s" % "".join(missing.keys()))
+
+
+## 阵容码（tests/cases/lineup_codes.json，正式卡）：写出的文字、读回的卡位和问题都符合期望，写出的再读回来不变；
+## 有 setup 的是"加人、改人之后"，先改卡牌数据或翻译，核对完撤销。最后全部卡各写一次再读回来
+func _run_lineup_codes() -> void:
+	var cases: Array = JSON.parse_string(FileAccess.get_file_as_string(LINEUP_CODES_PATH))
+	var numbers := {}
+	for c in cases:
+		numbers[int(c.case)] = true
+		var label := "[lineup-code %d] %s" % [c.case, c.note]
+		var undo := _lineup_setup(c.get("setup", {}))
+		if c.has("lineup") and LineupCode.write(c.lineup) != c.text:
+			_failures.append("%s：应写成 %s，实际 %s" % [label, c.text, LineupCode.write(c.lineup)])
+		var result := LineupCode.read(c.text)
+		var slots: Array = c.get("slots", c.get("lineup", []))
+		slots = slots.duplicate()
+		while slots.size() < LineupCode.SLOTS:
+			slots.append([])
+		if result.slots != slots:
+			_failures.append("%s：应读成 %s，实际 %s" % [label, slots, result.slots])
+		var problems: Array = _json_ints(c.get("problems", []))
+		if result.problems != problems:
+			_failures.append("%s：问题应是 %s，实际 %s" % [label, problems, result.problems])
+		if c.has("lineup") and LineupCode.write(result.slots) != c.text:
+			_failures.append("%s：读回来再写应不变，实际 %s" % [label, LineupCode.write(result.slots)])
+		undo.call()
+	var characters := CardDB.ids("character")
+	for id in CardDB.all():
+		var lineup := [[id, ""]] if id in characters else [[characters[0], id]]
+		var result := LineupCode.read(LineupCode.write(lineup))
+		if result.slots.slice(0, 1) != lineup or not result.problems.is_empty():
+			_failures.append("[lineup-code] %s 写成 %s，读回来是 %s %s" % [id, LineupCode.write(lineup), result.slots[0], result.problems])
+	print("阵容码：%d 条用例（%d 项），全部 %d 张卡写一次再读回来" % [numbers.size(), cases.size(), CardDB.all().size()])
+
+
+## 阵容码用例的前提：add 加卡（names 是它们的名字），change 改卡的字段，remove 删卡，rename_id 改 id（名字不变），
+## locale 换语言（names 是这种语言的卡名）。返回撤销的函数
+func _lineup_setup(setup: Dictionary) -> Callable:
+	var cards := CardDB.all()
+	var saved := cards.duplicate()
+	var locale := TranslationServer.get_locale()
+	var names := Translation.new()
+	names.locale = setup.get("locale", "zh_CN")
+	for id in setup.get("names", {}):
+		names.add_message("card." + id, setup.names[id])
+	CardDB.add_cards(setup.get("add", []))
+	for id in setup.get("change", {}):
+		cards[id] = cards[id].duplicate(true)
+		cards[id].merge(setup.change[id], true)
+	for id in setup.get("remove", []):
+		cards.erase(id)
+	for id in setup.get("rename_id", {}):
+		var renamed: Dictionary = cards[id].duplicate(true)
+		renamed.id = setup.rename_id[id]
+		names.add_message("card." + renamed.id, tr("card." + id))
+		cards.erase(id)
+		cards[renamed.id] = renamed
+	TranslationServer.add_translation(names)
+	if setup.has("locale"):
+		TranslationServer.set_locale(setup.locale)
+	return func() -> void:
+		TranslationServer.set_locale(locale)
+		TranslationServer.remove_translation(names)
+		cards.clear()
+		cards.merge(saved)
+
+
+## JSON 读出的数都是 float，整数换回 int 再比较
+func _json_ints(value: Variant) -> Variant:
+	if value is float and value == floorf(value):
+		return int(value)
+	if value is Array:
+		return value.map(_json_ints)
+	if value is Dictionary:
+		var out := {}
+		for key in value:
+			out[key] = _json_ints(value[key])
+		return out
+	return value
 
 
 ## 规则用例（只用测试卡）：结果符合期望；冒烟用例（正式卡）：关卡的解要赢。都检查交换左右后对称、事件日志自洽
@@ -742,6 +838,12 @@ func _check_sandbox(sandbox: Node) -> void:
 	var expect := func(label: String, side: int, index: int, unit: Array) -> void:
 		if sandbox.lineups[side][index] != unit:
 			_failures.append("[smoke-sandbox] %s：%s 第 %d 位应是 %s，实际 %s" % [label, side, index + 1, unit, sandbox.lineups[side][index]])
+	# 右列不压住选卡区，紧凑模式开和关都检查
+	for compact in [false, true]:
+		sandbox.get_node("%Compact").button_pressed = compact
+		var column: Rect2 = sandbox.get_node("RightColumn").get_rect()
+		if column.end.y > sandbox.get_node("Picker").position.y:
+			_failures.append("[smoke-layout] 科研模式%s：右列（底边 %d）压住了选卡区（顶边 %d）" % ["紧凑模式" if compact else "", column.end.y, sandbox.get_node("Picker").position.y])
 	sandbox.select_slot(2, 0)
 	sandbox.pick("tiger")
 	expect.call("选角色", 2, 0, ["tiger", ""])
@@ -793,6 +895,83 @@ func _check_sandbox(sandbox: Node) -> void:
 		_failures.append("[smoke-sandbox] 我方没有角色时应该提示")
 	sandbox.clear_all()
 	expect.call("清空全部", 1, 0, [])
+	await _check_lineup_code(sandbox)
+
+
+## 科研模式的阵容码：打开时是选中的卡位所在的一方；复制、清空、再导入，阵容和原来一样；导入到已有阵容的一方先确认；
+## 带问题的文字：认不出的卡位空着，说明列在文本框下面；一个角色都认不出时不导入；切换一方；点框外、右上角的叉都能关闭
+func _check_lineup_code(sandbox: Node) -> void:
+	var fail := func(text: String) -> void: _failures.append("[smoke-lineup-code] " + text)
+	var dialogs := func(panel: Node) -> Array: return panel.find_children("*", "Dialog", true, false)
+	var lineup := [["parrot", "lionheart"], ["soldier", ""], ["soldier", ""], ["clockwork_witch", "iron_sword"], [], [], []]
+	sandbox.lineups[2] = lineup.duplicate(true)
+	sandbox.select_slot(2, 0)
+	var panel: LineupCodePanel = sandbox.open_lineup_code()
+	var code := panel.code
+	if panel.side != 2 or code != "鹦鹉+狮心 / 士兵 / 士兵 / 千机魔女+铁剑":
+		fail.call("打开时应是我方现在的阵容，实际第 %d 方：%s" % [panel.side, code])
+	panel.close()
+	sandbox.clear_all()
+	panel = sandbox.open_lineup_code()
+	if panel.code != "":
+		fail.call("没有角色时文本框应是空的，实际 %s" % panel.code)
+	panel.code = code
+	panel.import_code()
+	await _frames(1)
+	if sandbox.lineups[2] != lineup:
+		fail.call("复制、清空、再导入后应和原来一样，实际 %s" % [sandbox.lineups[2]])
+	if is_instance_valid(panel):
+		fail.call("没有问题时导入后应关掉面板")
+
+	panel = sandbox.open_lineup_code()
+	panel.code = "老虎/士宾/士兵"
+	panel.import_code()
+	if dialogs.call(panel).size() == 1:
+		dialogs.call(panel)[0]._close(false)
+	else:
+		fail.call("导入到已有阵容的一方应先确认")
+	await _frames(1)
+	if sandbox.lineups[2] != lineup:
+		fail.call("取消后阵容应不变")
+	panel.import_code()
+	for dialog in dialogs.call(panel):
+		dialog._close(true)
+	await _frames(1)
+	var partial := [["tiger", ""], [], ["soldier", ""], [], [], [], []]
+	if sandbox.lineups[2] != partial:
+		fail.call("认不出的卡位应空着，实际 %s" % [sandbox.lineups[2]])
+	if panel.code != "老虎 / 士兵" or panel._notes.text != tr("ui.lineup_code.unknown") % [2, "士宾"]:
+		fail.call("导入后文本框应是标准写法、下面列出说明，实际 %s；%s" % [panel.code, panel._notes.text])
+
+	panel.code = "你好"
+	panel.import_code()
+	if not dialogs.call(panel).is_empty() or sandbox.lineups[2] != partial:
+		fail.call("一个角色都认不出时应不问、不导入")
+	if panel._notes.text != "\n".join([tr("ui.lineup_code.nothing"), tr("ui.lineup_code.unknown") % [1, "你好"]]):
+		fail.call("一个角色都认不出时应提示并列出不认识的名字，实际 %s" % panel._notes.text)
+
+	panel.set_side(1)
+	panel.code = code
+	panel.import_code()
+	await _frames(1)
+	if sandbox.lineups[1] != lineup or sandbox.lineups[2] != partial:
+		fail.call("切到对方导入，应只改对方")
+	sandbox.select_slot(1, 3)
+	panel = sandbox.open_lineup_code()
+	if panel.side != 1 or panel.code != code:
+		fail.call("选中对方的卡位时应打开对方，实际第 %d 方：%s" % [panel.side, panel.code])
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	panel._gui_input(click)
+	await _frames(1)
+	if is_instance_valid(panel):
+		fail.call("点框外应关掉面板")
+	panel = sandbox.open_lineup_code()
+	panel._close.pressed.emit()
+	await _frames(1)
+	if is_instance_valid(panel):
+		fail.call("点右上角的叉应关掉面板")
+	sandbox.clear_all()
 
 
 ## 关卡选择：同时只展开一个关卡，详情里是它的敌方阵容
