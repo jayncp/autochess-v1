@@ -39,7 +39,7 @@
 |---|---|---|
 | 按钮 | 深蓝底板、细金线、黑色间隙、淡金内线，两端各一枚菱形 | `UiButton`（`scenes/components/ui/ui_button.gd`） |
 | 主按钮 | 金棕底板、金色描边加外发光 | `UiButton`，`theme_type_variation = PrimaryButton` |
-| 图标按钮 | 方形底板，只有图标（返回、速度、跳过） | `Button`，`IconButton` |
+| 图标按钮 | 方形底板，只有图标（返回、速度、跳过、阵容码面板的关闭） | `Button`，`IconButton` |
 | 菜单项 | 没有底板；左边一枚菱形，悬停或聚焦时填满并加下划线；不可用时灰显并标"未开放" | `MenuItem`（`scenes/components/ui/menu_item.gd`） |
 | 标题 | 宋体，金色渐变 | `Label`，`TitleLabel`，材质 `gold_text.gdshader` |
 | 提示 | 淡色小字 | `Label`，`HintLabel` |
@@ -60,7 +60,7 @@
 | 标签页 | 标题加一行小字（数量或"即将开放"），选中的金色下划线 | `TabButton`（`scenes/components/ui/tab_button.gd`），同一组用 `ButtonGroup` |
 | 滚动条 | 细金条，没有箭头 | `VScrollBar`、`HScrollBar` |
 | 对话框 | 居中，深蓝渐变底加金框，顶部一枚菱形徽记；标题、分隔线、正文、按钮 | `Dialog.notice()` 一个"知道了"；`Dialog.confirm()` "取消"+"确定"；外框和标题由 `Dialog.frame()` 搭，别的面板也用 |
-| 阵容码面板 | 外框同对话框，宽 1000；顶部选一方（单选块，字前一面小旗，红、蓝同阵营旗帜），多行输入框，下面是金色的说明，按钮"复制""粘贴""导入"（主按钮）；点框外关闭 | `LineupCodePanel`（`scenes/components/ui/lineup_code_panel.gd`），行为见 [lineup-code.md](lineup-code.md) 第 3 节 |
+| 阵容码面板 | 外框同对话框，宽 1000；顶部选一方（单选块，字前一面小旗，红、蓝同阵营旗帜），多行输入框，下面是金色的说明，按钮"复制""粘贴""导入"（主按钮）；右上角一个关闭的图标按钮，点框外也关闭 | `LineupCodePanel`（`scenes/components/ui/lineup_code_panel.gd`），行为见 [lineup-code.md](lineup-code.md) 第 3 节 |
 
 ## 3. 卡牌
 

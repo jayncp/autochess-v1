@@ -1,7 +1,7 @@
 class_name LineupCodePanel
 extends Control
 ## 阵容码面板（规范见 docs/design/lineup-code.md）：顶部切换对方、我方，一个文本框加"复制、粘贴、导入"。
-## 外框同对话框（Dialog.frame），点框外关闭。打开时文本框里是这一方现在的阵容，可以直接复制，也可以改了或贴上别的再导入。
+## 外框同对话框（Dialog.frame），右上角的叉或点框外关闭。打开时文本框里是这一方现在的阵容，可以直接复制，也可以改了或贴上别的再导入。
 ## importable 为假时只能导出：文本框只读，只有"复制"。
 ## 导入：一个角色都认不出就不导入；这一方已有角色时先确认；导入后文本框换成标准写法，有问题就列在文本框下面，没有就关掉。
 ## 用法：LineupCodePanel.open(self, 双方阵容, 打开哪一方, 能不能导入).imported.connect(...)
@@ -11,6 +11,10 @@ signal imported(side: int, slots: Array)
 
 const WIDTH := 1000.0
 const COPIED_TIME := 1.5
+const CLOSE_ICON := preload("res://assets/ui/icons/close.png")
+## 右上角的叉：边长、离框的上边和右边
+const CLOSE_SIZE := 54.0
+const CLOSE_INSET := 22.0
 
 ## 现在是哪一方：1 对方，2 我方
 var side := 2
@@ -21,6 +25,7 @@ var _sides := {}
 var _text: TextEdit
 var _notes: Label
 var _copy: UiButton
+var _close: Button
 
 ## 文本框里的文字
 var code: String:
@@ -42,6 +47,7 @@ static func open(parent: Node, lineups: Dictionary, side_: int, importable_: boo
 
 func _build() -> void:
 	var column := Dialog.frame(self, tr("ui.lineup_code.title"), WIDTH)
+	_add_close_button(column.get_parent().get_parent())  # 框：column 在框的边距容器里
 	var sides := HBoxContainer.new()
 	sides.alignment = BoxContainer.ALIGNMENT_CENTER
 	sides.add_theme_constant_override("separation", 16)
@@ -142,6 +148,27 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		close()
+
+
+## 右上角的叉：盖在框上的一层（不挡点击），叉贴右上角
+func _add_close_button(box: Control) -> void:
+	var corner := Control.new()
+	corner.mouse_filter = MOUSE_FILTER_IGNORE
+	box.add_child(corner)
+	var button := Button.new()
+	button.theme_type_variation = &"IconButton"
+	button.icon = CLOSE_ICON
+	button.expand_icon = true
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	button.focus_mode = FOCUS_NONE
+	button.set_anchors_preset(PRESET_TOP_RIGHT)
+	button.offset_left = -CLOSE_INSET - CLOSE_SIZE
+	button.offset_right = -CLOSE_INSET
+	button.offset_top = CLOSE_INSET
+	button.offset_bottom = CLOSE_INSET + CLOSE_SIZE
+	button.pressed.connect(close)
+	corner.add_child(button)
+	_close = button
 
 
 func _problem_text(problem: Dictionary) -> String:

@@ -141,7 +141,7 @@ func build() -> Theme:
 	t.set_stylebox("pressed", "TagButton", _outlined(Color(GOLD, 0.1), GOLD, 1, 20, 14))
 	t.set_stylebox("focus", "TagButton", StyleBoxEmpty.new())
 
-	# 只有图标的方形按钮（返回、速度、跳过）
+	# 只有图标的方形按钮（返回、速度、跳过、关闭）
 	t.set_type_variation("IconButton", "Button")
 	for state in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
 		var source: String = "button" if state == "normal" else "button_" + ("pressed" if state == "hover_pressed" else state)

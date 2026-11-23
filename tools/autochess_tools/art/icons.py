@@ -61,8 +61,9 @@ ICONS = {
     # 交战：交叉双剑
     "on_engage": f'<g transform="translate(24 24) scale(.9) translate(-24 -24) rotate(45 24 24)">{SWORD}</g>'
     f'<g transform="translate(24 24) scale(.9) translate(-24 -24) rotate(-45 24 24)">{SWORD}</g>',
-    # 通用：返回、锁、搜索、跳过、对号、下拉箭头
+    # 通用：返回、关闭、锁、搜索、跳过、对号、下拉箭头
     "back": '<path d="M31 6 13 24l18 18 4-4-14-14 14-14z"/>',
+    "close": '<path d="M12 8 24 20 36 8l4 4-12 12 12 12-4 4-12-12-12 12-4-4 12-12L8 12z"/>',
     "lock": '<path fill-rule="evenodd" d="M14 20v-6a10 10 0 0 1 20 0v6h3a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H11a3 3 0 0 1'
     '-3-3V23a3 3 0 0 1 3-3zm5 0h10v-6a5 5 0 0 0-10 0z"/>',
     "search": '<path fill-rule="evenodd" d="M20 4a16 16 0 0 1 12.6 25.8l10.8 10.8-2.8 2.8-10.8-10.8A16 16 0 1 1 20 4z'

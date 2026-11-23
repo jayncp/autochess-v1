@@ -899,7 +899,7 @@ func _check_sandbox(sandbox: Node) -> void:
 
 
 ## 科研模式的阵容码：打开时是选中的卡位所在的一方；复制、清空、再导入，阵容和原来一样；导入到已有阵容的一方先确认；
-## 带问题的文字：认不出的卡位空着，说明列在文本框下面；一个角色都认不出时不导入；切换一方；点框外关闭
+## 带问题的文字：认不出的卡位空着，说明列在文本框下面；一个角色都认不出时不导入；切换一方；点框外、右上角的叉都能关闭
 func _check_lineup_code(sandbox: Node) -> void:
 	var fail := func(text: String) -> void: _failures.append("[smoke-lineup-code] " + text)
 	var dialogs := func(panel: Node) -> Array: return panel.find_children("*", "Dialog", true, false)
@@ -966,6 +966,11 @@ func _check_lineup_code(sandbox: Node) -> void:
 	await _frames(1)
 	if is_instance_valid(panel):
 		fail.call("点框外应关掉面板")
+	panel = sandbox.open_lineup_code()
+	panel._close.pressed.emit()
+	await _frames(1)
+	if is_instance_valid(panel):
+		fail.call("点右上角的叉应关掉面板")
 	sandbox.clear_all()
 
 
