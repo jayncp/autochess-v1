@@ -48,6 +48,22 @@ ui.sandbox.remove,移除
 ui.sandbox.unequip,卸下装备
 ui.sandbox.all_stars,全部星级
 ui.sandbox.search_hint,卡名、词条
+ui.lineup_code.title,阵容码
+ui.lineup_code.copy,复制
+ui.lineup_code.copied,已复制
+ui.lineup_code.paste,粘贴
+ui.lineup_code.import,导入
+ui.lineup_code.placeholder,在这里粘贴或输入阵容，如：老虎+狮心 / 士兵
+ui.lineup_code.replace,将替换%s当前的阵容
+ui.lineup_code.nothing,没有可以导入的角色
+ui.lineup_code.clipboard_empty,没有读到剪贴板里的文字，可以在文本框里直接粘贴
+ui.lineup_code.unknown,第 %d 位：不认识“%s”
+ui.lineup_code.not_character,第 %d 位：“%s”不是角色
+ui.lineup_code.no_character,第 %d 位：没有角色
+ui.lineup_code.unknown_equipment,第 %d 位：不认识装备“%s”
+ui.lineup_code.not_equipment,第 %d 位：“%s”不是装备
+ui.lineup_code.extra_equipment,第 %d 位：只能带一件装备，没有带上“%s”
+ui.lineup_code.too_many,最多 %d 个位置，后 %d 个没有导入
 ui.battle.start,开始战斗
 ui.battle.speed,%s×
 ui.battle.step,第 %d 步

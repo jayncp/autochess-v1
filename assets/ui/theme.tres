@@ -798,6 +798,39 @@ corner_radius_top_right = 20
 corner_radius_bottom_right = 20
 corner_radius_bottom_left = 20
 
+[sub_resource type="StyleBoxTexture" id="TextEdit_focus"]
+content_margin_left = 18.0
+content_margin_top = 12.0
+content_margin_right = 18.0
+content_margin_bottom = 12.0
+texture = ExtResource("13_hvi5t")
+texture_margin_left = 10.0
+texture_margin_top = 10.0
+texture_margin_right = 10.0
+texture_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxTexture" id="TextEdit_normal"]
+content_margin_left = 18.0
+content_margin_top = 12.0
+content_margin_right = 18.0
+content_margin_bottom = 12.0
+texture = ExtResource("14_8h5op")
+texture_margin_left = 10.0
+texture_margin_top = 10.0
+texture_margin_right = 10.0
+texture_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxTexture" id="TextEdit_read_only"]
+content_margin_left = 18.0
+content_margin_top = 12.0
+content_margin_right = 18.0
+content_margin_bottom = 12.0
+texture = ExtResource("14_8h5op")
+texture_margin_left = 10.0
+texture_margin_top = 10.0
+texture_margin_right = 10.0
+texture_margin_bottom = 10.0
+
 [sub_resource type="StyleBoxFlat" id="VScrollBar_grabber"]
 content_margin_left = 3.0
 content_margin_top = 3.0
@@ -1115,6 +1148,16 @@ TagButton/styles/focus = SubResource("TagButton_focus")
 TagButton/styles/hover = SubResource("TagButton_hover")
 TagButton/styles/normal = SubResource("TagButton_normal")
 TagButton/styles/pressed = SubResource("TagButton_pressed")
+TextEdit/colors/caret_color = Color(1, 0.8509804, 0.5411765, 1)
+TextEdit/colors/font_color = Color(1, 1, 1, 1)
+TextEdit/colors/font_placeholder_color = Color(1, 1, 1, 0.42)
+TextEdit/colors/font_readonly_color = Color(1, 1, 1, 0.85)
+TextEdit/colors/selection_color = Color(1, 0.8509804, 0.5411765, 0.35)
+TextEdit/constants/line_spacing = 8
+TextEdit/font_sizes/font_size = 24
+TextEdit/styles/focus = SubResource("TextEdit_focus")
+TextEdit/styles/normal = SubResource("TextEdit_normal")
+TextEdit/styles/read_only = SubResource("TextEdit_read_only")
 TitleLabel/base_type = &"Label"
 TitleLabel/colors/font_color = Color(1, 1, 1, 1)
 TitleLabel/font_sizes/font_size = 46

@@ -1,7 +1,7 @@
 extends Control
 ## 科研模式：双方都可以自由摆阵（上面一排是对方，下面一排是我方），然后开战。
 ## 点卡位选中，下面的选卡区就为它选卡；也可以把卡从选卡区拖到任意卡位，或把场上的卡拖出去（拖放见 sandbox_board）。
-## 右列：标题、开始战斗、交换双方、清空全部、紧凑模式。布局按画布大小算；紧凑模式下双方队列换成紧凑卡，选卡区放大。
+## 右列：标题、开始战斗、交换双方、清空全部、阵容码、紧凑模式。布局按画布大小算；紧凑模式下双方队列换成紧凑卡，选卡区放大。
 
 signal back_to_menu
 signal start_battle
@@ -104,6 +104,15 @@ func clear_all() -> void:
 func _on_clear_pressed() -> void:
 	if await Dialog.confirm(self, tr("ui.sandbox.clear"), tr("ui.sandbox.clear_confirm")).closed:
 		clear_all()
+
+
+## 阵容码面板：打开时是选中的卡位所在的一方，可以导出、导入
+func open_lineup_code() -> LineupCodePanel:
+	var panel := LineupCodePanel.open(self, lineups, selected[0], true)
+	panel.imported.connect(func(side: int, slots: Array):
+		lineups[side] = slots.duplicate(true)
+		refresh())
+	return panel
 
 
 ## 选卡区的按钮：角色页是"移除"，装备页是"卸下装备"

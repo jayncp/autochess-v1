@@ -1,7 +1,7 @@
 extends SceneTree
 ## 界面截图：把各界面截到指定目录，用来对照样稿、给用户看。需要窗口（不能 --headless）。
 ## 用法：just shots <输出目录> [宽度] [高度]，默认 1920 × 1080，手机用 2376；更高的屏幕比如 1920 × 1200（16:10）、1920 × 1440（4:3）
-## 截图：主菜单、主题控件、对话框；卡牌一览（cards_*，缩放 1，和样稿 cards.html 的几页对应）；用到卡牌的各界面；设置
+## 截图：主菜单、主题控件、对话框；卡牌一览（cards_*，缩放 1，和样稿 cards.html 的几页对应）；用到卡牌的各界面（含科研模式的阵容码面板）；设置
 ## 设置和存档用截图专用的文件，不读写玩家的存档
 
 var out: String
@@ -309,10 +309,15 @@ func _screens() -> void:
 	await _frames(3)
 	await _shot("sandbox_preview")
 	sandbox._preview.hide_card()
+	await _lineup_code_shots(sandbox)
 	sandbox.get_node("%Compact").button_pressed = true
 	sandbox.get_node("Picker").set_tab("equipment")
 	await _frames(5)
 	await _shot("sandbox_compact")
+	var panel: LineupCodePanel = sandbox.open_lineup_code()
+	await _frames(3)
+	await _shot("sandbox_compact_lineup_code")
+	panel.close()
 	sandbox.get_node("%Compact").button_pressed = false
 	sandbox.get_node("Picker").set_tab("character")
 	await _frames(3)
@@ -415,6 +420,26 @@ func _demo_levels(levels: Node) -> void:
 	TranslationServer.remove_translation(names)
 	SaveData.clear_levels()
 	levels.toggle_level("demo_5")
+
+
+## 阵容码面板：打开时是我方的阵容；导入前确认；导入后列出说明（位置最多、说明最长的情况）。截完恢复阵容
+func _lineup_code_shots(sandbox: Node) -> void:
+	var saved: Dictionary = sandbox.lineups.duplicate(true)
+	var panel: LineupCodePanel = sandbox.open_lineup_code()
+	await _frames(3)
+	await _shot("sandbox_lineup_code")
+	panel.code = "密林射手 / 萨满 / 幻梦菇+八咫镜 / 骑士王+锁子黄金甲 / 海德拉+师心 / 齐天大圣+如意金箍棒+铁剑 / 士宾 / 六翼天使 / 老虎"
+	panel.import_code()
+	await _frames(3)
+	await _shot("sandbox_lineup_code_confirm")
+	for dialog in panel.find_children("*", "Dialog", true, false):
+		dialog._close(true)
+	await _frames(3)
+	await _shot("sandbox_lineup_code_notes")
+	panel.close()
+	for side in saved:
+		sandbox.lineups[side] = saved[side]
+	sandbox.refresh()
 
 
 func _frames(n: int) -> void:
