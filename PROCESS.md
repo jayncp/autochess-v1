@@ -22,9 +22,10 @@
 - 数值校正写进正式版（issue #36，三个 PR，计划和执行记录 `docs/plans/balance-port.md`）：新机制在 GDScript 版实现、Rust 版去掉试验开关；118 张卡的数值写进 `data/cards.json`，5 件装备改名改 id；回放的合并显示（八咫镜、两个萨满）、战前减半和致命伤害的表现；规则、决策、设计文档同步。两个关卡因此待重做。
 - 平衡指标（issue #39）：只用阶段搜索，警戒线写进 `card-design.md` 第 1 节；去掉各星级有效战力的目标均值、有效战力和 1★ 基准矩阵的工具；设计表的有效战力列换成六个阶段的出场率（`just balance usage`）。
 - 阵容码（issue #44，计划和执行记录 `docs/plans/lineup-code.md`，规范 `docs/design/lineup-code.md`）：一方阵容写成一段文字（`鹦鹉+狮心 / 士兵`），读写在 `LineupCode`；共用的阵容码面板，科研模式里导出、导入；用例 `tests/cases/lineup_codes.json`。
+- 经济系统的初步建立和摸底（issue #46，记录 `docs/plans/economy-survey.md`，规则和结论 `docs/design/economy.md`）：经济表 `docs/design/economic-system.xlsx`（等级、商店、利息、天赋、拍卖），估算工具 `just economy`（一套阵容的期望花费、第几回合凑齐）；用均衡阵容摸底后定了商店 4 角色 + 2 装备、升级经验 5/10/25/30/45/60。
 
 ## 待办
-
+- [ ] 按金币约束搜索阵容，带上卡牌觉醒（三张相同的角色合成一张，数值翻倍；规则待定）
 - [ ] 冒险模式（设计中）
 - [ ] 卡图
 - 之后再定：构筑阶段的拖放反馈、音效；Android 的存档导入导出；正式发布前定 Android 包名（现在是占位的 `com.example.autochess`，改了存档会丢）

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>均衡阵容的价格</title>
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --hover: #f0efec;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --hover: #2c2c2a;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.55 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 20px 24px 48px; display: grid; gap: 16px; }
+  h1 { font-size: 21px; margin: 0 0 4px; }
+  .note { color: var(--ink2); font-size: 13px; margin: 0; }
+  main > *, .two > * { min-width: 0; }
+  .panel { background: var(--surface); border: 1px solid var(--grid); border-radius: 8px; padding: 14px 16px; }
+  .panel h2 { font-size: 15px; margin: 0; }
+  .panel > p { margin: 2px 0 10px; color: var(--ink2); font-size: 12.5px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+  svg { display: block; width: 100%; height: auto; }
+  svg text { fill: var(--muted); font-size: 12px; }
+  svg .name { fill: var(--ink2); font-size: 13px; }
+  svg .val { fill: var(--ink); font-size: 12px; }
+  .gridline { stroke: var(--grid); }
+  .dot { fill-opacity: .42; }
+  .dot:hover, .dot.on { fill-opacity: 1; stroke: var(--ink); stroke-width: 1.5; }
+  .tick { stroke: var(--ink); stroke-width: 2; }
+  .band { stroke: var(--ink); stroke-width: 1; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink2); margin: 0 0 6px; }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 4px 8px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  th { color: var(--ink2); font-weight: 500; position: sticky; top: 0; background: var(--surface); }
+  th[data-key] { cursor: pointer; }
+  th.sorted::after { content: " ↓"; } th.sorted.up::after { content: " ↑"; }
+  td.l, th.l { text-align: left; } td.wrap { white-space: normal; min-width: 320px; }
+  td.best { font-weight: 700; } td.none { color: var(--muted); }
+  tbody tr:hover { background: var(--hover); }
+  .tablewrap { max-height: 560px; overflow: auto; }
+  .chips { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+  button.chip { font: inherit; font-size: 13px; padding: 3px 12px; border-radius: 14px; border: 1px solid var(--axis); background: transparent; color: var(--muted); cursor: pointer; }
+  button.chip[aria-pressed="true"] { background: var(--surface); color: var(--ink); border-color: var(--ink2); }
+  #tip { position: fixed; pointer-events: none; background: var(--surface); border: 1px solid var(--axis); border-radius: 6px; padding: 8px 10px; font-size: 12.5px; max-width: 420px; box-shadow: 0 4px 14px rgba(0,0,0,.15); display: none; z-index: 10; }
+  #tip b { display: block; margin-bottom: 3px; }
+  #tip span { color: var(--ink2); }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>均衡阵容的价格</h1>
+  <p class="note" id="intro"></p>
+  <div class="legend" id="legend" style="margin-top:8px"></div>
+</header>
+
+<section class="panel">
+  <h2>各阶段的汇总</h2>
+  <p>按均衡分布的权重平均。“期望花费”只看金币：从 1 级、一张牌都没有，到买齐这套阵容并升到能全部上阵的等级，每次刷新和每点经验都算钱。“凑齐的回合”按每回合发的金币、经验、利息和一次免费刷新算，取存钱打法里最快的一种；“不存钱”是钱到手就花。</p>
+  <div class="tablewrap"><table id="summary"></table></div>
+</section>
+
+<section class="panel">
+  <h2>期望花费的分布（金币）</h2>
+  <p>一个点是均衡里的一套阵容，面积是它的权重；竖线是按权重的中位数，横线是 10%–90% 的范围。鼠标移上去看阵容。</p>
+  <svg id="cost"></svg>
+</section>
+
+<section class="panel">
+  <h2>第几回合凑齐</h2>
+  <p>每套阵容模拟的平均回合（最快的存钱打法）。</p>
+  <svg id="round"></svg>
+</section>
+
+<section class="panel">
+  <h2>带几件装备的阵容各花多少</h2>
+  <p>同一阶段里按装备件数分组的平均期望花费，灰色是这一组在均衡里的占比（不到 2% 的不列）。</p>
+  <div class="tablewrap"><table id="fit"></table></div>
+</section>
+
+<section class="panel">
+  <h2>只找一张指定的卡，平均要刷几次</h2>
+  <p>各等级下的次数，粗体是最合适的等级。</p>
+  <div class="tablewrap"><table id="single"></table></div>
+</section>
+
+<section class="panel">
+  <h2>阵容明细</h2>
+  <p>点表头排序。P90 是运气差的那 10% 至少要花的金币 / 至少要等到的回合；“留多少”是最快的存钱打法手里留的金币。</p>
+  <div class="chips" id="configs"></div>
+  <div class="chips" id="chips"></div>
+  <div class="tablewrap"><table id="lineups"></table></div>
+</section>
+</main>
+<div id="tip"></div>
+<script>
+const DATA = __DATA__;
+const configs = Object.keys(DATA.configs);
+const first = DATA.configs[configs[0]];
+const stages = Object.keys(first.stages);
+const eco = first.economy;
+const color = k => `var(--s${k + 1})`;
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent, text) => {
+  const node = document.createElementNS(NS, tag);
+  for (const k in attrs) node.setAttribute(k, attrs[k]);
+  if (text !== undefined) node.textContent = text;
+  if (parent) parent.appendChild(node);
+  return node;
+};
+const wsum = (rows, f) => rows.reduce((s, r) => s + r.weight * f(r), 0);
+const wquant = (rows, f, q) => {
+  const sorted = rows.map(r => [f(r), r.weight]).sort((a, b) => a[0] - b[0]);
+  let acc = 0;
+  for (const [v, w] of sorted) { acc += w; if (acc >= q) return v; }
+  return sorted[sorted.length - 1][0];
+};
+const price = r => r.char_stars + r.equip_stars;
+const fmt = (v, d = 0) => v.toFixed(d);
+
+$("intro").textContent = `按经济表算（开局 ${eco.start_gold} 金币，每回合 ${eco.round_gold} 金币、${eco.round_xp} 经验，刷新 ${eco.refresh} 金币，卡价等于星级，` +
+  `利息 ${eco.interest.map(([g, n]) => `满 ${g} 给 ${n}`).join("、")}；上阵人数 ${eco.slots.join("/")}，升级经验 ${eco.xp.join("/")}；` +
+  `第 ${eco.talents.join("、")} 回合拿天赋，一局合计折 ${eco.talent_sets.reduce((t, [p, c]) => t + p * c.reduce((a, b) => a + b, 0), 0).toFixed(1)} 金币；拍卖 ${eco.auctions.map(([t, k, s]) => `第 ${t} 回合 ${s}★${k ? "装备" : "角色"}`).join("、")}）。` +
+  "这里算的是“认准一套阵容硬凑”的价格：真实对局里玩家会用商店给的牌，实际花费更低，所以这些数适合比较阵容之间、方案之间的贵贱。";
+$("legend").innerHTML = "方案：" + configs.map((c, k) => `<span><i style="background:${color(k)}"></i>${c}</span>`).join("");
+
+// 汇总
+{
+  const head = ["阶段", "方案", "买卡", "买经验", "刷新次数", "期望花费", "花费 10%–90%", "最后等级", "凑齐的回合", "回合 10%–90%", "运气差时（P90）", "不存钱", "拿到的利息"];
+  let html = "<thead><tr>" + head.map((h, i) => `<th class="${i < 2 ? "l" : ""}">${h}</th>`).join("") + "</tr></thead><tbody>";
+  for (const name of stages) configs.forEach((c, k) => {
+    const s = DATA.configs[c].stages[name], L = s.lineups;
+    const limit = `${name}（≤${s.max_star}★，` + s.options.map(([n, b]) => `${n} 人 ${b} 星`).join(" / ") + `，${L.length} 套）`;
+    html += `<tr>${k ? "" : `<td class="l" rowspan="${configs.length}">${limit}</td>`}<td class="l"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${color(k)};margin-right:6px"></i>${c}</td>` +
+      `<td>${fmt(wsum(L, price), 1)}</td><td>${fmt(wsum(L, r => r.xp), 1)}</td>` +
+      `<td>${fmt(wsum(L, r => r.rolls), 1)}</td><td><b>${fmt(wsum(L, r => r.cost))}</b></td><td>${fmt(wquant(L, r => r.cost, .1))}–${fmt(wquant(L, r => r.cost, .9))}</td>` +
+      `<td>${fmt(wsum(L, r => r.timed_level), 1)}</td><td><b>${fmt(wsum(L, r => r.round.mean), 1)}</b></td>` +
+      `<td>${fmt(wquant(L, r => r.round.mean, .1), 1)}–${fmt(wquant(L, r => r.round.mean, .9), 1)}</td><td>${fmt(wsum(L, r => r.round.p90), 1)}</td>` +
+      `<td>${fmt(wsum(L, r => r.rush_round), 1)}</td><td>${fmt(wsum(L, r => r.interest))}</td></tr>`;
+  });
+  $("summary").innerHTML = html + "</tbody>";
+}
+
+// 提示框
+const tip = $("tip");
+const showTip = (ev, r, stage, config) => {
+  tip.innerHTML = `<b>${r.lineup}</b><span>${stage}，${config}，权重 ${(r.weight * 100).toFixed(2)}%<br>期望花费 ${fmt(r.cost)}（买卡 ${price(r)}、经验 ${fmt(r.xp)}、刷新 ${fmt(r.rolls)}），运气差时 ${r.gold.p90}<br>` +
+    `凑齐：平均第 ${fmt(r.round.mean, 1)} 回合（手里留 ${r.reserve}，不存钱第 ${fmt(r.rush_round, 1)} 回合），运气差时第 ${r.round.p90} 回合；最后 ${fmt(r.timed_level, 1)} 级</span>`;
+  tip.style.display = "block";
+  const x = Math.min(ev.clientX + 14, innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x + "px"; tip.style.top = (ev.clientY + 14) + "px";
+};
+const hideTip = () => { tip.style.display = "none"; };
+
+// 分布图：每个阶段一组，每种商店一行
+function strips(svg, value, step, unit) {
+  const W = 1120, rowH = 46, gap = 12, left = 70, right = 24, top = 8;
+  const groupH = rowH * configs.length + gap, H = top + groupH * stages.length + 24;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const all = configs.flatMap(c => stages.flatMap(s => DATA.configs[c].stages[s].lineups.map(value)));
+  const max = Math.ceil(Math.max(...all) / step) * step;
+  const x = v => left + (W - left - right) * v / max;
+  for (let v = 0; v <= max; v += step) {
+    el("line", { x1: x(v), x2: x(v), y1: top, y2: H - 26, class: "gridline" }, svg);
+    el("text", { x: x(v), y: H - 8, "text-anchor": "middle" }, svg, v + (v === max ? " " + unit : ""));
+  }
+  stages.forEach((name, k) => {
+    el("text", { x: 8, y: top + groupH * k + (groupH - gap) / 2 + 4, class: "name" }, svg, name);
+    configs.forEach((config, c) => {
+      const L = DATA.configs[config].stages[name].lineups, mid = top + groupH * k + rowH * c + rowH / 2;
+      const maxW = Math.max(...L.map(r => r.weight));
+      L.forEach((r, i) => {
+        const jitter = (((i * 2654435761) % 1000) / 1000 - 0.5) * (rowH - 20);
+        const dot = el("circle", { cx: x(value(r)), cy: mid + jitter, r: 1.5 + 4.5 * Math.sqrt(r.weight / maxW), class: "dot", fill: color(c) }, svg);
+        dot.addEventListener("mousemove", ev => showTip(ev, r, name, config));
+        dot.addEventListener("mouseleave", hideTip);
+      });
+      const [lo, md, hi] = [.1, .5, .9].map(q => wquant(L, value, q));
+      el("line", { x1: x(lo), x2: x(hi), y1: mid + rowH / 2 - 5, y2: mid + rowH / 2 - 5, class: "band" }, svg);
+      el("line", { x1: x(md), x2: x(md), y1: mid - rowH / 2 + 4, y2: mid + rowH / 2 - 2, class: "tick" }, svg);
+      el("text", { x: x(md) + 5, y: mid - rowH / 2 + 13, class: "val" }, svg, fmt(md, unit === "回合" ? 1 : 0));
+    });
+  });
+}
+strips($("cost"), r => r.cost, 50, "金币");
+strips($("round"), r => r.round.mean, 5, "回合");
+
+// 按装备件数
+{
+  const counts = [...new Set(configs.flatMap(c => stages.flatMap(s => DATA.configs[c].stages[s].by_equips.map(g => g.equips))))].sort();
+  let html = "<thead><tr><th class='l'>阶段</th><th class='l'>方案</th>" + counts.map(c => `<th>${c} 件</th>`).join("") + "</tr></thead><tbody>";
+  for (const name of stages) configs.forEach((config, k) => {
+    const groups = Object.fromEntries(DATA.configs[config].stages[name].by_equips.map(g => [g.equips, g]));
+    html += `<tr>${k ? "" : `<td class="l" rowspan="${configs.length}">${name}</td>`}<td class="l">${config}</td>` + counts.map(c => {
+      const g = groups[c];
+      return g && g.share >= 0.02 ? `<td>${fmt(g.cost)} <span style="color:var(--muted)">${fmt(g.share * 100)}%</span></td>` : '<td class="none">—</td>';
+    }).join("") + "</tr>";
+  });
+  $("fit").innerHTML = html + "</tbody>";
+}
+
+// 单卡
+{
+  let html = "<thead><tr><th class='l'>卡</th><th class='l'>方案</th>" + eco.slots.map((_, i) => `<th>${i + 1} 级</th>`).join("") + "</tr></thead><tbody>";
+  first.single.forEach((_, i) => configs.forEach((config, k) => {
+    const row = DATA.configs[config].single[i];
+    const best = Math.min(...row.rolls.filter(v => v !== null));
+    html += `<tr>${k ? "" : `<td class="l" rowspan="${configs.length}">${row.star}★ ${row.kind ? "装备" : "角色"}</td>`}<td class="l">${config}</td>` +
+      row.rolls.map(v => v === null ? '<td class="none">—</td>' : `<td class="${v === best ? "best" : ""}">${fmt(v, 1)}</td>`).join("") + "</tr>";
+  }));
+  $("single").innerHTML = html + "</tbody>";
+}
+
+// 明细
+{
+  const cols = [
+    ["权重", r => r.weight, r => (r.weight * 100).toFixed(2) + "%"],
+    ["人数", r => r.units, r => r.units], ["装备", r => r.equips, r => r.equips],
+    ["买卡", price, r => price(r)], ["买经验", r => r.xp, r => fmt(r.xp)], ["刷新", r => r.rolls, r => fmt(r.rolls)],
+    ["期望花费", r => r.cost, r => fmt(r.cost)], ["花费 P90", r => r.gold.p90, r => r.gold.p90],
+    ["凑齐回合", r => r.round.mean, r => fmt(r.round.mean, 1)], ["回合 P90", r => r.round.p90, r => r.round.p90],
+    ["留多少", r => r.reserve, r => r.reserve], ["最后等级", r => r.timed_level, r => fmt(r.timed_level, 1)],
+  ];
+  let config = configs[0], stage = stages[stages.length - 1], key = 6, up = false;
+  const chips = (list, on) => list.map(s => `<button class="chip" aria-pressed="${s === on}">${s}</button>`).join("");
+  const draw = () => {
+    $("configs").innerHTML = chips(configs, config);
+    $("chips").innerHTML = chips(stages, stage);
+    const rows = [...DATA.configs[config].stages[stage].lineups].sort((a, b) => (cols[key][1](a) - cols[key][1](b)) * (up ? 1 : -1));
+    $("lineups").innerHTML = "<thead><tr><th class='l'>阵容</th>" +
+      cols.map((c, i) => `<th data-key="${i}" class="${i === key ? "sorted" + (up ? " up" : "") : ""}">${c[0]}</th>`).join("") + "</tr></thead><tbody>" +
+      rows.map(r => `<tr><td class="l wrap">${r.lineup}</td>` + cols.map(c => `<td>${c[2](r)}</td>`).join("") + "</tr>").join("") + "</tbody>";
+  };
+  $("configs").addEventListener("click", ev => { if (ev.target.matches("button")) { config = ev.target.textContent; draw(); } });
+  $("chips").addEventListener("click", ev => { if (ev.target.matches("button")) { stage = ev.target.textContent; draw(); } });
+  $("lineups").addEventListener("click", ev => {
+    const th = ev.target.closest("th[data-key]");
+    if (!th) return;
+    const k = +th.dataset.key;
+    up = k === key ? !up : false; key = k; draw();
+  });
+  draw();
+}
+</script>
+</body>
+</html>

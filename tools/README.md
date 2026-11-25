@@ -21,6 +21,7 @@
 | `diff_sim.py` | 对拍（`just diff-sim`）：同一批随机对局分别用两个版本跑，逐场比较，不一致时用简要轨迹找出第一处不同 |
 | `bench.py` | 测速（`just bench`）：Rust 版单线程、多线程和 Godot 版单进程的场/秒 |
 | `balance/` | 数值试验：分阶段的阵容搜索（见下面"数值试验"） |
+| `economy/` | 经济系统的估算：一套阵容的期望花费、第几回合凑齐（见下面"经济系统的估算"） |
 | `art/` | 美术素材生成（依赖组 `art`：fonttools、resvg-py）：`fonts.py` 字体子集，`icons.py` 图标，`ornaments.py` 卡牌边框和法阵，`ui.py` 控件和卡面面板贴图，`fx.py` 战斗飘字的饰板。用 `just fonts`、`just art` 运行，规范见 `docs/design/art-direction.md` |
 
 ## 实验
@@ -30,6 +31,21 @@
 | `star_totals` | 同总星级的多个低星对少量高星的随机摆位平均分（方法同星级报告第 1 节） |
 
 实验结果写成 `docs/design/balance-report-<日期>.md`（带时效的快照）。
+
+## 经济系统的估算
+
+规则的数字在 `docs/design/economic-system.xlsx`，工具直接读它；方法和读法见 [`docs/design/economy.md`](../docs/design/economy.md)。
+
+都用 `just economy <模块> [参数]` 运行（等于在 `tools/` 下 `uv run --group balance python -m autochess_tools.economy.<模块>`）：
+
+| 模块 | 内容 |
+|---|---|
+| `price [阵容目录]` | 给阵容搜索存下的均衡阵容（默认 `balance/pools`）算期望花费、花费的分布、第几回合凑齐，写到 `balance/runs/economy.json`。`--shops 5/1,4/2`、`--round-xp 2,3` 可以一次比较几种商店格子数、每回合经验（其他的数改表格）；`--runs` 每套阵容每种打法模拟几次（默认 500）；`--workers` 进程数（默认一半核心） |
+| `report <输出.html> [结果.json]` | 把结果做成一页图表 |
+
+`model.py` 是算法：`load()` 读表格，`Plan(经济, target(阵容))` 是动态规划（`.cost` 期望花费），`simulate(plan, rng, timed, reserve)` 照规则抽卡。
+
+改了表格之后：`just economy price`，再 `just economy report ../docs/design/economy-report-<日期>.html`。六个阶段两千多套阵容，笔记本上十几分钟；要更多的模拟次数就放到服务器上（方法同下面"在哪里跑"，另外要带上 `docs/design/economic-system.xlsx`）。
 
 ## 数值试验
 

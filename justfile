@@ -78,6 +78,11 @@ experiment name:
 balance module *args:
     cd tools && uv run --group balance python -m autochess_tools.balance.{{module}} {{args}}
 
+# 经济系统的估算（tools/autochess_tools/economy/<模块>.py）：price 给均衡阵容算价格和成型回合，report 做成一页图表。
+# 规则在 docs/design/economic-system.xlsx，用法见 tools/README.md
+economy module *args:
+    cd tools && uv run --group balance python -m autochess_tools.economy.{{module}} {{args}}
+
 # 字体子集化：从 Google Fonts 下载源字体，裁到常用字加翻译表用到的字，写到 assets/fonts/
 fonts:
     cd tools && uv run --group art python -m autochess_tools.art.fonts

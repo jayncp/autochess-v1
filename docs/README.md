@@ -11,6 +11,9 @@
 | [design/art-direction.md](design/art-direction.md) | 美术与界面规范：画风、卡面、各界面布局、控件、素材生成 | 活文档 |
 | [design/save-data.md](design/save-data.md) | 存档：位置、文件、字段、版本和升级规则 | 活文档 |
 | [design/lineup-code.md](design/lineup-code.md) | 阵容码：一方阵容的文字写法、导入的规则、面板 | 活文档 |
+| [design/economy.md](design/economy.md) | 经济系统：等级、商店、利息、天赋、拍卖的规则，估算的方法和现在的结论 | 活文档 |
+| [design/economic-system.xlsx](design/economic-system.xlsx) | 经济表：经济规则的全部数字，估算工具直接读它 | 设计表，经济规则以它为准 |
+| [design/economy-report-2026-11-25.html](design/economy-report-2026-11-25.html) | 均衡阵容的价格和成型回合（一页图表） | 快照，带时效 |
 | [design/card-workbook.xlsx](design/card-workbook.xlsx) | 卡牌设计表：全部角色和装备（和正式数据一致，带各阶段的出场率）、旧设计（参考） | 设计草稿，正式数据以 `data/cards.json` 为准 |
 | [design/balance-notes.md](design/balance-notes.md) | 调数值的经验：怎么读数据、时机、体系和辅助卡、强卡和克制、调整的方法 | 活文档 |
 | [design/balance-trial.xlsx](design/balance-trial.xlsx) | 数值试验表：校正后的数值，已写进正式数据；下一轮试验在这张表上改（流程见 [tools/README.md](../tools/README.md)） | 设计草稿，正式数据以 `data/cards.json` 为准 |
