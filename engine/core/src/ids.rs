@@ -312,7 +312,8 @@ impl Scope {
     }
 }
 
-/// 对象（`CardDB.TARGETS`）：自身、下一位、下两位、己方全体、对方全体、对方前两位
+/// 对象（`CardDB.TARGETS`）：自身、下一位、下两位、己方全体、对方全体、对方前两位；
+/// 下四位、对方前四位是觉醒试验用的，现在只有 Rust 版认
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Target {
     Own,
@@ -321,11 +322,21 @@ pub enum Target {
     Allies,
     Enemies,
     EnemyFirstTwo,
+    NextFour,
+    EnemyFirstFour,
 }
 
 impl Target {
-    pub const ALL: [Target; 6] =
-        [Target::Own, Target::Next, Target::NextTwo, Target::Allies, Target::Enemies, Target::EnemyFirstTwo];
+    pub const ALL: [Target; 8] = [
+        Target::Own,
+        Target::Next,
+        Target::NextTwo,
+        Target::Allies,
+        Target::Enemies,
+        Target::EnemyFirstTwo,
+        Target::NextFour,
+        Target::EnemyFirstFour,
+    ];
 
     pub fn id(self) -> &'static str {
         match self {
@@ -335,6 +346,8 @@ impl Target {
             Target::Allies => "allies",
             Target::Enemies => "enemies",
             Target::EnemyFirstTwo => "enemy_first_two",
+            Target::NextFour => "next_four",
+            Target::EnemyFirstFour => "enemy_first_four",
         }
     }
 

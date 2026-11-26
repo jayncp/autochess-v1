@@ -7,6 +7,7 @@
 //!
 //! 结算时释放 GIL，多核并行（rayon），结果顺序和输入一致。
 
+mod economy;
 mod search;
 
 use autochess_core::{Deck, MAX_UNITS, Outcome, Pick, VERSION, simulate};
@@ -159,8 +160,10 @@ impl Engine {
 
     /// 并行爬山（试验，见 search.rs）：starts、opponents 的格式同 simulate_ids；keeps 是各起点必须带的卡（-1 不限）；
     /// star、limit 按卡牌编号给星级和同名上限；options 是（卡位数, 总星上限）。
+    /// gold 给了就按金币约束（limit、options、max_equips 不用）：（经济系统, 预算, 各卡的原卡编号, 角色的另一个形态或 -1, 算已有的觉醒牌的最高星级）。
     /// 返回（各起点最后的阵容，摊平成一维、每套 7×2 格、空位 -1；各起点的得分）
     #[allow(clippy::too_many_arguments, clippy::type_complexity)]
+    #[pyo3(signature = (starts, keeps, opponents, weights, steps, mutations, seed, chars, equips, star, limit, options, max_equips, gold=None))]
     fn climb<'py>(
         &self,
         py: Python<'py>,
@@ -177,12 +180,19 @@ impl Engine {
         limit: Vec<usize>,
         options: Vec<(usize, i32)>,
         max_equips: usize,
+        gold: Option<(Bound<'py, Prices>, f64, Vec<i32>, Vec<i32>)>,
     ) -> PyResult<(Bound<'py, PyArray1<i32>>, Bound<'py, PyArray1<f64>>)> {
         let (starts, opponents) = (self.lineups(&starts)?, self.lineups(&opponents)?);
         if keeps.len() != starts.len() || weights.len() != opponents.len() {
             return Err(PyValueError::new_err("keeps 要和 starts 一样长，weights 要和 opponents 一样长"));
         }
-        let space = search::Space { chars, equips, star, limit, options, max_equips };
+        let gold = gold.as_ref().map(|(prices, budget, base, twin)| search::Gold {
+            economy: &prices.get().economy,
+            budget: *budget,
+            base: base.clone(),
+            twin: twin.clone(),
+        });
+        let space = search::Space { chars, equips, star, limit, options, max_equips, gold };
         let deck = &self.deck;
         let found = py.detach(|| {
             let other = opponents.iter().map(|l| search::picks(deck, l)).collect::<Result<Vec<_>, _>>()?;
@@ -230,9 +240,46 @@ fn row(outcome: &Outcome) -> Row {
     (outcome.winner, outcome.reason.id(), strengths(0), strengths(1))
 }
 
+/// 经济系统（试验，见 economy.rs）：算凑齐一套阵容的期望花费，和 tools 里 economy.model.Plan 的口径相同
+#[pyclass(frozen, module = "autochess_engine")]
+struct Prices {
+    economy: economy::Economy,
+}
+
+#[pymethods]
+impl Prices {
+    /// odds[等级-1][星级-1]；slots 各等级的卡位；xp 升到下一级的经验；kinds、copies 是 [角色, 装备] 各星级的种类数、张数；
+    /// shop 是商店里 [角色格, 装备格] 的个数
+    #[new]
+    fn new(
+        odds: Vec<[f64; 5]>,
+        slots: Vec<usize>,
+        xp: Vec<f64>,
+        kinds: [[f64; 5]; 2],
+        copies: [[f64; 5]; 2],
+        shop: [usize; 2],
+        refresh: f64,
+    ) -> PyResult<Self> {
+        let economy = economy::Economy::new(odds, slots, xp, kinds, copies, shop, refresh);
+        Ok(Prices { economy: economy.map_err(PyValueError::new_err)? })
+    }
+
+    /// 一批阵容的期望花费（含买卡）。每套是（要的卡 [(类型 0 角色 / 1 装备, 星级, 张数), ...]，上阵人数）；凑不齐是 inf
+    fn costs(&self, py: Python<'_>, lineups: Vec<(Vec<economy::Want>, usize)>) -> Vec<f64> {
+        let economy = &self.economy;
+        py.detach(|| lineups.par_iter().map(|(wants, units)| economy.cost(wants, *units)).collect())
+    }
+
+    /// 记住了多少种算过的结果
+    fn cached(&self) -> usize {
+        self.economy.cached()
+    }
+}
+
 #[pymodule]
 fn autochess_engine(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Engine>()?;
+    m.add_class::<Prices>()?;
     // 和 BattleSim.VERSION 相同
     m.add("VERSION", VERSION)?;
     Ok(())

@@ -538,7 +538,7 @@ impl Battle {
                 Scope::ItselfAndFront => holder == u || self.next_unit(u) == Some(holder),
             };
             if counts {
-                count += 1;
+                count += params.times();
             }
         }
         count
@@ -576,11 +576,13 @@ impl Battle {
         self.holders[side]
             .of(Special::ExtraResolve)
             .into_iter()
-            .filter(|&holder| {
+            .map(|holder| {
                 let params = self.passive(holder, Special::ExtraResolve);
-                params.skill == Some(SkillRef::Base(skill)) && (params.scope == Some(Scope::Allies) || holder == u)
+                let counts =
+                    params.skill == Some(SkillRef::Base(skill)) && (params.scope == Some(Scope::Allies) || holder == u);
+                if counts { params.times() } else { 0 }
             })
-            .count()
+            .sum()
     }
 
     /// 特殊技能的各步：双方带这个时机的特殊技能按 STEPS 的顺序结算。返回被唤醒的单位（`BattleSim.special_steps`）
@@ -662,11 +664,12 @@ impl Battle {
                 }
                 line
             }
-            Target::NextTwo => {
+            Target::NextTwo | Target::NextFour => {
                 let mut line = Line::default();
                 let own = self.fields[side];
+                let count = if target == Target::NextTwo { 2 } else { 4 };
                 if let Some(position) = own.position(u) {
-                    for k in 1..=2 {
+                    for k in 1..=count {
                         if let Some(next) = own.get(position + k) {
                             line.push(next);
                         }
@@ -677,6 +680,7 @@ impl Battle {
             Target::Allies => self.fields[side],
             Target::Enemies => self.fields[1 - side],
             Target::EnemyFirstTwo => self.fields[1 - side].take(2),
+            Target::EnemyFirstFour => self.fields[1 - side].take(4),
         }
     }
 
@@ -698,9 +702,11 @@ impl Battle {
             }
             Special::CopySkills => {
                 // 鹦鹉：额外获得一份对方交战位的基础技能（和已有的相加，同"获得"）
-                for skill in BaseSkill::ALL {
-                    if let Some(value) = records.copy_skills.get(skill) {
-                        self.grant(u, SkillRef::Base(skill), Some(value));
+                for _ in 0..params.times() {
+                    for skill in BaseSkill::ALL {
+                        if let Some(value) = records.copy_skills.get(skill) {
+                            self.grant(u, SkillRef::Base(skill), Some(value));
+                        }
                     }
                 }
             }

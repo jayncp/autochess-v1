@@ -24,6 +24,7 @@ from itertools import product
 from pathlib import Path
 
 import openpyxl
+from autochess_engine import Prices
 
 from autochess_tools import data
 
@@ -124,6 +125,14 @@ def load(path: Path = WORKBOOK) -> Economy:
         talents=talents,
         talent_sets=talent_sets,
     )
+
+
+def prices(eco: Economy) -> Prices:
+    """Rust 版的期望花费（和 `Plan.cost` 相同，快得多，给搜索用）：
+    `prices(eco).costs([(goal.cards, goal.units), ...])`。"""
+    kinds, copies = ([[float(x) for x in stars] for stars in table] for table in (eco.kinds, eco.copies))
+    xp = [float(x) for x in eco.xp]
+    return Prices([list(o) for o in eco.odds], list(eco.slots), xp, kinds, copies, list(eco.shop), eco.refresh)
 
 
 @dataclass(frozen=True)

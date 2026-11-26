@@ -32,7 +32,7 @@
 
 ## 阶段 5：冒险模式
 
-连续对战 AI，赢金币，买角色和装备构筑。需要商店、经济、对手生成（用模拟器调难度）、局内存档。经济规则的设计和估算见 [design/economy.md](design/economy.md)（表格 `design/economic-system.xlsx`）；下一步是按金币约束搜索阵容，并引入卡牌觉醒。
+连续对战 AI，赢金币，买角色和装备构筑。需要商店、经济、对手生成（用模拟器调难度）、局内存档。经济规则的设计和估算见 [design/economy.md](design/economy.md)（表格 `design/economic-system.xlsx`）。按金币约束的阵容搜索和卡牌觉醒的第一轮测试已做完（[plans/gold-search.md](plans/gold-search.md)，觉醒的规则 [design/awakening.md](design/awakening.md)）；带商店的构筑页面有了样稿和交互规则（[plans/shop-build-ui.md](plans/shop-build-ui.md)）。下一步是实战模拟和商店构筑页面的开发。
 
 - 局外规则重新设计，桌游版（[takeover/05](takeover/05-design-materials.md#2-局外循环规则规则xlsx--docx)）只作参考。
 - 羁绊、升星、经济系统（财富产生金币）可能在这一阶段引入；经济卡在阶段 3 录入，财富在那之前只有特效。

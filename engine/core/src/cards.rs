@@ -72,9 +72,16 @@ pub struct Params {
     pub scope: Option<Scope>,
     pub timing: Option<Timing>,
     pub target: Option<Target>,
+    /// 试验（卡牌觉醒）：多结算、多触发、额外获得的次数，不写是 1
+    pub times: Option<i32>,
 }
 
 impl Params {
+    /// 多结算、多触发、额外获得几次
+    pub fn times(&self) -> usize {
+        self.times.unwrap_or(1) as usize
+    }
+
     /// 数值。只在校验过一定是数值的地方用（如队长的 amount）
     pub fn amount(&self) -> i32 {
         self.amount.expect("校验过：这里的 amount 是数值")
@@ -496,11 +503,19 @@ fn parse_specials(slot: &str, value: &Value, bad: &mut Vec<String>) -> Option<Sp
 fn parse_params(value: &Value, effect: Special) -> Result<Params, String> {
     let keys = effect.params();
     let names: Vec<&str> = keys.iter().map(|k| k.id()).collect();
-    let Some(dict) = value.as_object().filter(|d| d.len() == keys.len() && names.iter().all(|n| d.contains_key(*n)))
+    // 试验（卡牌觉醒）：多结算、多触发、额外获得可以多写一个次数 times
+    let counted = matches!(effect, Special::ExtraResolve | Special::ExtraRound | Special::CopySkills);
+    let times = value.get("times").filter(|_| counted);
+    let Some(dict) = value
+        .as_object()
+        .filter(|d| d.len() == keys.len() + usize::from(times.is_some()) && names.iter().all(|n| d.contains_key(*n)))
     else {
         return Err(format!("应为 {names:?}"));
     };
     let mut params = Params::default();
+    if let Some(v) = times {
+        params.times = Some(positive(v).ok_or_else(|| format!(" times 不对：{v}"))?);
+    }
     for &key in keys {
         let v = &dict[key.id()];
         let ok = match key {

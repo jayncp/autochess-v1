@@ -22,6 +22,7 @@
 | `bench.py` | 测速（`just bench`）：Rust 版单线程、多线程和 Godot 版单进程的场/秒 |
 | `balance/` | 数值试验：分阶段的阵容搜索（见下面"数值试验"） |
 | `economy/` | 经济系统的估算：一套阵容的期望花费、第几回合凑齐（见下面"经济系统的估算"） |
+| `awaken.py` | 卡牌觉醒：按方案从原卡生成觉醒的卡（见下面"卡牌觉醒和按金币约束的搜索"） |
 | `art/` | 美术素材生成（依赖组 `art`：fonttools、resvg-py）：`fonts.py` 字体子集，`icons.py` 图标，`ornaments.py` 卡牌边框和法阵，`ui.py` 控件和卡面面板贴图，`fx.py` 战斗飘字的饰板。用 `just fonts`、`just art` 运行，规范见 `docs/design/art-direction.md` |
 
 ## 实验
@@ -46,6 +47,18 @@
 `model.py` 是算法：`load()` 读表格，`Plan(经济, target(阵容))` 是动态规划（`.cost` 期望花费），`simulate(plan, rng, timed, reserve)` 照规则抽卡。
 
 改了表格之后：`just economy price`，再 `just economy report ../docs/design/economy-report-<日期>.html`。六个阶段两千多套阵容，笔记本上十几分钟；要更多的模拟次数就放到服务器上（方法同下面"在哪里跑"，另外要带上 `docs/design/economic-system.xlsx`）。
+
+## 卡牌觉醒和按金币约束的搜索
+
+规则见 [`docs/design/awakening.md`](../docs/design/awakening.md)，方法和第一轮的结论见 [`docs/plans/gold-search.md`](../docs/plans/gold-search.md)。
+
+- 各角色的觉醒方案在 `balance/awaken-templates.json`：`{角色 id: [战力, 基础技能, 特殊技能]}`，三个倍数各是 1、1.5、2。
+- `just awaken [设计表] [方案]`：把各角色的方案、原版和觉醒后的数值写进设计表（默认 `docs/design/card-workbook.xlsx`）的"觉醒"页，整页重写。改了方案或卡牌数据之后重跑。
+- `just balance gold run <回合> [--minutes N] [--threads N] [--out 目录] [--fresh]`：搜一个回合档（5、8、11、14、17、20）。每一轮都存盘（默认 `balance/runs/gold/<回合>.json`），到时间或收到中断信号时跑完当前这一轮就停，再跑会接着来；日志里"最强回应"的得分越接近 0.5 越收敛，出现"搜索完成"才算收敛。`--templates` 换一份方案，`--uniform 2 2 1` 全部角色用同样的三个倍数；换方案时要换 `--out`。
+- `just balance gold report <回合> [--forced] [--out 目录] > 目录/<回合>.md`：从存盘出报告，搜索没跑完也能出；`--forced` 加上每张卡必须带时的最好得分（慢）。
+- `just balance gold_trend <输出.html> <说明> <报告目录> <方案.json>`：把六档带 `--forced` 的报告做成一页趋势图（角色分合计、普通、觉醒）。
+- `balance/runs/gold/` 是第一轮定版的存盘和报告（不进 git）。
+- 在服务器上跑：六档各开一个进程，`--threads` 加起来不要超过能用的核心；另外要设 `OPENBLAS_NUM_THREADS`、`OMP_NUM_THREADS`、`MKL_NUM_THREADS`（如 2），不然求均衡时 numpy 每个进程会再开几十个线程。要停就等它跑完当前这一轮（中断信号），或者直接强杀（存盘是上一轮的，不会坏）。要带上 `docs/design/economic-system.xlsx`。
 
 ## 数值试验
 

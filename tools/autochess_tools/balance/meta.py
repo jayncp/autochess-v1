@@ -243,9 +243,10 @@ class Meta:
         assert all(space.legal(x) for x in found)
         return found, np.array(value)
 
-    def grow(self, rounds: int, climbers: int = 96, steps: int = 25, mutations: int = 24, log=print) -> None:
-        """反复：求均衡 → 找对均衡分布最强的阵容 → 加进库。"""
+    def grow(self, rounds: int, climbers: int = 96, steps: int = 25, mutations: int = 24, log=print) -> float:
+        """反复：求均衡 → 找对均衡分布最强的阵容 → 加进库。返回最后一轮最强回应的得分（越接近 0.5 越收敛）。"""
         rng = self.space.rng
+        top = 1.0
         for r in range(rounds):
             self.solve()
             opponents, weights = self.opponents()
@@ -255,24 +256,31 @@ class Meta:
             starts += [self.space.random_lineup() for _ in range(climbers - len(starts))]
             found, value = self.climb(starts, [-1] * len(starts), steps, mutations)
             order = np.argsort(-value)
+            top = float(value[order[0]])
             good = [found[i] for i in order if value[i] > 0.5 + 1e-9][:40]
             added = self.add(good)
             log(
-                f"  第 {r + 1} 轮：均衡里 {len(opponents)} 套，最强回应 {value[order[0]]:.3f}，"
-                f"加入 {added} 套，库 {len(self.pool)}"
+                f"  第 {r + 1} 轮：均衡里 {len(opponents)} 套，最强回应 {top:.3f}，加入 {added} 套，库 {len(self.pool)}"
             )
-            if value[order[0]] < 0.52 and r >= 3:
+            if top < 0.52 and r >= 3:
                 break
         self.solve()
+        return top
 
     def forced(
-        self, per_card: int = 8, steps: int = 30, mutations: int = 12, previous: dict[int, float] | None = None
+        self,
+        per_card: int = 8,
+        steps: int = 30,
+        mutations: int = 12,
+        previous: dict[int, float] | None = None,
+        targets: Sequence[int] | None = None,
     ) -> dict[int, tuple[float, Lineup]]:
         """每张卡：必须带它的最强阵容对均衡分布的得分。
         均衡里已经出场的卡（得分按定义在 0.5 附近）只用 2 个起点复查；
-        previous 是上一次的得分，给了的话，上次明显偏低（< 0.47）的卡也只用 2 个起点。"""
+        previous 是上一次的得分，给了的话，上次明显偏低（< 0.47）的卡也只用 2 个起点。
+        targets 是要量的卡，不写就是这个阶段能用的全部角色和装备。"""
         space = self.space
-        targets = space.chars + space.equips
+        targets = space.chars + space.equips if targets is None else targets
         opponents, weights = self.opponents()
         starts, keeps = [], []
         ranked = np.argsort(-(self.payoff @ self.mix))
