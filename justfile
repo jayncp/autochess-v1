@@ -74,9 +74,14 @@ experiment name:
     cd tools && uv run python -m autochess_tools.experiments.{{name}}
 
 # 数值试验（tools/autochess_tools/balance/<模块>.py）：run 六个阶段的阵容搜索，stage 单个阶段，check 复核一张卡，
-# compare 比较两份报告，trend 趋势页，sheet 读写试验表，usage 把出场率填进设计表。用法见 tools/README.md
+# compare 比较两份报告，trend 趋势页，sheet 读写试验表，usage 把出场率填进设计表；
+# gold 按金币约束的阵容搜索（带卡牌觉醒），gold_trend 它的趋势页。用法见 tools/README.md
 balance module *args:
     cd tools && uv run --group balance python -m autochess_tools.balance.{{module}} {{args}}
+
+# 卡牌觉醒：按觉醒方案（tools/balance/awaken-templates.json）把各角色觉醒后的数值写进设计表的"觉醒"页
+awaken *args:
+    cd tools && uv run --group balance python -m autochess_tools.awaken {{args}}
 
 # 经济系统的估算（tools/autochess_tools/economy/<模块>.py）：price 给均衡阵容算价格和成型回合，report 做成一页图表。
 # 规则在 docs/design/economic-system.xlsx，用法见 tools/README.md

@@ -80,7 +80,8 @@ rust.simulate([([["tiger_man", ""]], [["vulture", "iron_sword"]])])  # [(2, 'wip
 - `simulate_ids(p1, p2, threads=0)`：按编号传 numpy 数组，形状 `(场数, 位置数 ≤7, 2)`，每格 `[角色编号, 装备编号]`，`-1` 表示空位、不带装备；编号见 `ids()`、`index(id)`。
   返回 `winner`、`reason`（0 = 全灭、1 = 连续无人阵亡）和双方幸存者的战斗力（`(场数, 7)`，后面补 0）四个数组。大批量时用它：省掉 Python 字符串的转换，快 5 倍以上。
 - `cross(mine, theirs)`：两批阵容（编号数组）两两对战的得分矩阵，胜 1、平 0.5、负 0。
-- `climb(...)`：数值试验的爬山（`tools/autochess_tools/balance/meta.py` 的 `Meta.climb` 调它，参数见 `autochess_engine.pyi`）：每个起点反复试几个变异，对一批带权重的对手得分不降就换过去。
+- `climb(...)`：数值试验的爬山（`tools/autochess_tools/balance/meta.py` 的 `Meta.climb` 调它，参数见 `autochess_engine.pyi`）：每个起点反复试几个变异，对一批带权重的对手得分不降就换过去。给了 `gold` 就按金币约束（期望花费不超过预算，觉醒的角色按 3 张原卡算；`balance/gold.py` 用）。
+- `Prices(...)`：经济系统的期望花费（动态规划，和 `tools/autochess_tools/economy/model.py` 的 `Plan.cost` 一致），`costs(阵容要的卡)` 一次算一批。
 - 结算时释放 GIL、多核并行，结果顺序和输入一致；`threads` 为 0 时用全部核心。阵容或卡牌数据有误时报 `ValueError`。
 
 速度（`just bench`，12 核 Mac，30 万场随机对局）：
@@ -119,6 +120,7 @@ Godot 版单进程约 4300 场/秒。
 ## 和 GDScript 版不同的地方
 
 卡牌数据的校验和 `CardDB.problems` 完全一致（共用 `tests/cases/card_checks.json`，规则见 [data/README.md](../data/README.md)），结算结果逐场一致。
+为卡牌觉醒加的两样东西只有 Rust 版认，GDScript 版还没有（正式数据里也没有用到，所以对拍不受影响；见 [docs/design/awakening.md](../docs/design/awakening.md)）：多结算、多触发、额外获得可以多写一个次数 `times`；对象多了 `next_four`（下四位）、`enemy_first_four`（对方前四位）。在游戏里实现觉醒时要按下面的流程补到 GDScript 版。
 阵容的检查更严：角色的位置放了装备、装备的位置放了角色，或者一方超过 7 个单位（游戏里最多 7 个卡位），都直接报错。
 
 ## 改规则的流程

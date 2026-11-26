@@ -23,9 +23,12 @@
 - 平衡指标（issue #39）：只用阶段搜索，警戒线写进 `card-design.md` 第 1 节；去掉各星级有效战力的目标均值、有效战力和 1★ 基准矩阵的工具；设计表的有效战力列换成六个阶段的出场率（`just balance usage`）。
 - 阵容码（issue #44，计划和执行记录 `docs/plans/lineup-code.md`，规范 `docs/design/lineup-code.md`）：一方阵容写成一段文字（`鹦鹉+狮心 / 士兵`），读写在 `LineupCode`；共用的阵容码面板，科研模式里导出、导入；用例 `tests/cases/lineup_codes.json`。
 - 经济系统的初步建立和摸底（issue #46，记录 `docs/plans/economy-survey.md`，规则和结论 `docs/design/economy.md`）：经济表 `docs/design/economic-system.xlsx`（等级、商店、利息、天赋、拍卖），估算工具 `just economy`（一套阵容的期望花费、第几回合凑齐）；用均衡阵容摸底后定了商店 4 角色 + 2 装备、升级经验 5/10/25/30/45/60。
+- 按金币约束搜索阵容、卡牌觉醒的第一轮测试（issue #48，记录 `docs/plans/gold-search.md`，规则 `docs/design/awakening.md`）：期望花费的动态规划和按金币约束的爬山进了 Rust 版，搜索工具 `just balance gold`（可限时、续跑）；觉醒按"战力、基础技能、特殊技能各 ×1.5 / ×2"给每张角色定了方案（`tools/balance/awaken-templates.json`，数值在设计表的"觉醒"页），五轮测试后各回合档都有可选的觉醒牌、没有必选的。只做了 Rust 版和工具。
+- 带商店的构筑页面的样稿和交互规则（`docs/plans/shop-build-ui.md`，样稿在仓库外的 `../design-workspace/`）。
 
 ## 待办
-- [ ] 按金币约束搜索阵容，带上卡牌觉醒（三张相同的角色合成一张，数值翻倍；规则待定）
+- [ ] 实战模拟：按回合买牌、升级、带着已有的牌往后打，用来细调觉醒和经济；之后统一阶段搜索、按金币搜索、实战模拟的流程和标准
+- [ ] 商店构筑页面的开发（先在冒险模式里试用商店）；游戏里实现觉醒（GDScript 版补 `times` 和两个新范围，阵容码加 `*`）
 - [ ] 冒险模式（设计中）
 - [ ] 卡图
 - 之后再定：构筑阶段的拖放反馈、音效；Android 的存档导入导出；正式发布前定 Android 包名（现在是占位的 `com.example.autochess`，改了存档会丢）

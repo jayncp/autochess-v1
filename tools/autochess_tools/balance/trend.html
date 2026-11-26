@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>各阶段出场率和带卡得分</title>
+<title>出场率和带卡得分</title>
 <style>
   :root {
     --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
@@ -61,7 +61,7 @@
 </head>
 <body>
 <header>
-  <h1>各阶段出场率和带卡得分</h1>
+  <h1 id="title">各阶段出场率和带卡得分</h1>
   <div class="note" id="note"></div>
 </header>
 <div class="controls">
@@ -102,6 +102,8 @@ const node = (tag, props = {}, ...children) => {
   return e;
 };
 $("note").textContent = DATA.note;
+if (DATA.title) { $("title").textContent = DATA.title; document.title = DATA.title; }
+const KINDS = DATA.kinds || ["角色", "装备"];
 const color = star => `var(--s${star})`;
 const stat = (values, fn) => { const v = values.filter(x => x !== null); return v.length ? fn(...v) : null; };
 CARDS.forEach((c, i) => {
@@ -110,11 +112,11 @@ CARDS.forEach((c, i) => {
   c.best = stat(c.score, Math.max); c.worst = stat(c.score, Math.min);
 });
 
-const state = { kind: "角色", stars: new Set([1, 2, 3, 4, 5]), quick: "全部", search: "", pins: new Set(), hot: null, sort: "peak", desc: true };
+const state = { kind: KINDS[0], stars: new Set([1, 2, 3, 4, 5]), quick: "全部", search: "", pins: new Set(), hot: null, sort: "peak", desc: true };
 const QUICK = {
   "全部": () => true,
   "一直没人用（峰值 <3%）": c => c.peak < 3,
-  "带上就亏（最好 <0.47）": c => c.best < 0.47,
+  "带上就亏（最好 <0.47）": c => c.best !== null && c.best < 0.47,
   "出场偏高（峰值 ≥30%）": c => c.peak >= 30,
 };
 const visible = () => CARDS.filter(c => c.kind === state.kind && state.stars.has(c.star) && QUICK[state.quick](c) && c.name.includes(state.search));
@@ -129,7 +131,7 @@ function chips(host, values, pressed, onClick, swatch) {
   host.sync = () => buttons.forEach(([b, value]) => b.setAttribute("aria-pressed", pressed(value)));
 }
 const kinds = $("kinds"), stars = $("stars"), quick = $("quick");
-chips(kinds, ["角色", "装备"], v => state.kind === v, v => { state.kind = v; });
+chips(kinds, KINDS, v => state.kind === v, v => { state.kind = v; });
 chips(stars, [1, 2, 3, 4, 5], v => state.stars.has(v), v => { state.stars.has(v) ? state.stars.delete(v) : state.stars.add(v); }, color);
 chips(quick, Object.keys(QUICK), v => state.quick === v, v => { state.quick = v; });
 $("search").oninput = e => { state.search = e.target.value.trim(); render(); };
@@ -219,9 +221,10 @@ function hover(chart, e) {
   setHot(c.id);
   tip.replaceChildren(
     node("b", {}, c.name), " ", node("span", { className: "sub" }, `${c.star}★ ${c.kind} · ${STAGES[stage]}`), node("br"),
-    `出场率 ${c.usage[stage].toFixed(1)}%　带卡得分 ${c.score[stage].toFixed(2)}`,
-    node("div", { className: "sub" }, `带卡最强阵容：${c.lineup[stage]}`),
+    `出场率 ${c.usage[stage].toFixed(1)}%　带卡得分 ${c.score[stage] === null ? "买不起" : c.score[stage].toFixed(2)}`,
   );
+  if (c.lineup[stage]) tip.append(node("div", { className: "sub" }, `带卡最强阵容：${c.lineup[stage]}`));
+  if (c.info) tip.append(node("div", { className: "more" }, c.info));
   if (same.length) tip.append(node("div", { className: "more" }, `同一位置还有 ${same.length} 张：${same.slice(0, 12).map(s => s.name).join("、")}${same.length > 12 ? "…" : ""}`));
   tip.style.display = "block";
   const tw = tip.offsetWidth, th = tip.offsetHeight;
@@ -244,7 +247,7 @@ function table(cards) {
   },
     node("td", {}, node("i", { style: `background:${color(c.star)}` }), c.name), node("td", {}, `${c.star}★`),
     node("td", {}, `${c.peak.toFixed(0)}%`), node("td", {}, `${c.low.toFixed(0)}%`),
-    node("td", {}, c.best.toFixed(2)), node("td", {}, c.worst.toFixed(2)))]));
+    node("td", {}, c.best === null ? "" : c.best.toFixed(2)), node("td", {}, c.worst === null ? "" : c.worst.toFixed(2)))]));
   $("table").replaceChildren(node("thead", {}, head), node("tbody", {}, ...rows.values()));
   $("count").textContent = `${state.kind} ${cards.length} 张`;
 }
